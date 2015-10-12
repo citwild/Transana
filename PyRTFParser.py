@@ -822,12 +822,28 @@ class XMLToRTFHandler(xml.sax.handler.ContentHandler):
         
         # Write the Font Table information at the front of the file
         f.write('{\\fonttbl\n')
+
+##        print "PyRTFParser.saveFile():"
+##        print
+##        print self.fontTable
+##        print
+        
         # Iterate through the fontTable entries ...
         for x in range(len(self.fontTable)):
+
+##            print x, self.fontTable[x].encode('utf8'),
+##            if len(self.fontTable[x]) >= 3:
+##                print ord(self.fontTable[x][0]), ord(self.fontTable[x][1]), ord(self.fontTable[x][2])
+##            else:
+##                print
+            
             # ... and add each font to the font table
-            f.write('{\\f%d\\fmodern\\fcharset1\\fprq1 %s;}\n' % (x, self.fontTable[x]))
+            f.write('{\\f%d\\fmodern\\fcharset1\\fprq1 %s;}\n' % (x, self.fontTable[x].encode('utf8')))
         # Close the Font Table block
         f.write('}\n')
+
+##        print "Done"
+##        print
 
         # Write the Color Table information at the front of the file
         f.write('{\colortbl\n')

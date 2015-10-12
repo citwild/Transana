@@ -249,3 +249,16 @@ MessageServer/README.txt
 MessageServer/TransanaMessageServer300Linux.zip
 MessageServer/TransanaMessageServer300Mac.dmg
 MessageServer/TransanaMessageServer300Win.zip
+libavcodec.dll
+libavformat.dll
+pyMedia_audio_extract.py
+wceraudio.dll
+wceraudio.dylib
+wceravi.dll
+wceravi.dylib
+wcermpg.dll
+wcermpg.dylib
+wcermpg2.dll
+wcermpg2.dylib
+wcerwav.dll
+wcerwav.dylib
