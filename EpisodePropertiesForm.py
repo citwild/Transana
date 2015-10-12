@@ -150,7 +150,7 @@ class EpisodePropertiesForm(Dialogs.GenForm):
         self.fname_lb = wx.ListBox(self.panel, -1, wx.DefaultPosition, wx.Size(180, 60), self.filenames)
         # Add the element to the sizer
         r3Sizer.Add(self.fname_lb, 5, wx.EXPAND)
-        self.fname_lb.SetDropTarget(ListBoxFileDropTarget(self.fname_lb))
+        self.fname_lb.SetDropTarget(ListBoxFileDropTarget(self.fname_lb, self.obj))
         
         # Add a horizontal spacer to the row sizer        
         r3Sizer.Add((10, 0))
@@ -754,9 +754,11 @@ class EpisodePropertiesForm(Dialogs.GenForm):
 
 # This simple derrived class let's the user drop files onto a list box
 class ListBoxFileDropTarget(wx.FileDropTarget):
-    def __init__(self, listbox):
+    def __init__(self, listbox, obj):
         wx.FileDropTarget.__init__(self)
         self.listbox = listbox
+        self.obj = obj
+        
     def OnDropFiles(self, x, y, files):
         """Called when a file is dragged onto the edit box."""
         # If there are no files in the ListBox ...
@@ -765,8 +767,27 @@ class ListBoxFileDropTarget(wx.FileDropTarget):
             self.listbox.Clear()
         # If we have not exceeded the maximum number of files allowed ...
         if self.listbox.GetCount() < MEDIAFILEMAX:
-            # ... add the file name to the list box
-            self.listbox.Append(files[0])
+
+            # If we have a non-blank line first line in the filenames list in the form ...
+            if (self.listbox.GetCount() > 0) and (self.listbox.GetString(0).strip() != ''):
+                # ... add the file name to the end of the control
+                self.listbox.Append(files[0])
+                # ... and add the file name to the Episode object as an ADDITIONAL media file
+                self.obj.additional_media_files = {'filename' : files[0],
+                                              'length'   : 0,
+                                              'offset'   : 0,
+                                              'audio'    : 1 }
+            # If we don't have a first media file defined ...
+            else:
+                # ... set the filename as the MAIN media file for the Episode object
+                self.obj.media_filename = files[0]
+                # ... Clear the filename listbox
+                self.listbox.Clear()
+                # ... add the filename as the first line
+                self.listbox.Append(files[0])
+            # Reset the media file length                    
+            self.obj.tape_length = 0
+
         # If we have the maximum number of media files already selected ...
         else:
             # ... Display an error message to the user.
