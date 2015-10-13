@@ -437,7 +437,13 @@ class DataObject(object):
             # ... If we're using sqlite, we get a string and need to convert it to a datetime object
             if TransanaConstants.DBInstalled in ['sqlite3']:
                 import datetime
-                tempDate = datetime.datetime.strptime(lt[0], '%Y-%m-%d %H:%M:%S.%f')
+                # Start catching exceptions
+                try:
+                    # This conversion *almost* always works
+                    tempDate = datetime.datetime.strptime(lt[0], '%Y-%m-%d %H:%M:%S.%f')
+                except ValueError:
+                    # Every once in a while, we get an lt[0] value with no SECONDS, requiring this conversion.  I don't know why.
+                    tempDate = datetime.datetime.strptime(lt[0], '%Y-%m-%d %H:%M')
                 return tempDate
             # ... If we're using MySQL, we get a MySQL DateTime value
             else:
