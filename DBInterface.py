@@ -3930,7 +3930,7 @@ def VideoFilePaths(filePath, update=False):
                     # Remove the Video Root from the File Name
                     tempEpisode.media_filename = mediafile[len(filePath):]
                     # Save the Episode
-                    tempEpisode.db_save()
+                    tempEpisode.db_save(use_transactions=False)
                     # Unlock the Episode
                     tempEpisode.unlock_record()
                 # Catch failed record locks or Saves
@@ -3947,7 +3947,7 @@ def VideoFilePaths(filePath, update=False):
     if transactionStatus:
         # Initialize the Clip Counter
         clipCount = 0
-        # Create the Query for the Episode Table
+        # Create the Query for the Clip Table
         query = "SELECT ClipNum, MediaFile FROM Clips2 "
         # Execute the Query
         dbCursor.execute(query)
@@ -3979,7 +3979,7 @@ def VideoFilePaths(filePath, update=False):
                         # Remove the Video Root from the File Name
                         tempClip.media_filename = mediafile[len(filePath):]
                         # Save the Clip
-                        tempClip.db_save()
+                        tempClip.db_save(use_transactions=False)
                         # Unlock the Clip
                         tempClip.unlock_record()
                     # Catch failed record locks or Saves
@@ -3995,7 +3995,7 @@ def VideoFilePaths(filePath, update=False):
                         break
 
     if transactionStatus:
-        # Create the Query for the Episode Table
+        # Create the Query for the Additional Videos Table
         query = "SELECT EpisodeNum, ClipNum, MediaFile FROM AdditionalVids2 "
         # Execute the Query
         dbCursor.execute(query)
@@ -4040,7 +4040,7 @@ def VideoFilePaths(filePath, update=False):
                                     # Iterate the file counter
                                     filCount += 1
                             # Save the Clip
-                            tempClip.db_save()
+                            tempClip.db_save(use_transactions=False)
                             # Unlock the Clip
                             tempClip.unlock_record()
                         # Catch failed record locks or Saves
@@ -4073,7 +4073,7 @@ def VideoFilePaths(filePath, update=False):
                                     # Iterate the file counter
                                     filCount += 1
                             # Save the Episode
-                            tempEpisode.db_save()
+                            tempEpisode.db_save(use_transactions=False)
                             # Unlock the Episode
                             tempEpisode.unlock_record()
                         # Catch failed record locks or Saves
@@ -5057,6 +5057,9 @@ def UpdateDBFilenames(parent, filePath, fileList, newName=''):
                 if DEBUG:
                     (exctype, excvalue) = sys.exc_info()[:2]
                     print "DBInterface.UpdateDBFilenames() Exception: \n%s\n%s" % (exctype, excvalue)
+                    import traceback
+                    traceback.print_exc(file=sys.stdout)
+
                 # Indicate that we have failed.
                 success = False
                 # Don't bother to contine processing DB Records
@@ -5093,6 +5096,9 @@ def UpdateDBFilenames(parent, filePath, fileList, newName=''):
                 if DEBUG:
                     (exctype, excvalue) = sys.exc_info()[:2]
                     print "DBInterface.UpdateDBFilenames() Exception: \n%s\n%s" % (exctype, excvalue)
+                    import traceback
+                    traceback.print_exc(file=sys.stdout)
+
                 # Indicate that we have failed.
                 success = False
                 # Don't bother to contine processing DB Records
@@ -5146,6 +5152,9 @@ def UpdateDBFilenames(parent, filePath, fileList, newName=''):
                     if DEBUG:
                         (exctype, excvalue) = sys.exc_info()[:2]
                         print "DBInterface.UpdateDBFilenames() Exception: \n%s\n%s" % (exctype, excvalue)
+                        import traceback
+                        traceback.print_exc(file=sys.stdout)
+
                     # Indicate that we have failed.
                     success = False
                     # Don't bother to contine processing DB Records
@@ -5188,6 +5197,9 @@ def UpdateDBFilenames(parent, filePath, fileList, newName=''):
                     if DEBUG:
                         (exctype, excvalue) = sys.exc_info()[:2]
                         print "DBInterface.UpdateDBFilenames() Exception: \n%s\n%s" % (exctype, excvalue)
+                        import traceback
+                        traceback.print_exc(file=sys.stdout)
+
                     # Indicate that we have failed.
                     success = False
                     # Don't bother to contine processing DB Records
@@ -5221,6 +5233,9 @@ def UpdateDBFilenames(parent, filePath, fileList, newName=''):
                 if DEBUG:
                     (exctype, excvalue) = sys.exc_info()[:2]
                     print "DBInterface.UpdateDBFilenames() Exception: \n%s\n%s" % (exctype, excvalue)
+                    import traceback
+                    traceback.print_exc(file=sys.stdout)
+
                 # Indicate that we have failed.
                 success = False
                 # Don't bother to contine processing DB Records
