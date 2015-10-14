@@ -253,6 +253,9 @@ libavcodec.dll
 libavformat.dll
 pyMedia_audio_extract.py
 wceraudio.dll
+wcerwav.dylib
+wcerwav.dll
+wcermpg2.dylib
 wceraudio.dylib
 wceravi.dll
 wceravi.dylib

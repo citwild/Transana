@@ -4852,7 +4852,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Get the file's root name and extension
                     (filenameroot, extension) = os.path.splitext(filenameandext)
                     # We need to make sure only Text Files are processed!
-                    if extension[1:] in TransanaConstants.documentFileTypes:
+                    if extension[1:].lower() in TransanaConstants.documentFileTypes:
                         # Create a blank Document
                         tmpDocument = Document.Document()
                         # Name the Document after the root file name
@@ -4967,7 +4967,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Get the file's root name and extension
                     (filenameroot, extension) = os.path.splitext(filenameandext)
                     # We need to make sure only Media Files are processed!
-                    if extension[1:] in TransanaConstants.mediaFileTypes:
+                    if extension[1:].lower() in TransanaConstants.mediaFileTypes:
                         # Create a blank Episode
                         tmpEpisode = Episode.Episode()
                         # Name the Episode after the root file name
@@ -6445,53 +6445,62 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     (path, filenameandext) = os.path.split(filename)
                     # Get the file's root name and extension
                     (filenameroot, extension) = os.path.splitext(filenameandext)
-                    # Create a blank Snapshot
-                    tmpSnapshot = Snapshot.Snapshot()
-                    # Name the Episode after the root file name
-                    tmpSnapshot.id = filenameroot
-                    # Assign the image file
-                    tmpSnapshot.image_filename = filename
-                    # Assign the Collection number and name
-                    tmpSnapshot.collection_num = collection.number
-                    tmpSnapshot.collection_id = collection.id
-                    # Determine the Sort Order value
-                    maxSortOrder = DBInterface.getMaxSortOrder(collection.number)
-                    # Set the Sort Order
-                    tmpSnapshot.sort_order = maxSortOrder + 1
-                    # Start exception handling
-                    try:
-                        # Save the new Snapshot.  An exception will be generated if a Snapshot with this name already exists.
-                        tmpSnapshot.db_save()
+                    # We need to make sure only Text Files are processed!
+                    if extension[1:].lower() in TransanaConstants.imageFileTypes:
+                        # Create a blank Snapshot
+                        tmpSnapshot = Snapshot.Snapshot()
+                        # Name the Episode after the root file name
+                        tmpSnapshot.id = filenameroot
+                        # Assign the image file
+                        tmpSnapshot.image_filename = filename
+                        # Assign the Collection number and name
+                        tmpSnapshot.collection_num = collection.number
+                        tmpSnapshot.collection_id = collection.id
+                        # Determine the Sort Order value
+                        maxSortOrder = DBInterface.getMaxSortOrder(collection.number)
+                        # Set the Sort Order
+                        tmpSnapshot.sort_order = maxSortOrder + 1
+                        # Start exception handling
+                        try:
+                            # Save the new Snapshot.  An exception will be generated if a Snapshot with this name already exists.
+                            tmpSnapshot.db_save()
 
-                        # Build the Node List for the new Snapshot
-                        nodeData = (_('Collections'),) +  tmpSnapshot.GetNodeData(True)
-                        # Add the new Snapshot to the database tree
-                        self.add_Node('SnapshotNode', nodeData, tmpSnapshot.number, collection.number, sortOrder=tmpSnapshot.sort_order)
-                        # Now let's communicate with other Transana instances if we're in Multi-user mode
-                        if not TransanaConstants.singleUserVersion:
-                            # Create an "Add Snapshot" message
-                            msg = "ASnap %s"
-                            # Build the message details
-                            data = (nodeData[1],)
-                            for nd in nodeData[2:]:
-                                msg += " >|< %s"
-                                data += (nd, )
-                            if DEBUG:
-                                print 'Message to send =', msg % data
-                            # If there's a Chat window ...
-                            if TransanaGlobal.chatWindow != None:
-                                # ... send the message
-                                TransanaGlobal.chatWindow.SendMessage(msg % data)
+                            # Build the Node List for the new Snapshot
+                            nodeData = (_('Collections'),) +  tmpSnapshot.GetNodeData(True)
+                            # Add the new Snapshot to the database tree
+                            self.add_Node('SnapshotNode', nodeData, tmpSnapshot.number, collection.number, sortOrder=tmpSnapshot.sort_order)
+                            # Now let's communicate with other Transana instances if we're in Multi-user mode
+                            if not TransanaConstants.singleUserVersion:
+                                # Create an "Add Snapshot" message
+                                msg = "ASnap %s"
+                                # Build the message details
+                                data = (nodeData[1],)
+                                for nd in nodeData[2:]:
+                                    msg += " >|< %s"
+                                    data += (nd, )
+                                if DEBUG:
+                                    print 'Message to send =', msg % data
+                                # If there's a Chat window ...
+                                if TransanaGlobal.chatWindow != None:
+                                    # ... send the message
+                                    TransanaGlobal.chatWindow.SendMessage(msg % data)
 
-                    # If a Save Error was generated by the Snapshot ...
-                    except SaveError, e:
-                        # Build an error message
-                        msg = _('Transana was unable to import file "%s"\nduring Batch Snapshot Creation.\nA Snapshot named "%s" already exists.')
-                        # Make it Unicode
-                        if 'unicode' in wx.PlatformInfo:
-                            msg = unicode(msg, 'utf8')
+                        # If a Save Error was generated by the Snapshot ...
+                        except SaveError, e:
+                            # Build an error message
+                            msg = _('Transana was unable to import file "%s"\nduring Batch Snapshot Creation.\nA Snapshot named "%s" already exists.')
+                            # Make it Unicode
+                            if 'unicode' in wx.PlatformInfo:
+                                msg = unicode(msg, 'utf8')
+                            # Show the error message, then clean up.
+                            dlg = Dialogs.ErrorDialog(self, msg % (filename, tmpSnapshot.id))
+                            dlg.ShowModal()
+                            dlg.Destroy()
+
+                    else:
+                        prompt = unicode('File "%s" could not be processed during Batch Snapshot Creation.', 'utf8')
                         # Show the error message, then clean up.
-                        dlg = Dialogs.ErrorDialog(self, msg % (filename, tmpSnapshot.id))
+                        dlg = Dialogs.ErrorDialog(self, prompt % (filename, ))
                         dlg.ShowModal()
                         dlg.Destroy()
 
