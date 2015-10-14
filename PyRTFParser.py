@@ -823,27 +823,106 @@ class XMLToRTFHandler(xml.sax.handler.ContentHandler):
         # Write the Font Table information at the front of the file
         f.write('{\\fonttbl\n')
 
-##        print "PyRTFParser.saveFile():"
-##        print
-##        print self.fontTable
-##        print
+        ## <RANT>
+        ##
+        ## This is frustrating.  I can't figure out how to output non-English font NAMES to the Font Table correctly.
+        ##
+        ## The RTF Specification uses "fcharset" to specify the character set of the font name, which is all very nice,
+        ## but I can't figure out how to tell what value to set it to for a given font when we have fonts named in a
+        ## non-English language.  On my Windows box, all my font names are in English, so it's no problem.  But on
+        ## my Mac, I have fonts with Chinese and Japanese names.  I could probably have Arabic and Korean font names
+        ## too.
+        ##
+        ## I've tried using wx.Font.GetEncoding(), but that doesn't provide useful information.  On my Windows, it ALWAYS
+        ## returns wx.FONTENCODING_SYSTEM, and on my Mac, it ALWAYS returns wx.FONTENCODING_MACROMAN, even when the font
+        ## CAN'T be encoded using encode("macroman") because it's in Chinese or whatever.  It looks like maybe you have to
+        ## specify a FONTENCODING value when creating the wx.Font for this to work.
+        ##
+        ## I also spent some time experimenting with wx.FONTENUMERATOR.  You can use this to give you a list of all Font
+        ## names available from the System.  It has a GetEncodings() method, but I can't make this provide any information.
+        ##
+        ## So the implementation here saves non-English font names using UTF8 encoding.  This is not right.
+        ##
+        ## This system allows Transana to save to RTF, and to maintain the Font connection when loading these RTF files.
+        ## The problem is that when the RTF file is loaded in Word, the Font Names are displayed as their UTF8 equivalent
+        ## rather than their correct Unicode equivalent.  
+        ##
+        ## For example, Word on OS X outputs one of my fonts as using "\fcharset136" and having the font name of
+        ## "\'c4\'d7\'a7\'ba".  Charset 136 translates into the "cp950" or "big5" encoding system.  So the python
+        ## equivelant is:
+        ##
+        ##    t = "\xc4\xd7\xa7\xba"
+        ##    u = t.decode('big5')
+        ##    print u
+        ##
+        ## u is then a unicode object that corresponds to the Chinese font name.
+        ##
+        ## But by the time I want to export the document from Transana to RTF, I don't have that charset/encoding information
+        ## any more, if I ever did have it.  (I had it once from an RTF import, but not from someone creating a document in
+        ## Transana using that font.)  I have no way to know that a given font name is or isn't charset 135 or encoding
+        ## big5 that I can figure out.
+        ##
+        ## I also tried to use the alternate Unicode output format, using \u20791\u23435 to represent the same font name
+        ## in unicode character format.  Word cannot read this at all, saying the file is corrupt.  I guess this format isn't
+        ## allowed in the font table specification.
+        ##
+        ## What I'm doing at present is outputting the font name as "fcharset1" (Default) and using UTF8 encoding.
+        ## As I say, this seems to work fine when reading the RTF in Transana, as Transana uses UTF8 by default.  But Word
+        ## shows the font as the UTF8 characters, as seen with "print u.encode('utf8')" rather than "print u".  I don't
+        ## know how to fix this with no way to know the charset/encoding of the font name provided by the operating system.
+        ##
+        ## David Woods
+        ## October 14, 2015
+        ##
+        ## </RANT>
+
+#        print "PyRTFParser.saveFile():"
+#        print
+#        print self.fontTable
+#        print
         
         # Iterate through the fontTable entries ...
         for x in range(len(self.fontTable)):
 
-##            print x, self.fontTable[x].encode('utf8'),
-##            if len(self.fontTable[x]) >= 3:
-##                print ord(self.fontTable[x][0]), ord(self.fontTable[x][1]), ord(self.fontTable[x][2])
-##            else:
-##                print
+#            print x, self.fontTable[x].encode('utf8'),
+#            if len(self.fontTable[x]) >= 3:
+#                print ord(self.fontTable[x][0]), ord(self.fontTable[x][1]), ord(self.fontTable[x][2])
+#            else:
+#                print
             
             # ... and add each font to the font table
-            f.write('{\\f%d\\fmodern\\fcharset1\\fprq1 %s;}\n' % (x, self.fontTable[x].encode('utf8')))
+##            f.write('{\\f%d\\fmodern\\fcharset1\\fprq1 %s;}\n' % (x, self.fontTable[x].encode('utf8')))
+            # For non-ASCII values, we need to break them down into their "\'xx" format.
+            f.write('{\\f%d\\fmodern\\fcharset1\\fprq1 ' % x)
+
+            # UTF8 output (pick one!)
+            txt = self.fontTable[x].encode('utf8')
+            for y in range(len(txt)):
+                if ord(txt[y]) <= 127:
+                    f.write(txt[y])
+                else:
+                    f.write("\\'%s" % hex(ord(txt[y]))[2:])
+            
+            # Unicode output (pick one!)
+            ## try:
+            ##     # Try encoding the whole font name
+            ##     txt = self.fontTable[x]
+            ##	 t = txt.encode('cp1252')
+            ##	 f.write(t)
+            ## except UnicodeEncodeError:
+            ##     # If the whole font name throws a UnicodeEncodeError, try encoding the font name one letter at a time.
+            ##	 for y in txt:
+            ##         try:
+            ##             f.write(y.encode('cp1252'))
+            ##         except UnicodeEncodeError:
+            ##             f.write("\\u%d" % ord(y))
+            
+            f.write(';}\n')
         # Close the Font Table block
         f.write('}\n')
 
-##        print "Done"
-##        print
+#        print "Done"
+#        print
 
         # Write the Color Table information at the front of the file
         f.write('{\colortbl\n')
@@ -2488,7 +2567,6 @@ class RTFTowxRichTextCtrlParser:
                         'expshrtn',
                         'faauto', 
                         'fbidi', 'fmodern', 'fnil', 'froman', 'fscript', 'fswiss',
-                        'fcharset',
                         'fcs', 
                         'fet', 
                         'flomajor', 'fdbmajor', 'fhimajor', 'fbimajor', 'flominor', 'fdbminor', 'fhiminor', 'fbiminor',
