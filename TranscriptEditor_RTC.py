@@ -2833,7 +2833,7 @@ class TranscriptEditor(RichTextEditCtrl):
         # For each result found by the Regular Expression search ...
         for regexResult in regexResults:
             # ... Get the string value for the time, in HH:MM:SS.hh format, excluding the surrounding parentheses
-            tcString = transcriptText[regexResult.start() + 1 : regexResult.end() - 1]
+            tcString = transcriptText[regexResult.start() : regexResult.end() - 1]
             # Convert the string to a Time Code value in milliseconds
             tcVal = Misc.time_in_str_to_ms(tcString)
             # Find the text in the Transcript that matches the current Regular Expression result
