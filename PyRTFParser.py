@@ -1073,6 +1073,10 @@ class RTFTowxRichTextCtrlParser:
         
         # Initialize RTF block nesting counter
         self.nest = 0
+        # There is a variable that counts the number of bytes following a \uN specification we should use to
+        # determine the correct Unicode character that has been alternately expressed using \'XX notation.
+        # This variable is scoped by the { and } characters, so we need to maintain a stack to track this.
+        self.unicodeByteStack = [1]
 
         # Set the insertion point, if one is passed in
         if self.insertionPoint != None:
@@ -1468,6 +1472,8 @@ class RTFTowxRichTextCtrlParser:
                         if (self.in_font_table):
                             # ... then we are entering a font block ...
                             self.in_font_block = True
+                        # As we nest, add the LAST value as the new value unicodeByteStack
+                        self.unicodeByteStack.append(self.unicodeByteStack[-1])
                         # ... and we can move on to the next character
                         self.index += 1
 
@@ -1475,6 +1481,8 @@ class RTFTowxRichTextCtrlParser:
                     elif c == '}':
                         # ... note one less deep in the block nesting 
                         self.nest -= 1
+                        # ... and reduce the unicodeTypeStack by one
+                        self.unicodeByteStack = self.unicodeByteStack[:-1]
                         
                         # If we're in a font block ...
                         if (self.in_font_block):
@@ -1578,6 +1586,10 @@ class RTFTowxRichTextCtrlParser:
                             # Just close the block.  (This probably does little more than move to the next character
                             self.process_end_block()
 
+                    # Process the Non-Breaking Space here?
+                    elif self.buffer[self.index + 1] == '~':
+                        self.txtCtrl.WriteText(' ')
+                        self.index += 2
                     # If we have a backslash character ...
                     elif c == '\\':
                         # ... that signals the START of a control word we should process
@@ -1892,6 +1904,7 @@ class RTFTowxRichTextCtrlParser:
 ##                finally:
 ##                    self.index += 2
 ##                return 
+
 
             # ANSI Code Page specification.  If non-English encoding is an issue, this may be where we can determine
             # what encoding we need to use.
@@ -2393,7 +2406,7 @@ class RTFTowxRichTextCtrlParser:
             elif cw == 'u':   
 
                 if DEBUG and (num not in [164, 8232]):
-                    print "Processing Unicode Character Code %d" % num
+                    print "Processing Unicode Character Code %d" % num, self.buffer[self.index : self.index + 5], self.fontEncoding
 
                 # Start exception handling
                 try:
@@ -2413,14 +2426,22 @@ class RTFTowxRichTextCtrlParser:
                         # Sometimes, especially in RTF from Word on the Mac, there are redundant specifiers of the RTF character.
                         # This code detects that and skips over it!
 
+                        # I seem to have taken some special steps for handling Chinese at some point.  It's now clear that
+                        # code is causing problems.  It looks like I felt I needed to handle not just \'XX codes but sometimes
+                        # also \'XXX or longer codes.  But this can't be correct.  We don't get 3-digit hex values, and
+                        # in French, you can have \'8da, which is a lower-case cedila followed by the letter a, but the a was
+                        # getting dropped on import.
+
                         # There appear to be two different situations we have to trap.  If this one is left out, time codes
                         # end up without any TIME data in them.  
                         if (self.buffer[self.index : self.index + 2] == "\\'") and \
                            (self.buffer[self.index + 2] in '0123456789ABCDEFabcdef') and \
-                           (self.buffer[self.index + 3] in '0123456789ABCDEFabcdef') and \
-                           (self.buffer[self.index + 4] != '\\'):
+                           (self.buffer[self.index + 3] in '0123456789ABCDEFabcdef'):
+                            ## and \
+                            ## (self.buffer[self.index + 4] != '\\'):
+                            # The unicodeByteStack tracks how many \'XX characters we need to skip here!
                             # Skip past the unicode character digits
- 	                    self.index += 4
+ 	                    self.index += (4 * self.unicodeByteStack[-1])  # 4
                         # This gets hit, I guess, when the the 3rd and 4th characters are NOT HEX, or when the 5th character IS
                         # a slash.  Can that be right?
  	                # This one catches other unicode characters, such as Chinese characters.  Without this, Chinese doesn't
@@ -2435,12 +2456,13 @@ class RTFTowxRichTextCtrlParser:
                                     self.index += 1
                                 # If we have another backslash and apostrophe ...
                                 else:
+                                    # The unicodeByteStack tracks how many \'XX characters we need to skip here!
                                     # Skip those characters as REDUNDANT with the Unicode Character just processed
-                                    self.index += 2
-                                    # Now look for HEX values ...
-                                    while (self.buffer[self.index] in '0123456789ABCDEFabcdef'):
-                                        # ... and skip those as well
-                                        self.index += 1
+                                    self.index += (4 * self.unicodeByteStack[-1])  # 2
+                                    ## Now look for HEX values ...  (( NO.  Should never be more than \'XX, never \'XXX ))
+                                    ## while (self.buffer[self.index] in '0123456789ABCDEFabcdef'):
+                                    ##     # ... and skip those as well
+                                    ##     self.index += 1
 
                 # If a ValueError is raised ...
                 except ValueError:
@@ -2449,6 +2471,10 @@ class RTFTowxRichTextCtrlParser:
                         print "ValueError in RTF Processing for Unicode.  Control Word 'u', num =", num
                     # ... and just move on.
                     pass
+
+            # Unicode byte length
+            elif cw == 'uc':
+                self.unicodeByteStack[-1] = num
 
             # Underlining
             elif cw == "ul":
@@ -2542,7 +2568,6 @@ class RTFTowxRichTextCtrlParser:
             # themelang, themelangfe, themelangcs  Theme languages
             # trackformatting
             # trackmoves,
-            # uc                          Unicode byte length
             # upr                         keyword representation (??)
             # validatexml
             # viewh                       "view height"
@@ -2615,7 +2640,6 @@ class RTFTowxRichTextCtrlParser:
                         'themelang', 'themelangfe', 'themelangcs',
                         'trackmoves',
                         'trackformatting', 
-                        'uc',
                         'upr',
                         'validatexml', 
                         'viewkind', 'viewscale',
@@ -2730,10 +2754,14 @@ class RTFTowxRichTextCtrlParser:
             elif self.buffer[x] == "{":
                 # ... which increase our level of nesting
                 self.nest = self.nest + 1
+                # As we nest, add the LAST value as the new value unicodeByteStack
+                self.unicodeByteStack.append(self.unicodeByteStack[-1])
             # Look for block ends ...
             elif self.buffer[x] == "}":
                 # ... which decrease out level of nesting
                 self.nest = self.nest - 1
+                # ... and reduce the unicodeTypeStack by one
+                self.unicodeByteStack = self.unicodeByteStack[:-1]
                 # When we've reached the closer of our current RTF block ...
                 if self.nest == desired_nest:
                     # ... we can stop iterating
