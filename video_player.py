@@ -291,6 +291,11 @@ class VideoPlayer(wx.Panel):
                         backendNeeded = wx.media.MEDIABACKEND_DIRECTSHOW
                     else:
                         backendNeeded = wx.media.MEDIABACKEND_WMP10
+
+                # EXPERIMENTAL -- Override default MP4 Media Player
+                if (videoExtension.lower() == '.mp4') and (TransanaGlobal.configData.mp4MediaPlayer == 1):
+                    # ... indicate we need the WMP10 back end
+                    backendNeeded = wx.media.MEDIABACKEND_WMP10
                 # If the current back end is different from the needed back end ...
                 if self.backend != backendNeeded:
                     # ... signal the back end that we need ...

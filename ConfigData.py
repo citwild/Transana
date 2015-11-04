@@ -109,7 +109,8 @@ class ConfigData(object):
         str = str + 'colorConfigFilename = %s\n' % self.colorConfigFilename
         str = str + 'quickClipsWarning = %s\n' % self.quickClipWarning
         if 'wxMSW' in wx.PlatformInfo:
-            str = str + 'mediaPlayer = %s\n\n' % self.mediaPlayer
+            str = str + 'mediaPlayer = %s\n' % self.mediaPlayer
+            str = str + 'mp4MediaPlayer = %s\n\n' % self.mp4MediaPlayer
         return str
 
     def LoadConfiguration(self):
@@ -264,6 +265,10 @@ class ConfigData(object):
             if 'wxMSW' in wx.PlatformInfo:
                 # ... load the Media Player selection
                 self.mediaPlayer = config.ReadInt('/2.0/MediaPlayer', 0)
+                # This cannot not currently be changed without editing the Registry.
+                # 0 is default, uses QuickTime Player for *.mp4 files
+                # 1 is experimental, uses Windows Media Player for *.mp4 files
+                self.mp4MediaPlayer = config.ReadInt('/3.0/mp4MediaPlayer', 0)
 
         # If no version 2.0 Config File exists, ...
         else:
@@ -362,6 +367,7 @@ class ConfigData(object):
             if 'wxMSW' in wx.PlatformInfo:
                 # ... load the Media Player selection
                 self.mediaPlayer = 0
+                self.mp4MediaPlayer = 0
 
         # Load Port
         if not TransanaConstants.singleUserVersion:
@@ -600,6 +606,10 @@ class ConfigData(object):
         if 'wxMSW' in wx.PlatformInfo:
             # ... save the Media Player selection
             config.WriteInt('/2.0/MediaPlayer', self.mediaPlayer)
+            # This cannot not currently be changed without editing the Registry.
+            # 0 is default, uses QuickTime Player for *.mp4 files
+            # 1 is experimental, uses Windows Media Player for *.mp4 files
+            config.WriteInt('/3.0/mp4MediaPlayer', self.mp4MediaPlayer)
         # if the current primary display is valid ...
         if self.primaryScreen < wx.Display.GetCount():
             # ... save the Primary Screen setting
