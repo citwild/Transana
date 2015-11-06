@@ -109,6 +109,10 @@ class Document(DataObject.DataObject):
             str = str + self.text[:250] + '\n\n'   # "text not displayed due to length.\n\n"
         else:
             str = str + "text = %s\n\n" % self.text
+        if len(self.plaintext) > 250:
+            str = str + self.plaintext[:250] + '\n\n'   # "text not displayed due to length.\n\n"
+        else:
+            str = str + "plaintext = %s\n\n" % self.plaintext
         return str.encode('utf8')
 
     def __eq__(self, other):
@@ -211,7 +215,7 @@ class Document(DataObject.DataObject):
         else:
             # Define the query to load a Document with everything
             query = """SELECT DocumentNum, DocumentID, LibraryNum, SeriesID, Author, Comment,
-                              ImportedFile, ImportDate, DocumentLength, XMLText, 
+                              ImportedFile, ImportDate, DocumentLength, XMLText, PlainText,
                               a.RecordLock, a.LockTime, LastSaveTime
                          FROM Documents2 a, Series2 b
                          WHERE   DocumentNum = %s AND
@@ -352,18 +356,24 @@ class Document(DataObject.DataObject):
                     imported_file = self.imported_file.encode(TransanaGlobal.encoding)
                 else:
                     imported_file = self.imported_file
+                # Encode the plain text
+                if self.plaintext != None:
+                    plaintext = self.plaintext.encode(TransanaGlobal.encoding)
+                else:
+                    plaintext = self.plaintext
             else:
                 # If we don't need to encode the string values, we still need to copy them to our local variables.
                 id = self.id
                 author = self.author
                 comment = self.comment
                 imported_file = self.imported_file
+                plaintext = self.plaintext
 
             if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
                 raise SaveError, _("This document is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
 
-            fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "LastSaveTime")
-            values = (id, self.library_num, author, comment, imported_file, self.document_length, self.text)
+            fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "PlainText", "LastSaveTime")
+            values = (id, self.library_num, author, comment, imported_file, self.document_length, self.text, plaintext)
 
             if (self._db_start_save() == 0):
                 # Duplicate Document IDs within a Library are not allowed.
@@ -439,6 +449,7 @@ class Document(DataObject.DataObject):
                         ImportedFile = %s,
                         DocumentLength = %s,
                         XMLText = %s,
+                        PlainText = %s,
                         LastSaveTime = CURRENT_TIMESTAMP
                     WHERE DocumentNum = %s
                 """
@@ -889,6 +900,14 @@ class Document(DataObject.DataObject):
     def _del_text(self):
         self._text = ''
 
+    # Implementation for Plain Text Property
+    def _get_plaintext(self):
+        return self._plaintext
+    def _set_plaintext(self, txt):
+        self._plaintext = txt
+    def _del_plaintext(self):
+        self._plaintext = None
+
     # Implementation for Imported File Name Property
     def _get_imported_file(self):
         return self._imported_file
@@ -947,6 +966,8 @@ class Document(DataObject.DataObject):
                         """The person who wrote the Document.""")
     text = property(_get_text, _set_text, _del_text,
                         """Text of the transcript, stored in the database as a BLOB.""")
+    plaintext = property(_get_plaintext, _set_plaintext, _del_plaintext,
+                        """Plain Text version of the transcript, stored in the database as a BLOB.""")
     imported_file = property(_get_imported_file, _set_imported_file, _del_imported_file,
                              """Imported File Name""")
     import_date = property(_get_import_date, _set_import_date, _del_import_date,
@@ -1013,11 +1034,14 @@ class Document(DataObject.DataObject):
 
             # self.text gets set to be our data
             # then load_transcript is called, from transcriptionui.LoadTranscript()
+
+            self.plaintext = row['PlainText']
             
         # If we ARE skipping the text ...
         else:
             # set the text to None
             self.text = None
+            self.plaintext = None
 
         self.comment = row['Comment']
         self.imported_file = row['ImportedFile']

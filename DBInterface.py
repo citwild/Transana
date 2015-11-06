@@ -310,6 +310,7 @@ def CreateTranscriptsTableQuery(num):
                  Comment              VARCHAR(255),
                  MinTranscriptWidth   INTEGER,
                  RTFText              LONGBLOB, 
+                 PlainText            LONGBLOB,
                  RecordLock           VARCHAR(25), 
                  LockTime             DATETIME, 
                  LastSaveTime         DATETIME"""
@@ -491,6 +492,7 @@ def CreateDocumentsTableQuery(num):
                  ImportDate           DATETIME,
                  DocumentLength       INTEGER,
                  XMLText              LONGBLOB, 
+                 PlainText            LONGBLOB,
                  RecordLock           VARCHAR(25), 
                  LockTime             DATETIME, 
                  LastSaveTime         DATETIME"""
@@ -532,7 +534,8 @@ def CreateQuotesTableQuery(num):
                  SourceDocumentNum    INTEGER,
                  SortOrder            INTEGER,
                  Comment              VARCHAR(255),
-                 XMLText              LONGBLOB, 
+                 XMLText              LONGBLOB,
+                 PlainText            LONGBLOB,
                  RecordLock           VARCHAR(25), 
                  LockTime             DATETIME, 
                  LastSaveTime         DATETIME"""
@@ -1034,7 +1037,7 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
                 query = """INSERT INTO ConfigInfo
                              (KeyVal, Value)
                             VALUES
-                             ('DBVersion', '300')"""
+                             ('DBVersion', '301')"""
                 # Execute the Query
                 dbCursor.execute(query)
         else:
@@ -1042,7 +1045,7 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
             DBVersion = int(data[0][0])
 
         # Detect OLDER Database Versions
-        if (DBVersion > 0) and (DBVersion < 300):
+        if (DBVersion > 0) and (DBVersion < 301):
             # Create and report the problem
             prompt = _("This Transana Database has NOT been upgraded.\nDo you want to upgrade it?")
             dlg = Dialogs.QuestionDialog(None, prompt)
@@ -1051,9 +1054,9 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
 
             if result == wx.ID_YES:
                 # Indicate we're upgrading the DB
-                DBVersion = 300
+                DBVersion = 301
                 # update the Database Version in ConfigInfo
-                query = """UPDATE ConfigInfo SET Value = '300' WHERE KeyVal = 'DBVersion'"""
+                query = """UPDATE ConfigInfo SET Value = '301' WHERE KeyVal = 'DBVersion'"""
                 dbCursor.execute(query)
 
             else:
@@ -1065,7 +1068,7 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
                 return False
 
         # Detect NEWER Database Versions
-        if DBVersion > 300:
+        if DBVersion > 301:
             # Create and report the problem
             prompt = _("This Transana Database has been upgraded.\nYou need to upgrade your copy of Transana to work with it.")
             dlg = Dialogs.ErrorDialog(None, prompt)
@@ -1613,6 +1616,57 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
             TransanaGlobal.configData.pathsByDB[(TransanaGlobal.userName.encode('utf8'), TransanaGlobal.configData.host.encode('utf8'), TransanaGlobal.configData.database.encode('utf8'))] = \
                     {'videoPath' : TransanaGlobal.configData.videoPath.encode('utf8'),
                      'visualizationPath' : TransanaGlobal.configData.visualizationPath.encode('utf8')}
+
+        # Database Version 301 -- Add plaintext field to Documents and Transcripts
+        for tablename in ['Documents2', 'Transcripts2', 'Quotes2']:
+            # Assume we have NOT upgraded
+            upgraded = False
+            # MySQL syntax to check table structure for "PlainText" column
+            if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+                query = "SHOW CREATE TABLE %s" % tablename
+                dbCursor.execute(query)
+                results = dbCursor.fetchall()
+                # If the column exists ...
+                if 'PlainText' in results[0][1]:
+                    # ... then we HAVE upgraded
+                    upgraded = True
+            # sqlite syntax to check table structure for "PlainText" column
+            elif TransanaConstants.DBInstalled in ['sqlite3']:
+                query = "PRAGMA table_info(%s)" % tablename
+                dbCursor.execute(query)
+                results = dbCursor.fetchall()
+                for result in results:
+                    # If the column exists ...
+                    if result[1] == 'PlainText':
+                        # ... then we HAVE upgraded
+                        upgraded = True
+            # If we have NOT upgraded ...
+            if not upgraded:
+                # ... then upgrade!
+                query = "ALTER TABLE %s " % tablename
+                query += "ADD COLUMN  PlainText LONGBLOB "
+                if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+                    if tablename == 'Transcripts2':
+                        query += "AFTER RTFText "
+                    elif tablename in ['Documents2', 'Quotes2']:
+                        query += "AFTER XMLText "
+                dbCursor.execute(query)
+
+        # See if there are any records that need Plain Text extraction
+        plainTextCount = CountItemsWithoutPlainText()
+        # If there are ...
+        if plainTextCount > 0:
+            # ... import the Plain Text extractor (which cannot be imported above, at least not in it's alphabetic position)
+            import PlainTextUpdate
+            # Create the Plain Text extractor Dialog
+            tmpDlg = PlainTextUpdate.PlainTextUpdate(None, plainTextCount)
+            # Show the Dialog
+            tmpDlg.Show()
+            # Begin the conversion / extraction
+            tmpDlg.OnConvert()
+            # Clean up when done.
+            tmpDlg.Close()
+            tmpDlg.Destroy()
 
         # If we've gotten this far, return "true" to indicate success.
         return True
@@ -2369,12 +2423,16 @@ def list_of_episodes_for_series(LibraryName):
     DBCursor.close()
     return l
 
-def list_of_episode_transcripts():
-    """ Get a list of all Episode Transcript records. """
+def list_of_episode_transcripts(withoutPlainText = False):
+    """ Get a list of all Episode Transcript records, potentially only those missing extracted Plain Text. """
     # Create an empty list
     l = []
     # Define the Query.  We only want Episode Transcripts, not Clip Transcripts.
-    query = "SELECT TranscriptNum, TranscriptID, EpisodeNum FROM Transcripts2 WHERE ClipNum = 0 ORDER BY TranscriptID"
+    query = "SELECT TranscriptNum, TranscriptID, EpisodeNum FROM Transcripts2 WHERE ClipNum = 0 "
+    # If we ONLY want Episode Transcripts that are missing PlainText ...
+    if withoutPlainText:
+        query += " AND PlainText IS NULL "
+    query += "ORDER BY TranscriptID"
     # Get a Database Cursor
     DBCursor = get_db().cursor()
     # Execute the Query
@@ -2438,14 +2496,22 @@ def list_clip_transcripts(clipNum):
     DBCursor.close()
     return l
 
-def list_of_documents(libraryNum = None):
-    """ Get a list of all Document records, or only those for the specified Library. """
+def list_of_documents(libraryNum = None, withoutPlainText = False):
+    """ Get a list of all Document records, or only those for the specified Library, potentially
+        only those missing extracted Plain Text. """
     # Create an empty list to hold results
     l = []
     # Define the Query
     query = "SELECT DocumentNum, DocumentID, LibraryNum FROM Documents2 "
+    if (libraryNum != None) or withoutPlainText:
+        query += "WHERE "
     if libraryNum != None:
-        query += "WHERE LibraryNum = %d " % libraryNum
+        query += "LibraryNum = %d " % libraryNum
+        if withoutPlainText:
+            query += "AND "
+    # If we ONLY want Documents that are missing PlainText ...
+    if withoutPlainText:
+        query += "PlainText IS NULL "
     query += "ORDER BY DocumentID"
     # Get a Database Cursor
     DBCursor = get_db().cursor()
@@ -2597,13 +2663,16 @@ def locate_quick_quotes_and_clips_collection():
         tempCollection.db_save()
         return (tempCollection.number, collectionName, True)    
 
-def list_of_quotes():
-    """ Get a list of all Quotes, regardless of collection. """
+def list_of_quotes(withoutPlainText = False):
+    """ Get a list of all Quotes, regardless of collection, potentially only those missing extracted Plain Text. """
     # Create an empty list
     l = []
     # Define the Query
-    query = """ SELECT QuoteNum, QuoteID, CollectNum, SourceDocumentNum, SortOrder FROM Quotes2
-                  ORDER BY SortOrder, QuoteID """
+    query = "SELECT QuoteNum, QuoteID, CollectNum, SourceDocumentNum, SortOrder FROM Quotes2 "
+    # If we ONLY want Quotes that are missing PlainText ...
+    if withoutPlainText:
+        query += "WHERE PlainText IS NULL "
+    query += "ORDER BY SortOrder, QuoteID "
     # Get a Database Cursor
     DBCursor = get_db().cursor()
     # Execute the Query
@@ -2695,13 +2764,16 @@ def list_of_quotes_by_collectionnum(collectionNum, includeSortOrder=False):
     cursor.close()
     return quoteList
 
-def list_of_clips():
-    """ Get a list of all Clips, regardless of collection. """
+def list_of_clips(withoutPlainText = False):
+    """ Get a list of all Clips, regardless of collection, potentially only those missing extracted Plain Text. """
     # Create an empty list
     l = []
     # Define the Query
-    query = """ SELECT ClipNum, ClipID, CollectNum, EpisodeNum, SortOrder FROM Clips2
-                  ORDER BY SortOrder, ClipID """
+    query = "SELECT c.ClipNum, c.ClipID, c.CollectNum, c.EpisodeNum, c.SortOrder FROM Clips2 c"
+    # If we ONLY want Clips that are missing PlainText ...
+    if withoutPlainText:
+        query += ", Transcripts2 t WHERE c.ClipNum = t.ClipNum AND t.PlainText IS NULL "
+    query += " ORDER BY c.SortOrder, c.ClipID "
     # Get a Database Cursor
     DBCursor = get_db().cursor()
     # Execute the Query
@@ -3033,6 +3105,30 @@ def list_of_snapshots_by_collectionnum(collectionNum, includeSortOrder=False):
             snapshotList.append((snapshotNum, id, collectNum))
     cursor.close()
     return snapshotList
+
+def CountItemsWithoutPlainText():
+    """ Return the number of Documents, Episode Transcripts, Quote, and Clip Transcripts that have NULL in their PlainText Column.
+        This indicates the need to update the PlainText data! """
+    # Get a list of Documents without Plain Text
+    documents = list_of_documents(withoutPlainText=True)
+    # Get a list of Episode Transcripts without Plain Text
+    episodeTranscripts = list_of_episode_transcripts(withoutPlainText=True)
+    # Get a list of Quotes without Plain Text
+    quotes = list_of_quotes(withoutPlainText=True)
+    # Get a list of Clips without Plain Text
+    clips = list_of_clips(withoutPlainText=True)
+
+##    for x in documents:
+##        print "Document:", x
+##    for x in episodeTranscripts:
+##        print "Episode Transcript:", x
+##    for x in quotes:
+##        print "Quote:", x
+##    for x in clips:
+##        print "Clip:", x
+        
+    # Return the sum of the lengths of these lists
+    return len(documents) + len(episodeTranscripts) + len(quotes) + len(clips)
 
 def GetSortOrderData(collectionNum):
     """ Get the Sort Order information for a Collection's Quotes, Clips and Snapshots.
