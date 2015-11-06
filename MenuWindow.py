@@ -1407,6 +1407,22 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         # Close the Import Database dialog
         temp.Close()
 
+        # See if there are any records that need Plain Text extraction
+        plainTextCount = DBInterface.CountItemsWithoutPlainText()
+        # If there are ...
+        if plainTextCount > 0:
+            # ... import the Plain Text extractor
+            import PlainTextUpdate
+            # Create the Plain Text Extractor dialog
+            tmpDlg = PlainTextUpdate.PlainTextUpdate(None, plainTextCount)
+            # Show the Dialog
+            tmpDlg.Show()
+            # Start the Conversion
+            tmpDlg.OnConvert()
+            # Close the Dialog and clean up
+            tmpDlg.Close()
+            tmpDlg.Destroy()
+
     def OnExportDatabase(self, event):
         """ Export Database """
         # Create an Export Database dialog

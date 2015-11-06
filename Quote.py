@@ -108,6 +108,10 @@ class Quote(DataObject.DataObject):
             str += self.text[:150] + '\n\n'   # "text not displayed due to length.\n\n"
         else:
             str += "text = %s\n\n" % self.text
+        if len(self.plaintext) > 150:
+            str += "plaintext = " + self.plaintext[:150] + '\n\n'   # "text not displayed due to length.\n\n"
+        else:
+            str += "plaintext = %s\n\n" % self.plaintext
         return str.encode('utf8')
 
     def __eq__(self, other):
@@ -213,7 +217,7 @@ class Quote(DataObject.DataObject):
             # Define the query to load a Quote without text
             query = """SELECT a.QuoteNum, QuoteID, a.CollectNum, CollectID, SourceDocumentNum, SortOrder, a.Comment,
                               StartChar, EndChar,
-                              XMLText, a.RecordLock, a.LockTime, LastSaveTime
+                              XMLText, PlainText, a.RecordLock, a.LockTime, LastSaveTime
                          FROM Quotes2 a, QuotePositions2 b, Collections2 c
                          WHERE a.QuoteNum = %s AND
                                a.QuoteNum = b.QuoteNum AND
@@ -327,16 +331,22 @@ class Quote(DataObject.DataObject):
                 comment = self.comment.encode(TransanaGlobal.encoding)
             else:
                 comment = self.comment
+            # Encode the plain text
+            if self.plaintext != None:
+                plaintext = self.plaintext.encode(TransanaGlobal.encoding)
+            else:
+                plaintext = self.plaintext
         else:
             # If we don't need to encode the string values, we still need to copy them to our local variables.
             id = self.id
             comment = self.comment
+            plaintext = self.plaintext
 
         if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
             raise SaveError, _("This quote is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
 
-        fields = ("QuoteID", "CollectNum", "SourceDocumentNum", "SortOrder", "Comment", "XMLText", "LastSaveTime")
-        values = (id, self.collection_num, self.source_document_num, self.sort_order, comment, self.text)
+        fields = ("QuoteID", "CollectNum", "SourceDocumentNum", "SortOrder", "Comment", "XMLText", "PlainText", "LastSaveTime")
+        values = (id, self.collection_num, self.source_document_num, self.sort_order, comment, self.text, plaintext)
 
         if (self._db_start_save() == 0):
             # Duplicate Quote IDs within a Collection are not allowed.
@@ -395,6 +405,7 @@ class Quote(DataObject.DataObject):
                     SortOrder = %s,
                     Comment = %s,
                     XMLText = %s,
+                    PlainText = %s,
                     LastSaveTime = CURRENT_TIMESTAMP
                 WHERE QuoteNum = %s
             """
@@ -758,6 +769,14 @@ class Quote(DataObject.DataObject):
     def _del_text(self):
         self._text = ''
 
+    # Implementation for Plain Text Property
+    def _get_plaintext(self):
+        return self._plaintext
+    def _set_plaintext(self, txt):
+        self._plaintext = txt
+    def _del_plaintext(self):
+        self._plaintext = None
+
     # Implementation for Start Character Property
     def _get_start_char(self):
         return self._start_char
@@ -805,6 +824,8 @@ class Quote(DataObject.DataObject):
                         """The Source Document number, if associated with one.""")
     text = property(_get_text, _set_text, _del_text,
                         """Text of the transcript, stored in the database as a BLOB.""")
+    plaintext = property(_get_plaintext, _set_plaintext, _del_plaintext,
+                        """Plain Text version of the transcript, stored in the database as a BLOB.""")
     start_char = property(_get_start_char, _set_start_char, _del_start_char,
                         """Value of the Quote's starting character in the Source Document.""")
     end_char = property(_get_end_char, _set_end_char, _del_end_char,
@@ -872,11 +893,14 @@ class Quote(DataObject.DataObject):
 
             # self.text gets set to be our data
             # then load_transcript is called, from transcriptionui.LoadTranscript()
+
+            self.plaintext = row['PlainText']
             
         # If we ARE skipping the text ...
         else:
             # set the text to None
             self.text = None
+            self.plaintext = None
 
         self.lastsavetime = row['LastSaveTime']
         self.changed = False

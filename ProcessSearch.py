@@ -44,6 +44,77 @@ import TransanaGlobal
 import string
 
 
+
+
+##        self.txtCtrl.Clear()
+##        self.richTextCtrl.Clear()
+##        self.richTextCtrl.Enable(True)
+##
+##        db = DBInterface.get_db()
+##
+##        searchTextDlg = wx.TextEntryDialog(self, "Text Search:", "Text Search", "")
+##        result = searchTextDlg.ShowModal()
+##        if result == wx.ID_OK:
+##            searchText = '%' + searchTextDlg.GetValue() + '%'
+##            searchTextDlg.Destroy()
+##        else:
+##            searchTextDlg.Destroy()
+##            return
+##        
+##
+##        searchText = searchText.encode('utf8')
+##        
+##        query = """ SELECT s.SeriesNum, s.SeriesID, d.DocumentNum, d.DocumentID
+##                      FROM Series2 s, Documents2 d
+##                      WHERE s.SeriesNum = d.LibraryNum AND
+##                            d.PlainText LIKE %s """
+##        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+##            query += "COLLATE utf8_general_ci "
+##
+##        query = DBInterface.FixQuery(query)
+##        self.txtCtrl.AppendText(query + '\n\n')
+##        self.richTextCtrl.WriteText("Query: '%s'\n\n" % searchText)
+##
+##        self.richTextCtrl.WriteText("Documents\n\n")
+##        print "Documents"
+##        dbCursor = db.cursor()
+##        dbCursor.execute(query, (searchText,))
+##        results = dbCursor.fetchall()
+##        for res in results:
+##            self.richTextCtrl.WriteText("  %s\t%s\n" % (res[1], res[3]))
+##            print res
+##        print
+##
+##
+##        query = """ SELECT s.SeriesNum, s.SeriesID, e.EpisodeNum, e.EpisodeID, t.TranscriptNum, t.TranscriptID
+##                      FROM Series2 s, Episodes2 e, Transcripts2 t
+##                      WHERE s.SeriesNum = e.SeriesNum AND
+##                            e.EpisodeNum = t.EpisodeNum AND
+##                            t.ClipNum = 0 AND
+##                            t.PlainText LIKE %s """
+##        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+##            query += "COLLATE utf8_general_ci "
+##
+##        query = DBInterface.FixQuery(query)
+##
+##        self.txtCtrl.AppendText(query + '\n\n')
+##        self.richTextCtrl.WriteText("Query: '%s'\n\n" % searchText)
+##
+##        self.richTextCtrl.WriteText("Episode Transcripts\n\n")
+##        print "Episodes"
+##        dbCursor = db.cursor()
+##        dbCursor.execute(query, (searchText,))
+##        results = dbCursor.fetchall()
+##        for res in results:
+##            self.richTextCtrl.WriteText("  %s\t%s\t%s\n" % (res[1], res[3], res[5]))
+##            print res
+##        print
+##
+##        print "Done"
+
+
+
+
 class ProcessSearch(object):
     """ This class handles all processing related to Searching. """
     # searchName and searchTerms are used by unit_test_search
