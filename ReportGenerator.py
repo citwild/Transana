@@ -945,9 +945,12 @@ class ReportGenerator(wx.Object):
                         majorLabel = _('Snapshot')
                     elif objType == _('Quote'):
                         majorLabel = _('Quote')
-                        
-                    # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                    majorLabel = unicode(majorLabel, 'utf8')
+
+                    try:
+                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                        majorLabel = unicode(majorLabel, 'utf8')
+                    except TypeError:
+                        pass
 
                 # If a Collection Name is passed in ...
                 if self.collection != None:
