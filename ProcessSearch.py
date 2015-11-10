@@ -39,81 +39,11 @@ import SearchDialog
 import TransanaConstants
 # Import Transana's Globals
 import TransanaGlobal
+# Import Transana's Transcript object
+import Transcript
 
 # Import the Python String module
 import string
-
-
-
-
-##        self.txtCtrl.Clear()
-##        self.richTextCtrl.Clear()
-##        self.richTextCtrl.Enable(True)
-##
-##        db = DBInterface.get_db()
-##
-##        searchTextDlg = wx.TextEntryDialog(self, "Text Search:", "Text Search", "")
-##        result = searchTextDlg.ShowModal()
-##        if result == wx.ID_OK:
-##            searchText = '%' + searchTextDlg.GetValue() + '%'
-##            searchTextDlg.Destroy()
-##        else:
-##            searchTextDlg.Destroy()
-##            return
-##        
-##
-##        searchText = searchText.encode('utf8')
-##        
-##        query = """ SELECT s.SeriesNum, s.SeriesID, d.DocumentNum, d.DocumentID
-##                      FROM Series2 s, Documents2 d
-##                      WHERE s.SeriesNum = d.LibraryNum AND
-##                            d.PlainText LIKE %s """
-##        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
-##            query += "COLLATE utf8_general_ci "
-##
-##        query = DBInterface.FixQuery(query)
-##        self.txtCtrl.AppendText(query + '\n\n')
-##        self.richTextCtrl.WriteText("Query: '%s'\n\n" % searchText)
-##
-##        self.richTextCtrl.WriteText("Documents\n\n")
-##        print "Documents"
-##        dbCursor = db.cursor()
-##        dbCursor.execute(query, (searchText,))
-##        results = dbCursor.fetchall()
-##        for res in results:
-##            self.richTextCtrl.WriteText("  %s\t%s\n" % (res[1], res[3]))
-##            print res
-##        print
-##
-##
-##        query = """ SELECT s.SeriesNum, s.SeriesID, e.EpisodeNum, e.EpisodeID, t.TranscriptNum, t.TranscriptID
-##                      FROM Series2 s, Episodes2 e, Transcripts2 t
-##                      WHERE s.SeriesNum = e.SeriesNum AND
-##                            e.EpisodeNum = t.EpisodeNum AND
-##                            t.ClipNum = 0 AND
-##                            t.PlainText LIKE %s """
-##        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
-##            query += "COLLATE utf8_general_ci "
-##
-##        query = DBInterface.FixQuery(query)
-##
-##        self.txtCtrl.AppendText(query + '\n\n')
-##        self.richTextCtrl.WriteText("Query: '%s'\n\n" % searchText)
-##
-##        self.richTextCtrl.WriteText("Episode Transcripts\n\n")
-##        print "Episodes"
-##        dbCursor = db.cursor()
-##        dbCursor.execute(query, (searchText,))
-##        results = dbCursor.fetchall()
-##        for res in results:
-##            self.richTextCtrl.WriteText("  %s\t%s\t%s\n" % (res[1], res[3], res[5]))
-##            print res
-##        print
-##
-##        print "Done"
-
-
-
 
 class ProcessSearch(object):
     """ This class handles all processing related to Searching. """
@@ -123,6 +53,22 @@ class ProcessSearch(object):
             Search Results should be displayed.  The searchCount parameter accepts the number that should be included
             in the Default Search Title. Optional kwg (Keyword Group) and kw (Keyword) parameters implement Quick Search
             for the keyword specified. """
+
+        # See if there are any records that need Plain Text extraction
+        plainTextCount = DBInterface.CountItemsWithoutPlainText()
+        # If there are ...
+        if plainTextCount > 0:
+            # ... import the Plain Text extractor (which cannot be imported above, at least not in it's alphabetic position)
+            import PlainTextUpdate
+            # Create the Plain Text extractor Dialog
+            tmpDlg = PlainTextUpdate.PlainTextUpdate(None, plainTextCount)
+            # Show the Dialog
+            tmpDlg.Show()
+            # Begin the conversion / extraction
+            tmpDlg.OnConvert()
+            # Clean up when done.
+            tmpDlg.Close()
+            tmpDlg.Destroy()
 
         # Note the Database Tree that accepts Search Results
         self.dbTree = dbTree
@@ -164,9 +110,9 @@ class ProcessSearch(object):
         elif (searchTerms != None):
             # There's no dialog.  Just say the user said OK.
             result = wx.ID_OK
-            # Include Clips.  Do not include Documents or Episodes
-            includeDocuments = False
-            includeEpisodes = False
+            # Include Clips.  Include Documents and Episodes now that we allow Text Search!
+            includeDocuments = True
+            includeEpisodes = True
             includeClips = True
             # If Pro, Lab, or MU, include Quotes and Snapshots.  
             if TransanaConstants.proVersion:
@@ -248,7 +194,6 @@ class ProcessSearch(object):
                     episodeQuery = DBInterface.FixQuery(episodeQuery)
                     # Execute the Library/Episode query
                     dbCursor.execute(episodeQuery, tuple(params))
-
                     # Process the results of the Library/Episode query
                     for line in DBInterface.fetchall_named(dbCursor):
                         # Add the new Transcript(s) to the Database Tree Tab.
@@ -259,18 +204,28 @@ class ProcessSearch(object):
                         tempEpisode = Episode.Episode(line['EpisodeNum'])
                         # Add the Search Root Node, the Search Name, and the current Library and Episode Names.
                         nodeList = (_('Search'), searchName, tempLibrary.id, tempEpisode.id)
-                        # Find out what Transcripts exist for each Episode
-                        transcriptList = DBInterface.list_transcripts(tempLibrary.id, tempEpisode.id)
-                        # If the Episode HAS defined transcripts ...
-                        if len(transcriptList) > 0:
-                            # Add each Transcript to the Database Tree
-                            for (transcriptNum, transcriptID, episodeNum) in transcriptList:
-                                # Add the Transcript Node to the Tree.  
-                                self.dbTree.add_Node('SearchTranscriptNode', nodeList + (transcriptID,), transcriptNum, episodeNum)
-                        # If the Episode has no transcripts, it still has the keywords and SHOULD be displayed!
+                        # In order to include Clips without Transcripts (when there is no Text Search element),
+                        # line may or may not include a TranscriptNum dictionary element.  If it does, only include specified
+                        # Transcripts in the search results.
+                        if line.has_key('TranscriptNum'):
+                            tempTranscript = Transcript.Transcript(line['TranscriptNum'])
+                            nodeList += (tempTranscript.id,)
+                            # Add the Transcript Node to the Tree.  
+                            self.dbTree.add_Node('SearchTranscriptNode', nodeList, tempTranscript.number, tempTranscript.episode_num)
+                        # If line does NOT include a TranscriptNum, load all available transcripts for the search results.
                         else:
-                            # Add the Transcript-less Episode Node to the Tree.  
-                            self.dbTree.add_Node('SearchEpisodeNode', nodeList, tempEpisode.number, tempLibrary.number)
+                            # Find out what Transcripts exist for each Episode
+                            transcriptList = DBInterface.list_transcripts(tempLibrary.id, tempEpisode.id)
+                            # If the Episode HAS defined transcripts ...
+                            if len(transcriptList) > 0:
+                                # Add each Transcript to the Database Tree
+                                for (transcriptNum, transcriptID, episodeNum) in transcriptList:
+                                    # Add the Transcript Node to the Tree.  
+                                    self.dbTree.add_Node('SearchTranscriptNode', nodeList + (transcriptID,), transcriptNum, episodeNum)
+                            # If the Episode has no transcripts, it still has the keywords and SHOULD be displayed!
+                            else:
+                                # Add the Transcript-less Episode Node to the Tree.  
+                                self.dbTree.add_Node('SearchEpisodeNode', nodeList, tempEpisode.number, tempLibrary.number)
 
                 if includeDocuments:
                     # Adjust query for sqlite, if needed
@@ -347,7 +302,9 @@ class ProcessSearch(object):
                         # Add the Node to the Tree
                         self.dbTree.add_Node('SearchClipNode', nodeList, line['ClipNum'], line['CollectNum'], sortOrder=line['SortOrder'])
 
-                if includeSnapshots:
+                # If Snapshots are check AND there is no Text Search Component ...
+                # (If there is a Text Search component to the search, the wholeSnapshotQuery is blank!!)
+                if includeSnapshots and wholeSnapshotQuery != '':
                     # Adjust query for sqlite, if needed
                     wholeSnapshotQuery = DBInterface.FixQuery(wholeSnapshotQuery)
                     # Execute the Whole Snapshot query
@@ -454,9 +411,26 @@ class ProcessSearch(object):
         #   WHERE (Cl.ClipNum = CK1.ClipNum) AND (Cl.CollectNum = Co.CollectNum) AND (CK1.ClipNum > 0)
         #   GROUP BY Cl.CollectNum, CollectID, ClipID
         #   HAVING (V1 > 0) AND (V2 = 0)
+
+        # Here's a query that combines Text Search and Keyword Search!
+        #
+        # SELECT Doc.LibraryNum, SeriesID, Doc.DocumentNum, DocumentID, 
+        #        COUNT(CASE WHEN ((CK1.KeywordGroup = 'Coca Cola') AND (CK1.Keyword = 'Coke')) THEN 1 ELSE NULL END) V1, 
+        #        COUNT(CASE WHEN (PlainText LIKE '%cola%') THEN 1 ELSE NULL END) V2 
+        #   FROM ClipKeywords2 CK1, Series2 Se, Documents2 Doc 
+        #   WHERE (Doc.DocumentNum = CK1.DocumentNum) AND 
+        #         (Doc.LibraryNum = Se.SeriesNum) AND 
+        #         (CK1.DocumentNum > 0) 
+        #   GROUP BY Doc.LibraryNum, SeriesID, Doc.DocumentNum, DocumentID 
+        #   HAVING (V1 > 0) AND (V2 > 0) 
+        #   ORDER BY SeriesID, DocumentID
         
         # Initialize a Temporary Variable Counter
         tempVarNum = 0
+        # We need to know if the query includes Keywords, as this alters the SQL.  This tracks that.
+        includesKeywords = False
+        # We also need to know if the query includes Text, as we can't do that for Snapshots.  This tracks that.
+        includesText = False
         # Initialize a list for strings to store SQL "COUNT" lines
         countStrings = []
         # Initialize a list to hold the Search Parameters.
@@ -521,26 +495,49 @@ class ProcessSearch(object):
                 # Temporary Variable Number.)
                 tempVarNum += 1
 
-                # The presence of a variable (or it's absence if NOT has been specified) is signalled in SQL by a combination of
-                # this "COUNT" statement, which creates a numbered variable in the SELECT Clause, and a "HAVING" line.
-                # I can't adequately explain it, but it DOES work.
-                # Please, don't mess with it.
+                # See if we have a Text Search string
+                if tempStr[:20] == 'Item Text contains "':
+                    # Note that we are including text
+                    includesText = True
+                    
+                    # Remove the "Item Text Contains" text and the quotation marks around the search text
+                    tempStr = '%%' + tempStr[20:tempStr.rfind('"')] + '%%'
 
-                # Add a line to the SQL "COUNT" statements to indicate the presence or absence of a Keyword Group : Keyword pair
-                tempStr2 = "COUNT(CASE WHEN ((CK1.KeywordGroup = %s) AND (CK1.Keyword = %s)) THEN 1 ELSE NULL END) " + "V%s" % tempVarNum
-                countStrings.append(tempStr2)
-                # Add the Keyword Group to the Parameters
-                kwg = tempStr[:tempStr.find(':')]
-                if 'unicode' in wx.PlatformInfo:
-                    kwg = kwg.encode(TransanaGlobal.encoding)
-                params.append(kwg)
-                # Add the Keyword to the Parameters
-                kw = tempStr[tempStr.find(':') + 1:]
-                if 'unicode' in wx.PlatformInfo:
-                    kw = kw.encode(TransanaGlobal.encoding)
-                params.append(kw)
-                # Add the Temporary Variable Number that corresponds to this Keyword Group : Keyword pair to the Parameters
-#                params.append(tempVarNum)
+                    tempStr2 = "COUNT(CASE WHEN (PlainText LIKE %s"
+                    # If we're on MySQL ...
+                    if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+                        # ... make the Text Search Case Insensitive!
+                        tempStr2 += " COLLATE utf8_general_ci"
+                    tempStr2 += ") THEN 1 ELSE NULL END) " + "V%s" % tempVarNum
+                    params.append(tempStr)
+
+                    countStrings.append(tempStr2)
+                # If not, we have KEYWORDS
+                else:
+                    # note that we are including Keywords
+                    includesKeywords = True
+
+                    # The presence of a variable (or it's absence if NOT has been specified) is signalled in SQL by a combination of
+                    # this "COUNT" statement, which creates a numbered variable in the SELECT Clause, and a "HAVING" line.
+                    # I can't adequately explain it, but it DOES work.
+                    # Please, don't mess with it.
+
+                    # Add a line to the SQL "COUNT" statements to indicate the presence or absence of a Keyword Group : Keyword pair
+                    tempStr2 = "COUNT(CASE WHEN ((CK1.KeywordGroup = %s) AND (CK1.Keyword = %s)) THEN 1 ELSE NULL END) " + "V%s" % tempVarNum
+
+                    countStrings.append(tempStr2)
+                    # Add the Keyword Group to the Parameters
+                    kwg = tempStr[:tempStr.find(':')]
+                    if 'unicode' in wx.PlatformInfo:
+                        kwg = kwg.encode(TransanaGlobal.encoding)
+                    params.append(kwg)
+                    # Add the Keyword to the Parameters
+                    kw = tempStr[tempStr.find(':') + 1:]
+                    if 'unicode' in wx.PlatformInfo:
+                        kw = kw.encode(TransanaGlobal.encoding)
+                    params.append(kw)
+                    # Add the Temporary Variable Number that corresponds to this Keyword Group : Keyword pair to the Parameters
+                    # params.append(tempVarNum)
 
                 # If the "NOT" operator has been specified, we want the Temporary Variable to equal Zero in the "HAVING" clause
                 if notFlag:
@@ -579,14 +576,20 @@ class ProcessSearch(object):
         documentSQL = 'SELECT Doc.LibraryNum, SeriesID, Doc.DocumentNum, DocumentID, '
         # Define the start of the Library/Episode Query
         episodeSQL = 'SELECT Ep.SeriesNum, SeriesID, Ep.EpisodeNum, EpisodeID, '
+        if includesText:
+            episodeSQL += 'Tr.TranscriptNum, TranscriptID, '
         # Define the start of the Collection/Quote Query
         quoteSQL = 'SELECT Q.CollectNum, ParentCollectNum, Q.QuoteNum, CollectID, QuoteID, SortOrder, '
         # Define the start of the Collection/Clip Query
-        clipSQL = 'SELECT Cl.CollectNum, ParentCollectNum, Cl.ClipNum, CollectID, ClipID, SortOrder, '
-        # Define the start of the Whole Snapshot Query
-        wholeSnapshotSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, SortOrder, '
-        # Define the start of the Snapshot Coding Query
-        snapshotCodingSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, SortOrder, '
+        clipSQL = 'SELECT Cl.CollectNum, ParentCollectNum, Cl.ClipNum, CollectID, ClipID, Cl.SortOrder, '
+        if not includesText:
+            # Define the start of the Whole Snapshot Query
+            wholeSnapshotSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, SortOrder, '
+            # Define the start of the Snapshot Coding Query
+            snapshotCodingSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, SortOrder, '
+        else:
+            wholeSnapshotSQL = ''
+            snapshotCodingSQL = ''
 
         # Add in the SQL "COUNT" variables that signal the presence or absence of Keyword Group : Keyword pairs
         for lineNum in range(len(countStrings)):
@@ -605,14 +608,17 @@ class ProcessSearch(object):
             quoteSQL += countStrings[lineNum] + tempStr
             # Add the SQL "COUNT" Line and seperator to the Collection/Clip Query
             clipSQL += countStrings[lineNum] + tempStr
-            # Add the SQL "COUNT" Line and seperator to the Whole Snapshot Query
-            wholeSnapshotSQL += countStrings[lineNum] + tempStr
-            # Add the SQL "COUNT" Line and seperator to the Snapshot Coding Query
-            snapshotCodingSQL += countStrings[lineNum] + tempStr
+            if not includesText:
+                # Add the SQL "COUNT" Line and seperator to the Whole Snapshot Query
+                wholeSnapshotSQL += countStrings[lineNum] + tempStr
+                # Add the SQL "COUNT" Line and seperator to the Snapshot Coding Query
+                snapshotCodingSQL += countStrings[lineNum] + tempStr
 
         # Now add the rest of the SQL for the Library/Document Query
         documentSQL += 'FROM ClipKeywords2 CK1, Series2 Se, Documents2 Doc '
-        documentSQL += 'WHERE (Doc.DocumentNum = CK1.DocumentNum) AND '
+        documentSQL += 'WHERE '
+        if includesKeywords:
+            documentSQL += '(Doc.DocumentNum = CK1.DocumentNum) AND '
         documentSQL += '(Doc.LibraryNum = Se.SeriesNum) AND '
         documentSQL += '(CK1.DocumentNum > 0) '
         documentSQL += 'GROUP BY Doc.LibraryNum, SeriesID, Doc.DocumentNum, DocumentID '
@@ -621,17 +627,27 @@ class ProcessSearch(object):
         documentSQL += 'ORDER BY SeriesID, DocumentID'
 
         # Now add the rest of the SQL for the Library/Episode Query
-        episodeSQL += 'FROM ClipKeywords2 CK1, Series2 Se, Episodes2 Ep '
-        episodeSQL += 'WHERE (Ep.EpisodeNum = CK1.EpisodeNum) AND '
+        episodeSQL += 'FROM ClipKeywords2 CK1, Series2 Se, Episodes2 Ep'
+        if includesText:
+            episodeSQL += ', Transcripts2 Tr'
+        episodeSQL += ' WHERE '
+        if includesKeywords:
+            episodeSQL += '(Ep.EpisodeNum = CK1.EpisodeNum) AND '
         episodeSQL += '(Ep.SeriesNum = Se.SeriesNum) AND '
         episodeSQL += '(CK1.EpisodeNum > 0) '
-        episodeSQL += 'GROUP BY Ep.SeriesNum, SeriesID, Ep.EpisodeNum, EpisodeID '
+        if includesText:
+            episodeSQL += 'AND (Tr.EpisodeNum = Ep.EpisodeNum) AND (Tr.ClipNum = 0)'
+        episodeSQL += 'GROUP BY Ep.SeriesNum, SeriesID, Ep.EpisodeNum, EpisodeID'
+        if includesText:
+            episodeSQL += ', TranscriptID'
         # Add in the SQL "HAVING" Clause that was constructed above
-        episodeSQL += 'HAVING %s ' % havingStr
+        episodeSQL += ' HAVING %s ' % havingStr
 
         # Now add the rest of the SQL for the Collection/Quote Query
         quoteSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Quotes2 Q '
-        quoteSQL += 'WHERE (Q.QuoteNum = CK1.QuoteNum) AND '
+        quoteSQL += 'WHERE '
+        if includesKeywords:
+            quoteSQL += '(Q.QuoteNum = CK1.QuoteNum) AND '
         quoteSQL += '(Q.CollectNum = Co.CollectNum) AND '
         quoteSQL += '(CK1.QuoteNum > 0) '
         if len(self.collectionList) > 0:
@@ -643,10 +659,16 @@ class ProcessSearch(object):
         quoteSQL += 'ORDER BY CollectID, SortOrder'
 
         # Now add the rest of the SQL for the Collection/Clip Query
-        clipSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Clips2 Cl '
-        clipSQL += 'WHERE (Cl.ClipNum = CK1.ClipNum) AND '
+        clipSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Clips2 Cl'
+        if includesText:
+            clipSQL += ', Transcripts2 Tr'
+        clipSQL += ' WHERE '
+        if includesKeywords:
+            clipSQL += '(Cl.ClipNum = CK1.ClipNum) AND '
         clipSQL += '(Cl.CollectNum = Co.CollectNum) AND '
         clipSQL += '(CK1.ClipNum > 0) '
+        if includesText:
+            clipSQL += 'AND (Tr.ClipNum = Cl.ClipNum) '
         if len(self.collectionList) > 0:
             clipSQL += collectionSQL % paramsCl
         clipSQL += 'GROUP BY Cl.CollectNum, CollectID, ClipID '
@@ -655,53 +677,54 @@ class ProcessSearch(object):
         # Add an "ORDER BY" Clause to preserve Clip Sort Order
         clipSQL += 'ORDER BY CollectID, SortOrder'
 
-        # Now add the rest of the SQL for the Whole Snapshot Query
-        wholeSnapshotSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Snapshots2 Sn '
-        wholeSnapshotSQL += 'WHERE (Sn.SnapshotNum = CK1.SnapshotNum) AND '
-        wholeSnapshotSQL += '(Sn.CollectNum = Co.CollectNum) AND '
-        wholeSnapshotSQL += '(CK1.SnapshotNum > 0) '
-        if len(self.collectionList) > 0:
-            wholeSnapshotSQL += collectionSQL % paramsSn
-        wholeSnapshotSQL += 'GROUP BY Sn.CollectNum, CollectID, SnapshotID '
-        # Add in the SQL "HAVING" Clause that was constructed above
-        wholeSnapshotSQL += 'HAVING %s ' % havingStr
-        # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
-        wholeSnapshotSQL += 'ORDER BY CollectID, SortOrder'
+        if not includesText:
+            # Now add the rest of the SQL for the Whole Snapshot Query
+            wholeSnapshotSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Snapshots2 Sn '
+            wholeSnapshotSQL += 'WHERE (Sn.SnapshotNum = CK1.SnapshotNum) AND '
+            wholeSnapshotSQL += '(Sn.CollectNum = Co.CollectNum) AND '
+            wholeSnapshotSQL += '(CK1.SnapshotNum > 0) '
+            if len(self.collectionList) > 0:
+                wholeSnapshotSQL += collectionSQL % paramsSn
+            wholeSnapshotSQL += 'GROUP BY Sn.CollectNum, CollectID, SnapshotID '
+            # Add in the SQL "HAVING" Clause that was constructed above
+            wholeSnapshotSQL += 'HAVING %s ' % havingStr
+            # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
+            wholeSnapshotSQL += 'ORDER BY CollectID, SortOrder'
 
-        # Now add the rest of the SQL for the Snapshot Coding Query
-        snapshotCodingSQL += 'FROM SnapshotKeywords2 CK1, Collections2 Co, Snapshots2 Sn '
-        snapshotCodingSQL += 'WHERE (Sn.SnapshotNum = CK1.SnapshotNum) AND '
-        snapshotCodingSQL += '(Sn.CollectNum = Co.CollectNum) AND '
-        snapshotCodingSQL += '(CK1.SnapshotNum > 0) '
-        # For Snapshot Coding, we ONLY want VISIBLE Keywords
-        snapshotCodingSQL += 'AND (CK1.Visible = 1) '
-        if len(self.collectionList) > 0:
-            snapshotCodingSQL += collectionSQL % paramsSn
-        snapshotCodingSQL += 'GROUP BY Sn.CollectNum, CollectID, SnapshotID '
-        # Add in the SQL "HAVING" Clause that was constructed above
-        snapshotCodingSQL += 'HAVING %s ' % havingStr
-        # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
-        snapshotCodingSQL += 'ORDER BY CollectID, SortOrder'
+            # Now add the rest of the SQL for the Snapshot Coding Query
+            snapshotCodingSQL += 'FROM SnapshotKeywords2 CK1, Collections2 Co, Snapshots2 Sn '
+            snapshotCodingSQL += 'WHERE (Sn.SnapshotNum = CK1.SnapshotNum) AND '
+            snapshotCodingSQL += '(Sn.CollectNum = Co.CollectNum) AND '
+            snapshotCodingSQL += '(CK1.SnapshotNum > 0) '
+            # For Snapshot Coding, we ONLY want VISIBLE Keywords
+            snapshotCodingSQL += 'AND (CK1.Visible = 1) '
+            if len(self.collectionList) > 0:
+                snapshotCodingSQL += collectionSQL % paramsSn
+            snapshotCodingSQL += 'GROUP BY Sn.CollectNum, CollectID, SnapshotID '
+            # Add in the SQL "HAVING" Clause that was constructed above
+            snapshotCodingSQL += 'HAVING %s ' % havingStr
+            # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
+            snapshotCodingSQL += 'ORDER BY CollectID, SortOrder'
 
         tempParams = ()
         for p in params:
             tempParams = tempParams + (p,)
             
-#        dlg = wx.TextEntryDialog(None, "Transana Library/Document SQL Statement:", "Transana", documentSQL % tempParams, style=wx.OK)
-#        dlg.ShowModal()
-#        dlg.Destroy()
+##        dlg = wx.TextEntryDialog(None, "Transana Library/Document SQL Statement:", "Transana", documentSQL % tempParams, style=wx.OK)
+##        dlg.ShowModal()
+##        dlg.Destroy()
 
-#        dlg = wx.TextEntryDialog(None, "Transana Library/Episode SQL Statement:", "Transana", episodeSQL % tempParams, style=wx.OK)
-#        dlg.ShowModal()
-#        dlg.Destroy()
+##        dlg = wx.TextEntryDialog(None, "Transana Library/Episode SQL Statement:", "Transana", episodeSQL % tempParams, style=wx.OK)
+##        dlg.ShowModal()
+##        dlg.Destroy()
 
-#        dlg = wx.TextEntryDialog(None, "Transana Collection/Quote SQL Statement:", "Transana", quoteSQL % tempParams, style=wx.OK)
-#        dlg.ShowModal()
-#        dlg.Destroy()
+##        dlg = wx.TextEntryDialog(None, "Transana Collection/Quote SQL Statement:", "Transana", quoteSQL % tempParams, style=wx.OK)
+##        dlg.ShowModal()
+##        dlg.Destroy()
 
-#        dlg = wx.TextEntryDialog(None, "Transana Collection/Clip SQL Statement:", "Transana", clipSQL % tempParams, style=wx.OK)
-#        dlg.ShowModal()
-#        dlg.Destroy()
+##        dlg = wx.TextEntryDialog(None, "Transana Collection/Clip SQL Statement:", "Transana", clipSQL % tempParams, style=wx.OK)
+##        dlg.ShowModal()
+##        dlg.Destroy()
 
 #        dlg = wx.TextEntryDialog(None, "Transana Whole Snapshot SQL Statement:", "Transana", wholeSnapshotSQL % tempParams, style=wx.OK)
 #        dlg.ShowModal()

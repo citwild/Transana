@@ -49,7 +49,7 @@ class SearchDialog(wx.Dialog):
     def __init__(self, searchName=''):
         """ Initialize the Search Dialog, passing in the default Search Name. """
         # Define the SearchDialog as a resizable wxDialog Box
-        wx.Dialog.__init__(self, TransanaGlobal.menuWindow, -1, _("Boolean Keyword Search"), wx.DefaultPosition, wx.Size(650, 600),
+        wx.Dialog.__init__(self, TransanaGlobal.menuWindow, -1, _("Boolean Keyword Search"), wx.DefaultPosition, wx.Size(650, 760),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         # To look right, the Mac needs the Small Window Variant.
@@ -97,8 +97,8 @@ class SearchDialog(wx.Dialog):
         if TransanaConstants.proVersion:
             # Add a checkbox for including Documents in the Search Results
             self.includeDocuments = wx.CheckBox(self, -1, _('Documents'))
-            # Exclude Documents by default
-            self.includeDocuments.SetValue(False)
+            # Include Documents by default
+            self.includeDocuments.SetValue(True)
             # Bind the Check event
             self.includeDocuments.Bind(wx.EVT_CHECKBOX, self.OnBtnClick)
             # Add the checkbox to the Include Sizer
@@ -117,7 +117,7 @@ class SearchDialog(wx.Dialog):
         # Add a checkbox for including Episodes in the Search Results
         self.includeEpisodes = wx.CheckBox(self, -1, _('Episodes'))
         # Include Episodes by default
-        self.includeEpisodes.SetValue(False)
+        self.includeEpisodes.SetValue(True)
         # Bind the Check event
         self.includeEpisodes.Bind(wx.EVT_CHECKBOX, self.OnBtnClick)
         # Add the checkbox to the Include Sizer
@@ -190,27 +190,9 @@ class SearchDialog(wx.Dialog):
             # Set the Notebook Background to White (probably prevents a visible anomoly in Arabic!)
             selectionNotebook.SetBackgroundColour(wx.WHITE)
 
-
             # *********************************************************************************************************
-            # Add a Panel to the Notebook for Text Search information
-#            panelText = wx.Panel(selectionNotebook, -1)
-#            panelText.SetBackgroundColour(wx.RED)
-
-            # Add a Sizer to the Text Search Panel
-#            panelTextSizer = wx.BoxSizer(wx.VERTICAL)
-
-
-
-            # Add the Text Search Sizer to the Collections Panel
-#            panelText.SetSizer(panelTextSizer)
-
-            # Add the Text Search Panel to the Notebook as the initial page
-#            selectionNotebook.AddPage(panelText, _("Text Search"), True)
-            # *********************************************************************************************************
-
             # Add a Panel to the Notebook for Collection information
             panelCollections = wx.Panel(selectionNotebook, -1)
-#            panelCollections.SetBackgroundColour(wx.BLUE)
 
             # Add a Sizer to the Collections Panel
             panelCollectionsSizer = wx.BoxSizer(wx.VERTICAL)
@@ -351,6 +333,8 @@ class SearchDialog(wx.Dialog):
             # Add the Collections Panel to the Notebook as the initial page
             selectionNotebook.AddPage(panelCollections, _("Collections"), True)
 
+
+            # *********************************************************************************************************
             # Add a Panel to the Notebook for the Keywords information
             panelKeywords = wx.Panel(selectionNotebook, -1)
 
@@ -383,6 +367,7 @@ class SearchDialog(wx.Dialog):
             # Add NOT Button
             self.btnNot = wx.Button(panelKeywords, -1, _('NOT'), size=wx.Size(50, 24))
             r1Sizer.Add(self.btnNot, 0)
+            self.btnNot.Enable(False)
             wx.EVT_BUTTON(self, self.btnNot.GetId(), self.OnBtnClick)
 
             r1Sizer.Add((1, 0), 1, wx.EXPAND)
@@ -458,6 +443,21 @@ class SearchDialog(wx.Dialog):
             panelKeywordsSizer.Add(self.btnAdd, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
             wx.EVT_BUTTON(self, self.btnAdd.GetId(), self.OnBtnClick)
 
+
+            # Add Text Label
+            keywordsText = wx.StaticText(panelKeywords, -1, _('Text:'))
+            panelKeywordsSizer.Add(keywordsText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+
+            # Add Search Text
+            self.searchText = wx.TextCtrl(panelKeywords, -1, size=wx.Size(240, 24))
+            panelKeywordsSizer.Add(self.searchText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+            # Add "Add Text to Query" Button
+            self.btnAddText = wx.Button(panelKeywords, -1, _('Add Text to Query'), size=wx.Size(240, 24))
+            panelKeywordsSizer.Add(self.btnAddText, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
+            wx.EVT_BUTTON(self, self.btnAddText.GetId(), self.OnBtnClick)
+
+
             # Add Search Query Label
             searchQueryText = wx.StaticText(panelKeywords, -1, _('Search Query:'))
             panelKeywordsSizer.Add(searchQueryText, 0, wx.LEFT | wx.RIGHT, 10)
@@ -476,13 +476,6 @@ class SearchDialog(wx.Dialog):
 
             # Add the Notebook to the form's Main Sizer
             mainSizer.Add(selectionNotebook, 5, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            # *****************************************************************************************************
-            # Set the Text Search Panel to AutoLayout
-#            panelText.SetAutoLayout(True)
-            # Lay Out the Text Search Panel
-#            panelText.Layout()
-            # *****************************************************************************************************
 
             # Set the Collection Panel to AutoLayout
             panelCollections.SetAutoLayout(True)
@@ -752,6 +745,8 @@ class SearchDialog(wx.Dialog):
             self.searchQuery.AppendText(' AND\n')
             # Enable the "Add" button
             self.btnAdd.Enable(True)
+            # Enable the "Add Text" button
+            self.btnAddText.Enable(True)
             # Disable the "And" button
             self.btnAnd.Enable(False)
             # Disable the "Or" button
@@ -774,6 +769,8 @@ class SearchDialog(wx.Dialog):
             self.searchQuery.AppendText(' OR\n')
             # Enable the "Add" button
             self.btnAdd.Enable(True)
+            # Enable the "Add Text" button
+            self.btnAddText.Enable(True)
             # Disable the "And" button
             self.btnAnd.Enable(False)
             # Disable the "Or" button
@@ -843,11 +840,13 @@ class SearchDialog(wx.Dialog):
             self.lineStarted = False
             # You are starting over, so enable "Add"
             self.btnAdd.Enable(True)
+            # Enable the "Add Text" button
+            self.btnAddText.Enable(True)
             # You can't add a Boolean Operator
             self.btnAnd.Enable(False)
             self.btnOr.Enable(False)
-            # You can add a NOT Operator
-            self.btnNot.Enable(True)
+            # You cannot add a NOT Operator to a blank Query
+            self.btnNot.Enable(False)
             # You can't perform a Search yet
             self.btnSearch.Enable(False)
             self.btnFileSave.Enable(False)
@@ -876,6 +875,8 @@ class SearchDialog(wx.Dialog):
                 self.searchQuery.AppendText(keywordGroup + ':' + keyword)
                 # Disable the "Add" button
                 self.btnAdd.Enable(False)
+                # Disable the "Add Text" button
+                self.btnAddText.Enable(False)
                 # Enable the "And" button
                 self.btnAnd.Enable(True)
                 # Enable the "Or" button
@@ -896,6 +897,52 @@ class SearchDialog(wx.Dialog):
                 # Add to the Search Stack
                 self.SaveSearchStack()
 
+        # "Add Text to Query" Button
+        elif (event.GetId() == self.btnAddText.GetId()) or \
+             ((event.GetId() == self.searchText.GetId()) and (self.btnAddText.IsEnabled())):
+
+            # Get the Search text.  Do NOT strip() here, as leading and trailing spaces may be important!
+            searchText = self.searchText.GetValue()
+            
+            # searchText must not be blank!
+            if searchText.strip() <> '':
+                # Add the appropriate text to the Search Query
+                # This is NOT TRANSLATED.  It must be processed and saved in English!
+                self.searchQuery.AppendText('Item Text contains "%s"' % searchText)
+                # Disable the "Add" button
+                self.btnAdd.Enable(False)
+                # Disable the "Add Text" button
+                self.btnAddText.Enable(False)
+                # Enable the "And" button
+                self.btnAnd.Enable(True)
+                # Enable the "Or" button
+                self.btnOr.Enable(True)
+                # Disable the "Not" button
+                self.btnNot.Enable(False)
+                # See if there are still parens that need to be closed
+                if self.parensOpen > 0:
+                    # If there are parens that need to be closed, enable the ")" (Right Paren) button
+                    self.btnRightParen.Enable(True)
+                else:
+                    # If there are no parens that need to be closed, enable the "Search" button
+                    self.btnSearch.Enable(True)
+                    # and the save button
+                    self.btnFileSave.Enable(True)
+                # Disable the "(" (Left Paren) button
+                self.btnLeftParen.Enable(False)
+                # Add to the Search Stack
+                self.SaveSearchStack()
+
+            # If we're not in Standard ...
+            if TransanaConstants.proVersion:
+                # We can't have Text Search AND Snapshots!!
+                # Remember what the Snapshot Value was
+                self.disabledSnapshotValue = self.includeSnapshots.GetValue()
+                # Un-check Include Snapshots
+                self.includeSnapshots.SetValue(False)
+                # Disable Include Snapshots
+                self.includeSnapshots.Enable(False)
+
         # "Undo" Button
         elif event.GetId() == self.btnUndo.GetId():
             # If the search stack has data ...
@@ -911,6 +958,8 @@ class SearchDialog(wx.Dialog):
                 self.btnFileSave.Enable(self.searchStack[-1][1])
                 # Restore the Add Button
                 self.btnAdd.Enable(self.searchStack[-1][2])
+                # Restore the "Add Text" button
+                self.btnAddText.Enable(self.searchStack[-1][2])
                 # Restore the And button
                 self.btnAnd.Enable(self.searchStack[-1][3])
                 # Restore the Or button
@@ -923,6 +972,14 @@ class SearchDialog(wx.Dialog):
                 self.btnRightParen.Enable(self.searchStack[-1][6])
                 # Restore the counter of open paren pairs
                 self.parensOpen = self.searchStack[-1][7]
+                # If we're not in the Standard Version ...
+                if TransanaConstants.proVersion:
+                    # If there is NO Text Search specification and the Include Snapshot box is disabled ...
+                    if (not 'Item Text contains "' in self.searchQuery.GetValue()) and (not self.includeSnapshot.IsEnabled()):
+                        # ... enable Include Snapshots
+                        self.includeSnapshots.Enable(True)
+                        # and restore its former value
+                        self.includeSnapshots.SetValue(self.disabledSnapshotValue)
 
         # "Search" Button
         elif event.GetId() == self.btnSearch.GetId():
@@ -987,7 +1044,7 @@ class SearchDialog(wx.Dialog):
         #   Left paren button enabled
         #   Right parent button disabled
         #   0 paren pairs open
-        self.searchStack = [('', False, True, False, True, True, False, 0)]
+        self.searchStack = [('', False, True, False, False, True, False, 0)]
 
     def SaveSearchStack(self):
         """ Add the current state of the dialog to the Search Undo Stack """
@@ -1119,6 +1176,8 @@ class SearchDialog(wx.Dialog):
                 # Only valid searches can be saved, so we know the desired state of the interface buttons
                 # Disable the "Add" button
                 self.btnAdd.Enable(False)
+                # Disable the "Add Text" button
+                self.btnAddText.Enable(False)
                 # Enable the "And" button
                 self.btnAnd.Enable(True)
                 # Enable the "Or" button
