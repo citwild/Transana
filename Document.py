@@ -1058,3 +1058,5 @@ class Document(DataObject.DataObject):
             self.author = DBInterface.ProcessDBDataForUTF8Encoding(self.author)
             self.comment = DBInterface.ProcessDBDataForUTF8Encoding(self.comment)
             self.imported_file = DBInterface.ProcessDBDataForUTF8Encoding(self.imported_file)
+            if self.plaintext != None:
+                self.plaintext = self.plaintext.decode(TransanaGlobal.encoding)

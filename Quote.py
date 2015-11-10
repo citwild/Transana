@@ -911,3 +911,5 @@ class Quote(DataObject.DataObject):
             self.id = DBInterface.ProcessDBDataForUTF8Encoding(self.id)
             self.collection_id = DBInterface.ProcessDBDataForUTF8Encoding(self.collection_id)
             self.comment = DBInterface.ProcessDBDataForUTF8Encoding(self.comment)
+            if self.plaintext != None:
+                self.plaintext = self.plaintext.decode(TransanaGlobal.encoding)
