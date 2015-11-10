@@ -942,3 +942,5 @@ class Transcript(DataObject.DataObject):
                 self.series_id = DBInterface.ProcessDBDataForUTF8Encoding(self.series_id)
             if row.has_key('EpisodeID'):
                 self.episode_id = DBInterface.ProcessDBDataForUTF8Encoding(self.episode_id)
+            if self.plaintext != None:
+                self.plaintext = self.plaintext.decode(TransanaGlobal.encoding)
