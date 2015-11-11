@@ -2241,7 +2241,7 @@ class _NodeData:
     # NOTE:  _NodeType and DataTreeDragDropData have very similar structures so that they can be
     #        used interchangably.  If you alter one, please also alter the other.
    
-    def __init__(self, nodetype='Unknown', recNum=0, parent=0, sortOrder=None, sourceObj=0):
+    def __init__(self, nodetype='Unknown', recNum=0, parent=0, sortOrder=None, sourceObj=0, textSearchItems=[]):
         """ Initialize the NodeData Object """
         self.nodetype = nodetype    # nodetype indicates what sort of node we have.  Options include:
                                     # Root, LibraryRootNode, LibraryNode, DocumentNode, EpisodeNode, TranscriptNode,
@@ -2255,10 +2255,14 @@ class _NodeData:
         self.parent = parent        # parent indicates the parent Record Number for nested Collections
         self.sortOrder = sortOrder  # sortOrder indicates order of Clips and Snapshots in a Collection
         self.sourceObj = sourceObj
+        self.textSearchItems = textSearchItems
 
     def __repr__(self):
         """ Provides a string representation of the data in the _NodeData object """
-        str = 'nodetype = %s, recNum = %s, parent = %s, sourceObj = %s, sortOrder = %s' % (self.nodetype, self.recNum, self.parent, self.sourceObj, self.sortOrder)
+        str = """NodeData:\nnodetype = %s\nrecNum = %s\nparent = %s\nsourceObj = %s\nsortOrder = %s\n""" % (self.nodetype, self.recNum, self.parent, self.sourceObj, self.sortOrder)
+        for item in self.textSearchItems:
+            str += "TextSearchItem:  %s\n" % item
+        str += "\n"
         return str
 
 
@@ -3217,7 +3221,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         return result
         
     def add_Node(self, nodeType, nodeData, nodeRecNum, nodeParent, sortOrder=None, expandNode = True, insertPos = None,
-                 avoidRecursiveYields = False):
+                 avoidRecursiveYields = False, textSearchItems = []):
         """ This method is used to add nodes to the tree after it has been built.
             nodeType is the type of node to be added, and nodeData is a list that gives the tree structure
             that describes where the node should be added. """
@@ -3390,7 +3394,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Get the parent information
                     currentParent = nodeParent
                     # Use this data to create the node data
-                    nodedata = _NodeData(nodetype=expectedNodeType, recNum=currentRecNum, parent=currentParent, sortOrder=sortOrder)
+                    nodedata = _NodeData(nodetype=expectedNodeType, recNum=currentRecNum, parent=currentParent, sortOrder=sortOrder, textSearchItems = textSearchItems)
                     # Assign the node data to the new node.
                     self.SetPyData(newNode, nodedata)
                     # Signal that we're done!
@@ -3438,7 +3442,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Get the parent information
                     currentParent = nodeParent
                     # Use this data to create the node data
-                    nodedata = _NodeData(nodetype=expectedNodeType, recNum=currentRecNum, parent=currentParent, sortOrder=sortOrder)
+                    nodedata = _NodeData(nodetype=expectedNodeType, recNum=currentRecNum, parent=currentParent, sortOrder=sortOrder, textSearchItems = textSearchItems)
                     # Assign the node data to the new node.
                     self.SetPyData(newNode, nodedata)
 
@@ -3666,7 +3670,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                       dlg.ShowModal()
                       dlg.Destroy()
                     # Create the Node Data and attach it to the Node
-                    nodedata = _NodeData(nodetype=expectedNodeType, recNum=currentRecNum, parent=currentParent, sortOrder=sortOrder)
+                    nodedata = _NodeData(nodetype=expectedNodeType, recNum=currentRecNum, parent=currentParent, sortOrder=sortOrder, textSearchItems = textSearchItems)
                     self.SetPyData(newNode, nodedata)
 
                     # Sort, if needed
@@ -10636,6 +10640,12 @@ class _DBTreeCtrl(wx.TreeCtrl):
         # use HitTest to determine the tree item as the screen point indicated.
         sel_item, flags = self.HitTest(pt)
 
+        print "DatabaseTreeTab.OnRightDown():"
+        print self.GetItemText(sel_item),
+        tmpData = self.GetPyData(sel_item)
+        print tmpData.nodetype, tmpData.textSearchItems
+        print
+
         try:
 
             # This platform difference is NOT TRUE of wxPython 2.9.4.0
@@ -11363,7 +11373,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             # Capture the Document Name
                             documentname=self.GetItemText(sel_item)
                             # Load the document via the ControlObject
-                            self.parent.ControlObject.LoadDocument(libraryname, documentname, sel_item_data.recNum)
+                            self.parent.ControlObject.LoadDocument(libraryname, documentname, sel_item_data.recNum, textSearchItems=sel_item_data.textSearchItems)
 
                     # If the item is an Episode, Add a Transcript
                     elif sel_item_data.nodetype == 'EpisodeNode':
@@ -11391,7 +11401,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                 # Capture the Transcript Name
                                 transcriptname=self.GetItemText(sel_item)
                                 # Load the first transcript via the ControlObject
-                                self.parent.ControlObject.LoadTranscript(libraryname, episodename, transcriptname)
+                                self.parent.ControlObject.LoadTranscript(libraryname, episodename, transcriptname, textSearchItems=sel_item_data.textSearchItems)
                                 # Signal that we now have loaded the first transcript
                                 firstTr = False
                             # If we are looking at the second or later items ...
@@ -11432,11 +11442,12 @@ class _DBTreeCtrl(wx.TreeCtrl):
                         # Iterate through the selected items
                         for sel_item in sel_items:
                             # Load the Quote via the ControlObject
-                            self.parent.ControlObject.LoadQuote(sel_item_data.recNum)
+                            self.parent.ControlObject.LoadQuote(sel_item_data.recNum, textSearchItems=sel_item_data.textSearchItems)
 
                     # If the item is a Clip, load the appropriate object.
                     elif (sel_item_data.nodetype == 'ClipNode') or (sel_item_data.nodetype == 'SearchClipNode'):
-                        self.parent.ControlObject.LoadClipByNumber(sel_item_data.recNum)  # Load everything via the ControlObject
+                        # Load everything via the ControlObject
+                        self.parent.ControlObject.LoadClipByNumber(sel_item_data.recNum, textSearchItems=sel_item_data.textSearchItems)
 
                     # If the item is a Snapshot, open a Snapshot Window
                     elif (sel_item_data.nodetype == 'SnapshotNode') or (sel_item_data.nodetype == 'SearchSnapshotNode'):
