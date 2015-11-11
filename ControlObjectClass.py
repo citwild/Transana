@@ -206,7 +206,7 @@ class ControlObject(object):
             # ... minimize/restore the Report
             self.ReportWindows[win].Iconize(iconize)
 
-    def LoadDocument(self, library_name, document_name, document_number):
+    def LoadDocument(self, library_name, document_name, document_number, textSearchItems=[]):
         """ When a Document is identified to trigger systemic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
         # Initialize a variable indicating if we found the requested document
@@ -257,6 +257,10 @@ class ControlObject(object):
             tmpDocument = Document.Document(document_number)
             # Load the Document into the Editor Interface (Transcripts and Documents act the same here!)
             self.TranscriptWindow.LoadTranscript(tmpDocument)
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
             # Set the new Current Object
             self.currentObj = tmpDocument
 
@@ -280,7 +284,7 @@ class ControlObject(object):
             # Enable the transcript menu item options
             self.MenuWindow.SetTranscriptOptions(True)
 
-    def LoadTranscript(self, library, episode, transcript):
+    def LoadTranscript(self, library, episode, transcript, textSearchItems=[]):
         """ When a Transcript is identified to trigger systemic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
         # First, let's see if there's already a video loaded in the system.  Iterate through all Notebook Pages.
@@ -346,6 +350,10 @@ class ControlObject(object):
                 self.VideoWindow.SetTitle(_("Media"))
             # Open Transcript in Transcript Window
             self.TranscriptWindow.LoadTranscript(transcriptObj) #flies off to transcriptionui.py
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
 
             self.currentObj = episodeObj
 
@@ -405,7 +413,7 @@ class ControlObject(object):
             # ... we have a Quote
             return 'Quote'
 
-    def LoadQuote(self, quote_number):
+    def LoadQuote(self, quote_number, textSearchItems=[]):
         """ When a Quote is identified to trigger systemic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
         # Initialize a variable indicating if we found the requested Quote
@@ -444,6 +452,10 @@ class ControlObject(object):
                 
             # Load the Quote into the Editor Interface (Transcripts, Documents, and Quotes act the same here!)
             self.TranscriptWindow.LoadTranscript(tmpQuote)
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
 
 ##            # Remove any tabs in the Data Window beyond the Database Tab
 ##            self.DataWindow.DeleteTabs()
@@ -483,7 +495,7 @@ class ControlObject(object):
                 # Now point the DBTree (the notebook's parent window's DBTab's tree) to the loaded Quote
                 self.DataWindow.DBTab.tree.select_Node(nodeList, 'QuoteNode')
 
-    def LoadClipByNumber(self, clipNum):
+    def LoadClipByNumber(self, clipNum, textSearchItems=[]):
         """ When a Clip is identified to trigger systematic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
 
@@ -538,6 +550,10 @@ class ControlObject(object):
 
             # Open the first Clip Transcript in Transcript Window (activeTranscript is ALWAYS 0 here!)
             self.TranscriptWindow.LoadTranscript(clipObj.transcripts[0])
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
             # Update the Transana Interface for this object
             self.UpdateCurrentObject(clipObj.transcripts[0])
             
