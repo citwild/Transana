@@ -932,6 +932,8 @@ class SearchDialog(wx.Dialog):
                 self.btnLeftParen.Enable(False)
                 # Add to the Search Stack
                 self.SaveSearchStack()
+                # Clear the Search Text box for the next entry
+                self.searchText.Clear()
 
             # If we're not in Standard ...
             if TransanaConstants.proVersion:
