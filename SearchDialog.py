@@ -472,7 +472,7 @@ class SearchDialog(wx.Dialog):
             panelKeywords.SetSizer(panelKeywordsSizer)
 
             # Add the Keywords Panel to tne Notebook and select it
-            selectionNotebook.AddPage(panelKeywords, _("Keywords"), True)
+            selectionNotebook.AddPage(panelKeywords, _("Search Terms"), True)
 
             # Add the Notebook to the form's Main Sizer
             mainSizer.Add(selectionNotebook, 5, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
