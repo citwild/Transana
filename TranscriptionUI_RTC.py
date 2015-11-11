@@ -544,6 +544,33 @@ class TranscriptionUI(wx.Frame):
         # Enable the Search
         self.dlg.EnableSearch(True)
 
+    def SetSearchItem(self, searchText):
+        """ Set the initial Search text and perform the first Search.
+            searchText should be a LIST of unicode items.  This routine will go through the list until it finds
+            an item in the text. """
+        # If the searchText is blank ...
+        if len(searchText) == 0:
+            # ... there's nothing to do here!
+            return
+
+        if self.dlg.editor.GetCurrentPos() != 0:
+
+            print "TranscriptionUI_RTC.SetSearchItem():", self.dlg.editor.GetCurrentPos()
+            
+            self.dlg.editor.SetCurrentPos(0)
+
+        # For each item in the searchText list ...
+        for searchTerm in searchText:
+            self.searchText.Clear()
+            # ... set the Search Text in the toolbar to the text item
+            self.searchText.SetValue(searchTerm)
+            # ... and search for it
+            self.OnSearch(None)
+            # If an instance of this item IS found ...
+            if self.dlg.editor.GetCurrentPos() > 0:
+                # ... stop looking.  Otherwise, move on to the next term.
+                break
+
     def UpdateGUI(self):
         """ This method should handle updating the GUI based on what data object is selected in the TranscriptWindow
             infrastructure """
@@ -2075,7 +2102,7 @@ class _TranscriptPanel(wx.Panel):
         # If there is text ...
         if txt != '':
             # Determine whether we're searching forward or backward
-            if event.GetId() == self.parent.parent.parent.CMD_SEARCH_BACK_ID:
+            if (event != None) and (event.GetId() == self.parent.parent.parent.CMD_SEARCH_BACK_ID):
                 direction = "back"
             # Either CMD_SEARCH_FORWARD_ID or ENTER in the text box indicate forward!
             else:
