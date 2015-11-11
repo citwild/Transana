@@ -21,20 +21,18 @@ __author__ = 'David Woods <dwoods@wcer.wisc.edu>'
 # Import wxPython
 import wx
 
-# Import the Transana Collection Object
-import Collection
-# Import the Transana Database Interface
-import DBInterface
-# import Transana's Dialog
-import Dialogs
+# Import the Transana Library Object
+import Library
 # Import the Transana Document Object
 import Document
 # Import the Transana Episode Object
 import Episode
-# Import the Transana Library Object
-import Library
 # Import the Transana Quote Object
 import Quote
+# Import the Transana Collection Object
+import Collection
+# Import the Transana Database Interface
+import DBInterface
 # Import the Transana Search Dialog Box
 import SearchDialog
 # import Transana's Constants
@@ -175,6 +173,9 @@ class ProcessSearch(object):
                 nameIncrementValue += 1
             # As long as there's a search name (and there's no longer a way to eliminate it!
             if searchName != '':
+                # Add a Search Results Node to the Database Tree
+                nodeListBase = [_("Search"), searchName]
+                self.dbTree.add_Node('SearchResultsNode', nodeListBase, 0, 0, expandNode=True)
 
                 # Build the appropriate Queries based on the Search Query specified in the Search Dialog.
                 # (This method parses the Natural Language Search Terms into queries for Episode Search
@@ -182,21 +183,12 @@ class ProcessSearch(object):
                 #  Parameters to be used with the queries.  Parameters are not integrated into the queries 
                 #  in order to allow for automatic processing of apostrophes and other text that could 
                 #  otherwise interfere with the SQL execution.)
-                (documentQuery, episodeQuery, quoteQuery, clipQuery, wholeSnapshotQuery, snapshotCodingQuery, params, textSearchItems) = \
+                (documentQuery, episodeQuery, quoteQuery, clipQuery, wholeSnapshotQuery, snapshotCodingQuery, params) = \
                     self.BuildQueries(searchTerms)
-
-                # Clip Searches with Text seem to take a long time.  Let's display a Popup if there's Text.
-                if len(textSearchItems) > 0:
-                    progressDialog = Dialogs.PopupDialog(None, _('Search'), _('Search in progress.  Please wait.'))
-
-                # Add a Search Results Node to the Database Tree
-                nodeListBase = [_("Search"), searchName]
-                self.dbTree.add_Node('SearchResultsNode', nodeListBase, 0, 0, expandNode=True, textSearchItems = textSearchItems)
 
                 # Get a Database Cursor
                 dbCursor = DBInterface.get_db().cursor()
 
-                # Episodes
                 if includeEpisodes:
                     # Adjust query for sqlite, if needed
                     episodeQuery = DBInterface.FixQuery(episodeQuery)
@@ -219,7 +211,7 @@ class ProcessSearch(object):
                             tempTranscript = Transcript.Transcript(line['TranscriptNum'])
                             nodeList += (tempTranscript.id,)
                             # Add the Transcript Node to the Tree.  
-                            self.dbTree.add_Node('SearchTranscriptNode', nodeList, tempTranscript.number, tempTranscript.episode_num, textSearchItems = textSearchItems)
+                            self.dbTree.add_Node('SearchTranscriptNode', nodeList, tempTranscript.number, tempTranscript.episode_num)
                         # If line does NOT include a TranscriptNum, load all available transcripts for the search results.
                         else:
                             # Find out what Transcripts exist for each Episode
@@ -229,13 +221,12 @@ class ProcessSearch(object):
                                 # Add each Transcript to the Database Tree
                                 for (transcriptNum, transcriptID, episodeNum) in transcriptList:
                                     # Add the Transcript Node to the Tree.  
-                                    self.dbTree.add_Node('SearchTranscriptNode', nodeList + (transcriptID,), transcriptNum, episodeNum, textSearchItems = textSearchItems)
+                                    self.dbTree.add_Node('SearchTranscriptNode', nodeList + (transcriptID,), transcriptNum, episodeNum)
                             # If the Episode has no transcripts, it still has the keywords and SHOULD be displayed!
                             else:
                                 # Add the Transcript-less Episode Node to the Tree.  
-                                self.dbTree.add_Node('SearchEpisodeNode', nodeList, tempEpisode.number, tempLibrary.number, textSearchItems = textSearchItems)
+                                self.dbTree.add_Node('SearchEpisodeNode', nodeList, tempEpisode.number, tempLibrary.number)
 
-                # Documents
                 if includeDocuments:
                     # Adjust query for sqlite, if needed
                     documentQuery = DBInterface.FixQuery(documentQuery)
@@ -253,9 +244,8 @@ class ProcessSearch(object):
                         # Add the Search Root Node, the Search Name, and the current Library Name.
                         nodeList = (_('Search'), searchName, tempLibraryName)
                         # Add the Document Node to the Tree.
-                        self.dbTree.add_Node('SearchDocumentNode', nodeList + (tempDocument.id,), tempDocument.number, tempDocument.library_num, textSearchItems = textSearchItems)
+                        self.dbTree.add_Node('SearchDocumentNode', nodeList + (tempDocument.id,), tempDocument.number, tempDocument.library_num)
 
-                # Quotes
                 if includeQuotes:
                     # Adjust query for sqlite, if needed
                     quoteQuery = DBInterface.FixQuery(quoteQuery)
@@ -282,9 +272,8 @@ class ProcessSearch(object):
                         nodeList = (_('Search'), searchName) + nodeList + (tempID, )
 
                         # Add the Node to the Tree
-                        self.dbTree.add_Node('SearchQuoteNode', nodeList, line['QuoteNum'], line['CollectNum'], sortOrder=line['SortOrder'], textSearchItems = textSearchItems)
+                        self.dbTree.add_Node('SearchQuoteNode', nodeList, line['QuoteNum'], line['CollectNum'], sortOrder=line['SortOrder'])
 
-                # Clips
                 if includeClips:
                     # Adjust query for sqlite, if needed
                     clipQuery = DBInterface.FixQuery(clipQuery)
@@ -311,7 +300,7 @@ class ProcessSearch(object):
                         nodeList = (_('Search'), searchName) + nodeList + (tempID, )
 
                         # Add the Node to the Tree
-                        self.dbTree.add_Node('SearchClipNode', nodeList, line['ClipNum'], line['CollectNum'], sortOrder=line['SortOrder'], textSearchItems = textSearchItems)
+                        self.dbTree.add_Node('SearchClipNode', nodeList, line['ClipNum'], line['CollectNum'], sortOrder=line['SortOrder'])
 
                 # If Snapshots are check AND there is no Text Search Component ...
                 # (If there is a Text Search component to the search, the wholeSnapshotQuery is blank!!)
@@ -345,7 +334,7 @@ class ProcessSearch(object):
                         nodeList = (_('Search'), searchName) + nodeList + (tempID, )
 
                         # Add the Node to the Tree
-                        self.dbTree.add_Node('SearchSnapshotNode', nodeList, line['SnapshotNum'], line['CollectNum'], sortOrder=line['SortOrder'], textSearchItems = textSearchItems)
+                        self.dbTree.add_Node('SearchSnapshotNode', nodeList, line['SnapshotNum'], line['CollectNum'], sortOrder=line['SortOrder'])
                         # Add the Snapshot to the list of Snapshots added to the Search Result
                         addedSnapshots.append(line['SnapshotNum'])
                         
@@ -378,18 +367,13 @@ class ProcessSearch(object):
                             nodeList = (_('Search'), searchName) + nodeList + (tempID, )
 
                             # Add the Node to the Tree
-                            self.dbTree.add_Node('SearchSnapshotNode', nodeList, line['SnapshotNum'], line['CollectNum'], sortOrder=line['SortOrder'], textSearchItems = textSearchItems)
+                            self.dbTree.add_Node('SearchSnapshotNode', nodeList, line['SnapshotNum'], line['CollectNum'], sortOrder=line['SortOrder'])
                             # Add the Snapshot to the list of Snapshots added to the Search Result
                             addedSnapshots.append(line['SnapshotNum'])
                             
                             tmpNode = self.dbTree.select_Node(nodeList[:-1], 'SearchCollectionNode', ensureVisible=False)
                             self.dbTree.SortChildren(tmpNode)
 
-                # If we opened a Popup Dialog, we need to close it!
-                if len(textSearchItems) > 0:
-                    progressDialog.Close()
-                    progressDialog.Destroy()
-                    
             else:
                 self.searchCount = searchCount
 
@@ -447,8 +431,6 @@ class ProcessSearch(object):
         includesKeywords = False
         # We also need to know if the query includes Text, as we can't do that for Snapshots.  This tracks that.
         includesText = False
-        # We also need to keep track of what the Search Text terms are
-        textSearchItems = []
         # Initialize a list for strings to store SQL "COUNT" lines
         countStrings = []
         # Initialize a list to hold the Search Parameters.
@@ -517,8 +499,6 @@ class ProcessSearch(object):
                 if tempStr[:20] == 'Item Text contains "':
                     # Note that we are including text
                     includesText = True
-                    # Remember the Text Search Term
-                    textSearchItems.append(tempStr[20:tempStr.rfind('"')])
                     
                     # Remove the "Item Text Contains" text and the quotation marks around the search text
                     tempStr = '%%' + tempStr[20:tempStr.rfind('"')] + '%%'
@@ -756,4 +736,4 @@ class ProcessSearch(object):
 
         # Return the Library/Episode Query, the Collection/Clip Query, the Whole Snapshot Query, the Snapshot Coding Query, 
         # and the list of parameters to use with these queries to the calling routine.
-        return (documentSQL, episodeSQL, quoteSQL, clipSQL, wholeSnapshotSQL, snapshotCodingSQL, params, textSearchItems)
+        return (documentSQL, episodeSQL, quoteSQL, clipSQL, wholeSnapshotSQL, snapshotCodingSQL, params)
