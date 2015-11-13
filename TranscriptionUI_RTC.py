@@ -553,60 +553,23 @@ class TranscriptionUI(wx.Frame):
             # ... there's nothing to do here!
             return
 
-        # Check for Multiple Transcripts
-        editorPanes = self.nb.GetCurrentPage().GetChildren()
+        if self.dlg.editor.GetCurrentPos() != 0:
 
-        textFound = False
-        winningPane = []
+            print "TranscriptionUI_RTC.SetSearchItem():", self.dlg.editor.GetCurrentPos()
+            
+            self.dlg.editor.SetCurrentPos(0)
 
-        for pane in editorPanes:
-
-            # print "TranscriptionUI_RTC.SetSearchItem():", pane.panelNum, pane.editor.GetCurrentPos(), type(pane.editor.TranscriptObj)
-                
-            if pane.editor.GetCurrentPos() != 0:
-
-                pane.editor.SetCurrentPos(0)
-
-            # For each item in the searchText list ...
-            for searchTerm in searchText:
-                self.searchText.Clear()
-                # ... set the Search Text in the toolbar to the text item
-                self.searchText.SetValue(searchTerm)
-                # ... and search for it.  (Subtlety -- use pane.OnSearch rather than self.OnSearch, as self.OnSearch uses
-                #     the activePanel while pane.OnSearch can search a non-active panel!)
-                pane.OnSearch(None)
-
-                # print "   --> ", pane.panelNum, pane.editor.GetCurrentPos()
-                
-                # If an instance of this item IS found ...
-                if pane.editor.GetCurrentPos() > 0:
-                    if not textFound:
-                        pane.ActivatePanel()
-
-                        winningSearchTerm = searchTerm
-                    # Pre-pend the pane, so the final display will occur from the bottom up.
-                    winningPane = [pane] + winningPane
-
-                    # Signal that the text has been found
-                    textFound = True
-                    # ... stop looking.  Otherwise, move on to the next term.
-                    break
-
-        if (len(editorPanes) > 0) and isinstance(editorPanes[0].editor.TranscriptObj, Transcript.Transcript) and \
-           (editorPanes[0].editor.TranscriptObj.clip_num > 0):
-            wx.CallLater(500, self.FinishTheSearch, winningPane, winningSearchTerm)
-
-    def FinishTheSearch(self, winningPane, winningSearchTerm):
-        # Activate the LAST Pane, which will actually be at the TOP.
-        winningPane[-1].ActivatePanel()
-        # Set Focus in the LAST Pane, which will actually be at the TOP.
-        winningPane[-1].editor.SetFocus()
-        # Iterate through the panes (which were put in in reverse order)
-        for pane in winningPane:
-            # position at the beginning of the Document
-            pane.editor.SetCurrentPos(0)
-            # ... and re-perform the Search
-            wx.CallLater(100, pane.editor.find_text, winningSearchTerm, "next")
+        # For each item in the searchText list ...
+        for searchTerm in searchText:
+            self.searchText.Clear()
+            # ... set the Search Text in the toolbar to the text item
+            self.searchText.SetValue(searchTerm)
+            # ... and search for it
+            self.OnSearch(None)
+            # If an instance of this item IS found ...
+            if self.dlg.editor.GetCurrentPos() > 0:
+                # ... stop looking.  Otherwise, move on to the next term.
+                break
 
     def UpdateGUI(self):
         """ This method should handle updating the GUI based on what data object is selected in the TranscriptWindow
@@ -2144,12 +2107,8 @@ class _TranscriptPanel(wx.Panel):
             # Either CMD_SEARCH_FORWARD_ID or ENTER in the text box indicate forward!
             else:
                 direction = "next"
-
-            # print "TranscriptionUI_RTC._TranscriptPanel.OnSearch():", self.panelNum, event == None
-            
             # Set the focus back on the editor component, rather than the button, so Paste or typing work.
-            if event != None:
-                self.editor.SetFocus()
+            self.editor.SetFocus()
             # Perform the search in the Editor
             self.editor.find_text(txt, direction)
 
