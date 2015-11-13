@@ -606,7 +606,7 @@ class ControlObject(object):
             if len(textSearchItems) > 0:
                 # ... set the Search Item.  Calling immediately and calling with wx.CallAfter DO NOT WORK.
                 # This Search needs to occur AFTER media file placement by the LoadClip process.
-                wx.CallLater(1000, self.TranscriptWindow.SetSearchItem, textSearchItems)
+                wx.CallLater(500, self.TranscriptWindow.SetSearchItem, textSearchItems)
             # Enable the transcript menu item options
             self.MenuWindow.SetTranscriptOptions(True)
 

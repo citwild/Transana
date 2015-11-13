@@ -196,21 +196,12 @@ class ProcessSearch(object):
                 # Get a Database Cursor
                 dbCursor = DBInterface.get_db().cursor()
 
-                import datetime
-                print "ProcessSearch Time Tests:"
-
                 # Episodes
                 if includeEpisodes:
                     # Adjust query for sqlite, if needed
                     episodeQuery = DBInterface.FixQuery(episodeQuery)
-
-                    now = datetime.datetime.now()
-                    
                     # Execute the Library/Episode query
                     dbCursor.execute(episodeQuery, tuple(params))
-
-                    print "Episode:", datetime.datetime.now() - now
-                    
                     # Process the results of the Library/Episode query
                     for line in DBInterface.fetchall_named(dbCursor):
                         # Add the new Transcript(s) to the Database Tree Tab.
@@ -248,14 +239,9 @@ class ProcessSearch(object):
                 if includeDocuments:
                     # Adjust query for sqlite, if needed
                     documentQuery = DBInterface.FixQuery(documentQuery)
-
-                    now = datetime.datetime.now()
-                    
                     # Execute the Library/Document query
                     dbCursor.execute(documentQuery, tuple(params))
 
-                    print "Document:", datetime.datetime.now() - now
-                    
                     # Process the results of the Library/Document query
                     for line in DBInterface.fetchall_named(dbCursor):
                         # Add the new Document(s) to the Database Tree Tab.
@@ -273,14 +259,8 @@ class ProcessSearch(object):
                 if includeQuotes:
                     # Adjust query for sqlite, if needed
                     quoteQuery = DBInterface.FixQuery(quoteQuery)
-
-                    now = datetime.datetime.now()
-                    
                     # Execute the Collection/Quote query
                     dbCursor.execute(quoteQuery, params)
-
-                    print "Quote:", datetime.datetime.now() - now
-                    
 
                     # Process all results of the Collection/Quote query 
                     for line in DBInterface.fetchall_named(dbCursor):
@@ -308,14 +288,8 @@ class ProcessSearch(object):
                 if includeClips:
                     # Adjust query for sqlite, if needed
                     clipQuery = DBInterface.FixQuery(clipQuery)
-
-                    now = datetime.datetime.now()
-                    
                     # Execute the Collection/Clip query
                     dbCursor.execute(clipQuery, params)
-
-                    print "Clip:", datetime.datetime.now() - now
-                    
 
                     # Process all results of the Collection/Clip query 
                     for line in DBInterface.fetchall_named(dbCursor):
@@ -721,7 +695,7 @@ class ProcessSearch(object):
         # Add in the SQL "HAVING" Clause that was constructed above
         clipSQL += 'HAVING %s ' % havingStr
         # Add an "ORDER BY" Clause to preserve Clip Sort Order
-        clipSQL += 'ORDER BY CollectID, Cl.SortOrder'
+        clipSQL += 'ORDER BY CollectID, SortOrder'
 
         if not includesText:
             # Now add the rest of the SQL for the Whole Snapshot Query
