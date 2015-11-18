@@ -8618,13 +8618,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             # We need the screen to update here, before the next step.
                             wx.Yield()
                             # Now let's go through each Transcript Window ...
-                            for trWin in self.parent.ControlObject.TranscriptWindow:
+                            for trWin in self.parent.ControlObject.TranscriptWindow.nb.GetCurrentPage().GetChildren():
                                 # ... move the cursor to the TRANSCRIPT's Start Time (not the Clip's)
-                                trWin.dlg.editor.scroll_to_time(snapshot.episode_start + 500)
+                                trWin.editor.scroll_to_time(snapshot.episode_start + 50)
                                 # .. and select to the TRANSCRIPT's End Time (not the Clip's)
-                                trWin.dlg.editor.select_find(str(snapshot.episode_start + snapshot.episode_duration))
+                                trWin.editor.select_find(str(snapshot.episode_start + snapshot.episode_duration))
                                 # update the selection text
-                                wx.CallLater(50, trWin.dlg.editor.ShowCurrentSelection)
+#                                wx.CallLater(50, trWin.dlg.editor.ShowCurrentSelection)
                 except:
                     (exctype, excvalue, traceback) = sys.exc_info()
 
