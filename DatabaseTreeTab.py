@@ -4343,7 +4343,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         if TransanaConstants.proVersion:
             tmpMenu += (_("Batch Document Creation"),)
         tmpMenu += (_("Batch Episode Creation"), _("Add Library Note"), _("Delete Library"), _("Library Report"),
-                    _("Library Keyword Frequency Report"))
+                    _("Library Word Frequency Report"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Library Keyword Sequence Map"), _("Library Keyword Bar Graph"), _("Library Keyword Percentage Graph"))
         tmpMenu += (_("Analytic Data Export"), _("Library Properties"))
@@ -4387,7 +4387,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         # Collection Root Menu
         # Default Double-click is expand, then Add Collection.  (See OnItemActivated())
         self.create_menu('CollectionsRootNode',
-                       (_("Paste"), _("Add Collection"), _("Collection Report"), _("Collection Keyword Frequency Report"),
+                       (_("Paste"), _("Add Collection"), _("Collection Report"), _("Collection Word Frequency Report"),
                         _('Analytic Data Export')),
                         self.OnCollRootCommand)
 
@@ -4400,7 +4400,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         if TransanaConstants.proVersion:
             tmpMenu += (_("Add Multi-transcript Clip"), _("Add Snapshot"), _("Batch Snapshot Creation"))
         tmpMenu += (_("Add Nested Collection"), _("Add Collection Note"), _("Delete Collection"),
-                    _("Collection Report"), _("Collection Keyword Frequency Report"), _("Collection Keyword Map"), 
+                    _("Collection Report"), _("Collection Word Frequency Report"), _("Collection Keyword Map"), 
                     _("Analytic Data Export"), _("Play All Clips"), _("Collection Properties"))
         self.create_menu("CollectionNode",
                          tmpMenu,
@@ -4499,32 +4499,34 @@ class _DBTreeCtrl(wx.TreeCtrl):
         # The Search Library Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
         self.create_menu("SearchLibraryNode",
-                        (_("Drop from Search Result"), _("Search Library Report")),
+                        (_("Drop from Search Result"), _("Search Library Report"), _("Search Library Word Frequency Report")), 
                         self.OnSearchLibraryCommand)
         
         # The Search Document Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
         self.create_menu("SearchDocumentNode",
-                        (_("Open"), _("Drop from Search Result"), _("Document Report"), _("Document Keyword Map")),
+                        (_("Open"), _("Drop from Search Result"), _("Document Report"),
+                         _("Search Document Word Frequency Report"), _("Document Keyword Map")),
                         self.OnSearchDocumentCommand)
         
         # The Search Episode Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
         self.create_menu("SearchEpisodeNode",
-                        (_("Drop from Search Result"), _("Episode Report"), _("Episode Keyword Map")),
+                        (_("Drop from Search Result"), _("Episode Report"), _("Search Episode Word Frequency Report"),
+                         _("Episode Keyword Map")),
                         self.OnSearchEpisodeCommand)
         
         # The Search Transcript Node Menu
         # Default Double-click is Open.  (See OnItemActivated())
         self.create_menu("SearchTranscriptNode",
-                         (_("Open"), _("Drop from Search Result")),
+                         (_("Open"), _("Drop from Search Result"), _("Search Transcript Word Frequency Report")),
                          self.OnSearchTranscriptCommand)
         
         # The Search Collection Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
         self.create_menu("SearchCollectionNode",
                         (_("Cut"), _("Copy"), _("Paste"),
-                         _("Drop from Search Result"), _("Search Collection Report"),
+                         _("Drop from Search Result"), _("Search Collection Report"), _("Search Collection Word Frequency Report"),
                          _("Play All Clips"), _("Rename")),
                         self.OnSearchCollectionCommand)
         
@@ -5221,7 +5223,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showDocImportDate=True,
                                             showKeywords=True)
 
-        elif n == 8:    # Library Keyword Frequency Report
+        elif n == 8:    # Library Word Frequency Report
             
             WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
 
@@ -9851,6 +9853,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showTime=True,
                                             showKeywords=True)
 
+        elif n == 2:    # Search Library Root Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
         else:
             raise MenuIDError
  
@@ -9907,7 +9913,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showQuoteNotes=False ) # ,
 ##                                            showSnapshotNotes=False)
 
-        elif n == 3:      # Document Keyword Map Report
+        elif n == 3:    # Search Document Root Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 4:      # Document Keyword Map Report
             self.DocumentKeywordMapReport(selData.recNum, library_name, document_name)
             
         else:
@@ -9962,7 +9972,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showClipNotes=False,
                                             showSnapshotNotes=False)
 
-        elif n == 2:      # Keyword Map Report
+        elif n == 2:    # Search Episode Root Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 3:      # Keyword Map Report
             self.EpisodeKeywordMapReport(selData.recNum, library_name, episode_name)
             
         else:
@@ -9987,6 +10001,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
             for sel in selItems:
                 # ... drop it from the Search Results
                 self.DropSearchResult(sel)
+
+        elif n == 2:    # Search Transcript Root Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
 
         else:
             raise MenuIDError
@@ -10070,12 +10088,16 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showNested=True,
                                             showHyperlink=True)
 
-        elif n == 5:    # Play All Clips
+        elif n == 5:    # Search Collection Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 6:    # Play All Clips
             # Play All Clips takes the current Collection and the ControlObject as parameters.
             # (The ControlObject is owned not by the _DBTreeCtrl but by its parent)
             PlayAllClips.PlayAllClips(searchColl=sel, controlObject=self.parent.ControlObject, treeCtrl=self)
 
-        elif n == 6:    # Rename
+        elif n == 7:    # Rename
             self.EditLabel(sel)
             
         else:
