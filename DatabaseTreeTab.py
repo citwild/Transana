@@ -73,6 +73,7 @@ import cPickle                      # Used in Drag and Drop
 import Misc                         # Transana's Miscellaneous functions
 import PropagateChanges             # Transana's Change Propagation routines
 import MediaConvert
+import WordFrequencyReport          # Transana's Word Frequency Report
 
 class DatabaseTreeTab(wx.Panel):
     """This class defines the object for the "Database" tab of the Data
@@ -4330,7 +4331,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         # Library Root Menu
         # Default Double-click is expand, then Add Library.  (See OnItemActivated())
         self.create_menu("LibraryRootNode",
-                         (_("Add Library"),),
+                         (_("Add Library"), _("Word Frequency Report")),
                          self.OnLibraryRootCommand)
 
         # Library Menu
@@ -4341,7 +4342,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
         tmpMenu += (_("Add Episode"),)
         if TransanaConstants.proVersion:
             tmpMenu += (_("Batch Document Creation"),)
-        tmpMenu += (_("Batch Episode Creation"), _("Add Library Note"), _("Delete Library"), _("Library Report"))
+        tmpMenu += (_("Batch Episode Creation"), _("Add Library Note"), _("Delete Library"), _("Library Report"),
+                    _("Library Keyword Frequency Report"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Library Keyword Sequence Map"), _("Library Keyword Bar Graph"), _("Library Keyword Percentage Graph"))
         tmpMenu += (_("Analytic Data Export"), _("Library Properties"))
@@ -4354,8 +4356,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
         tmpMenu = (_("Cut"), _("Paste"), _("Open"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Open Additional Document"),)
-        tmpMenu += (_("Add Document Note"), _("Delete Document"), _("Document Report"), _("Document Keyword Map"), _("Analytic Data Export"),
-                    _("Document Properties"))
+        tmpMenu += (_("Add Document Note"), _("Delete Document"), _("Document Report"), _("Document Word Frequency Report"),
+                    _("Document Keyword Map"), _("Analytic Data Export"), _("Document Properties"))
         self.create_menu("DocumentNode",
                          tmpMenu,
                          self.OnDocumentCommand)
@@ -4366,8 +4368,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                    _("Add Transcript"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Open Multiple Transcripts"),)
-        tmpMenu += (_("Add Episode Note"), _("Delete Episode"), _("Episode Report"), _("Episode Keyword Map"), _("Analytic Data Export"),
-                    _("Episode Properties"))
+        tmpMenu += (_("Add Episode Note"), _("Delete Episode"), _("Episode Report"), _("Episode Word Frequency Report"),
+                    _("Episode Keyword Map"), _("Analytic Data Export"), _("Episode Properties"))
         self.create_menu("EpisodeNode",
                          tmpMenu,
                          self.OnEpisodeCommand)
@@ -4377,7 +4379,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         tmpMenu = (_("Paste"), _("Open"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Open Additional Transcript"),)
-        tmpMenu += (_("Add Transcript Note"), _("Delete Transcript"), _("Transcript Properties"))
+        tmpMenu += (_("Add Transcript Note"), _("Delete Transcript"), _("Transcript Word Frequency Report"), _("Transcript Properties"))
         self.create_menu('TranscriptNode',
                          tmpMenu,
                          self.OnTranscriptCommand)
@@ -4385,7 +4387,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
         # Collection Root Menu
         # Default Double-click is expand, then Add Collection.  (See OnItemActivated())
         self.create_menu('CollectionsRootNode',
-                       (_("Paste"), _("Add Collection"), _("Collection Report"), _('Analytic Data Export')),
+                       (_("Paste"), _("Add Collection"), _("Collection Report"), _("Collection Keyword Frequency Report"),
+                        _('Analytic Data Export')),
                         self.OnCollRootCommand)
 
         # Collection Menu
@@ -4397,8 +4400,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
         if TransanaConstants.proVersion:
             tmpMenu += (_("Add Multi-transcript Clip"), _("Add Snapshot"), _("Batch Snapshot Creation"))
         tmpMenu += (_("Add Nested Collection"), _("Add Collection Note"), _("Delete Collection"),
-                    _("Collection Report"), _("Collection Keyword Map"), _("Analytic Data Export"), _("Play All Clips"),
-                    _("Collection Properties"))
+                    _("Collection Report"), _("Collection Keyword Frequency Report"), _("Collection Keyword Map"), 
+                    _("Analytic Data Export"), _("Play All Clips"), _("Collection Properties"))
         self.create_menu("CollectionNode",
                          tmpMenu,
                          self.OnCollectionCommand)
@@ -4572,6 +4575,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
         
         if n == 0:      # Add Library
             self.parent.add_series()
+
+        elif n == 1:    # Library Root Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, self.GetSelections()[0])
+
         else:
             raise MenuIDError
   
@@ -4579,14 +4587,14 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle menu selections for Library objects."""
         n = evt.GetId() - self.cmd_id_start["LibraryNode"]
         # If we're in the Standard version, we need to adjust the menu numbers
-        # for Add Document (1), Batch Document Creation (3), Library Keyword Sequence Map (8), Library Keyword Bar Graph (9),
+        # for Add Document (1), Batch Document Creation (3), Library Keyword Sequence Map (9), Library Keyword Bar Graph (9),
         # and Library Keyword Percentage Graph (10)
         if not TransanaConstants.proVersion:
             if (n >= 1):
                 n += 1
             if (n >= 3):
                 n += 1
-            if (n >= 8):
+            if (n >= 9):
                 n += 3
 
         # Get the list of selected items
@@ -5213,19 +5221,23 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showDocImportDate=True,
                                             showKeywords=True)
 
-        elif n == 8:    # Library Map -- Sequence Mode
-            LibraryMap.LibraryMap(self, unicode(_("Library Keyword Sequence Map"), 'utf8'), selData.recNum, library_name, 1, controlObject = self.parent.ControlObject)
+        elif n == 8:    # Library Keyword Frequency Report
             
-        elif n == 9:    # Library Map -- Bar Graph Mode
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 9:    # Library Map -- Sequence Mode
+            LibraryMap.LibraryMap(self, unicode(_("Library Keyword Sequence Map"), 'utf8'), selData.recNum, library_name, 1, controlObject = self.parent.ControlObject)
+
+        elif n == 10:    # Library Map -- Bar Graph Mode
             LibraryMap.LibraryMap(self, unicode(_("Library Keyword Bar Graph"), 'utf8'), selData.recNum, library_name, 2, controlObject = self.parent.ControlObject)
             
-        elif n == 10:    # Library Map -- Percentage Mode
+        elif n == 11:    # Library Map -- Percentage Mode
             LibraryMap.LibraryMap(self, unicode(_("Library Keyword Percentage Graph"), 'utf8'), selData.recNum, library_name, 3, controlObject = self.parent.ControlObject)
 
-        elif n == 11:    # Analytic Data Export
+        elif n == 12:    # Analytic Data Export
             self.AnalyticDataExport(libraryNum = selData.recNum)
             
-        elif n == 12:    # Library Properties
+        elif n == 13:    # Library Properties
             library = Library.Library()
             # FIXME: Gracefully handle when we can't load the Library.
             # (yes, this can happen.  for example if another user changes
@@ -5542,14 +5554,18 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showQuoteNotes=False ) # ,
 ##                                            showSnapshotNotes=False)
 
-        elif n == 7:    # Document Keyword Map
+        elif n == 7:    # Document Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 8:    # Document Keyword Map
             
             self.DocumentKeywordMapReport(selData.recNum, self.GetItemText(self.GetItemParent(sel)), document_name)
 
-        elif n == 8:    # Analytic Data Export
+        elif n == 9:    # Analytic Data Export
             self.AnalyticDataExport(documentNum = selData.recNum)
             
-        elif n == 9:    # Document Properties
+        elif n == 10:    # Document Properties
             # Load the Document Object
             document = Document.Document(selData.recNum)
             # Edit the Document Properties
@@ -5886,13 +5902,17 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showClipNotes=False,
                                             showSnapshotNotes=False)
 
-        elif n == 7:    # Keyword Map Report
+        elif n == 7:    # Episode Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 8:    # Keyword Map Report
             self.EpisodeKeywordMapReport(selData.recNum, library_name, episode_name)
 
-        elif n == 8:    # Analytic Data Export
+        elif n == 9:    # Analytic Data Export
             self.AnalyticDataExport(episodeNum = selData.recNum)
 
-        elif n == 9:    # Episode Properties
+        elif n == 10:    # Episode Properties
             library_name = self.GetItemText(self.GetItemParent(sel))
             episode = Episode.Episode()
             # FIXME: Gracefully handle when we can't load the Episode.
@@ -6080,7 +6100,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             errordlg.ShowModal()
                             errordlg.Destroy()
 
-        elif n == 5:    # Transcript Properties
+        elif n == 5:    # Transcript Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 6:    # Transcript Properties
             library_name = self.GetItemText(self.GetItemParent(self.GetItemParent(sel)))
             episode_name = self.GetItemText(self.GetItemParent(sel))
             episode = Episode.Episode()
@@ -6169,7 +6193,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showNested=True,
                                             showHyperlink=True)
 
-        elif n == 3:    # (Global) Analytic Data Export
+        elif n == 3:    # (Global) Collection Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, self.GetSelections()[0])
+
+        elif n == 4:    # (Global) Analytic Data Export
             self.AnalyticDataExport()
 
         else:
@@ -6688,15 +6716,19 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showNested=True,
                                             showHyperlink=True)
 
-        elif n == 12:    # Collection Keyword Map Report
+        elif n == 12:    # Collection Word Frequency Report
+
+            WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
+
+        elif n == 13:    # Collection Keyword Map Report
             # Call the Collection Keyword Map 
             self.CollectionKeywordMapReport(selData.recNum)
 
-        elif n == 13:    # Analytic Data Export
+        elif n == 14:    # Analytic Data Export
             # Call Analytic Data Export with the Collection Number
             self.AnalyticDataExport(collectionNum = selData.recNum)
 
-        elif n == 14:    # Play All Clips
+        elif n == 15:    # Play All Clips
             # Get the appropriate collection
             coll = Collection.Collection(coll_name, parent_num)
             # Play All Clips takes the current Collection and the ControlObject as parameters.
@@ -6709,7 +6741,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             # Let's clear all the Windows, since we don't want to stay in the last Clip played.
             self.parent.ControlObject.ClearAllWindows()
 
-        elif n == 15:    # Collection Properties
+        elif n == 16:    # Collection Properties
             # FIXME: Gracefully handle when we can't load the Collection.
             coll = Collection.Collection(coll_name, parent_num)
             self.parent.edit_collection(coll)
@@ -8622,13 +8654,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             # We need the screen to update here, before the next step.
                             wx.Yield()
                             # Now let's go through each Transcript Window ...
-                            for trWin in self.parent.ControlObject.TranscriptWindow:
+                            for trWin in self.parent.ControlObject.TranscriptWindow.nb.GetCurrentPage().GetChildren():
                                 # ... move the cursor to the TRANSCRIPT's Start Time (not the Clip's)
-                                trWin.dlg.editor.scroll_to_time(snapshot.episode_start + 500)
+                                trWin.editor.scroll_to_time(snapshot.episode_start + 50)
                                 # .. and select to the TRANSCRIPT's End Time (not the Clip's)
-                                trWin.dlg.editor.select_find(str(snapshot.episode_start + snapshot.episode_duration))
+                                trWin.editor.select_find(str(snapshot.episode_start + snapshot.episode_duration))
                                 # update the selection text
-                                wx.CallLater(50, trWin.dlg.editor.ShowCurrentSelection)
+#                                wx.CallLater(50, trWin.dlg.editor.ShowCurrentSelection)
                 except:
                     (exctype, excvalue, traceback) = sys.exc_info()
 
