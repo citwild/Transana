@@ -891,6 +891,27 @@ def CreateAdditionalVidsTableQuery(num):
     # Return the query to the calling routine
     return query % (num, autoIncrementSyntax)
 
+def CreateSynonymsTableQuery(num):
+    """ Create query for the Synonyms Table """
+
+    # Synonyms Table: Test for existence and create if needed
+    query = """
+              CREATE TABLE IF NOT EXISTS Synonyms%d
+                (SynonymGroup  VARCHAR(255) NOT NULL, 
+                 Synonym       VARCHAR(255) NOT NULL, 
+                 PRIMARY KEY (SynonymGroup, Synonym))
+                """
+    # Add MySQL-specific SQL if appropriate
+    if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+        query += """
+                 DEFAULT CHARACTER SET utf8
+                 COLLATE utf8_bin
+            """
+    # Add the appropriate Table Type to the CREATE Query
+    query = SetTableType(TransanaGlobal.hasInnoDB, query)
+    # Return the query to the calling routine
+    return query % num
+
 
 def establish_db_exists(dbToOpen=None, usePrompt=True):
     """ Check for the existence of all database tables and create them
@@ -1511,6 +1532,11 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
 
         # AdditionalVids2 (Additional Videos) Table: Test for existence and create if needed
         query = CreateAdditionalVidsTableQuery(2)
+        # Execute the Query
+        dbCursor.execute(query)
+
+        # Synonyms2 Table: Test for existence and create if needed
+        query = CreateSynonymsTableQuery(2)
         # Execute the Query
         dbCursor.execute(query)
 
@@ -4834,6 +4860,146 @@ def delete_keyword(group, kw_name):
         raise TransanaExceptions.GeneralError, msg
     DBCursor.close()
 
+def AddSynonym(synonymGroup, synonym):
+    """ Add a Synonym to the Synonyms Table """
+
+    print "DBInterface.AddSynonym()", synonymGroup.encode('utf8'), synonym.encode('utf8'), type(synonym)
+
+    # Get a Database cursor
+    DBCursor = get_db().cursor()
+
+    # Create the INSERT query for the Synonyms table
+    query = """ INSERT INTO Synonyms2
+                  (SynonymGroup, Synonym)
+                VALUES
+                  (%s, %s) """
+    # Set up the values, and encode them
+    values = (synonymGroup.encode(TransanaGlobal.encoding), synonym.encode(TransanaGlobal.encoding))
+    # Adjust query for sqlite, if needed
+    query = FixQuery(query)
+
+    # Duplicate Insertion may raise an exception, which should be trapped
+    try:
+        # Execute the query
+        DBCursor.execute(query, values)
+    # Handle exceptions
+    except:
+
+        print "DBInterface.AddSynonym() Exception:"
+        print sys.exc_info()[0]
+        print sys.exc_info()[1]
+
+    # Close the Database Cursor
+    DBCursor.close()
+
+def UpdateSynonym(synonymGroup, synonym, newSynonymGroup, newSynonym):
+    """ Change a Synonym to the Synonyms Table """
+
+    print "DBInterface.UpdateSynonym()", synonymGroup.encode('utf8'), synonym.encode('utf8'), newSynonymGroup.encode('utf8'), newSynonym.encode('utf8')
+
+    # Get a Database cursor
+    DBCursor = get_db().cursor()
+
+    # Create the INSERT query for the Synonyms table
+    query = """ UPDATE Synonyms2
+                  SET SynonymGroup = %s,
+                      Synonym = %s
+                  WHERE SynonymGroup = %s AND
+                        Synonym = %s """
+    # Set up the values, and encode them
+    values = (newSynonymGroup, newSynonym, synonymGroup, synonym) # (newSynonymGroup.encode('utf8'), newSynonym.encode('utf8'), synonymGroup.encode('utf8'), synonym.encode('utf8'))
+    # Adjust query for sqlite, if needed
+    query = FixQuery(query)
+
+    # Duplicate Insertion may raise an exception, which should be trapped
+    try:
+        # Execute the query
+        DBCursor.execute(query, values)
+    # Handle exceptions
+    except:
+
+        print "DBInterface.UpdateSynonym() Exception:"
+        print sys.exc_info()[0]
+        print sys.exc_info()[1]
+
+    # Close the Database Cursor
+    DBCursor.close()
+
+def DeleteSynonym(synonymGroup, synonym):
+    """ Delete a Synonym from the Synonyms Table """
+
+    print "DBInterface.DeleteSynonym()", synonymGroup.encode('utf8'), synonym.encode('utf8')
+
+    # Get a Database cursor
+    DBCursor = get_db().cursor()
+
+    # Create the INSERT query for the Synonyms table
+    query = """ DELETE FROM Synonyms2
+                  WHERE SynonymGroup = %s AND
+                        Synonym = %s """
+    # Set up the values, and encode them
+    values = (synonymGroup.encode('utf8'), synonym.encode('utf8'))
+    # Adjust query for sqlite, if needed
+    query = FixQuery(query)
+
+    # Duplicate Insertion may raise an exception, which should be trapped
+    try:
+        # Execute the query
+        DBCursor.execute(query, values)
+    # Handle exceptions
+    except:
+
+        print "DBInterface.DeleteSynonym() Exception:"
+        print sys.exc_info()[0]
+        print sys.exc_info()[1]
+
+    # Close the Database Cursor
+    DBCursor.close()
+
+def GetSynonyms():
+    """ Get all synonyms from the Synonyms Table """
+
+    print "DBInterface.GetSynonyms()"
+
+    # initialize the Synonyms Dictionary
+    synonymsDict = {}
+    
+    # Get a Database cursor
+    DBCursor = get_db().cursor()
+
+    # Get all Synonym table entries
+    query = """ SELECT SynonymGroup, Synonym FROM Synonyms2 ORDER BY SynonymGroup, Synonym """
+    # Execute the query
+    DBCursor.execute(query)
+
+    # Iterate through the records from the database
+    for (synonymGroup, synonym) in DBCursor.fetchall():
+        # Decode the values
+        synonymGroup = ProcessDBDataForUTF8Encoding(synonymGroup)
+        synonym = ProcessDBDataForUTF8Encoding(synonym)
+        # If the synonym group exists in the dictionary ...
+        if synonymsDict.has_key(synonymGroup):
+            # ... append the synonym to the group's synonym list
+            synonymsDict[synonymGroup].append(synonym)
+        # If the synonym group does not exist in the dictionary ...
+        else:
+            # ... create an entry with a LIST containing the first synonym
+            synonymsDict[synonymGroup] = [synonym]
+
+    # Close the Database Cursor
+    DBCursor.close()
+
+    for key in synonymsDict.keys():
+        print key.encode('utf8'), ' -- ',
+        for item in synonymsDict[key]:
+            print item.encode(TransanaGlobal.encoding),
+            print type(item), ProcessDBDataForUTF8Encoding(item).encode('utf8')
+        print
+    print
+
+    # Return the data in a Dictionary
+    return synonymsDict
+
 def ClearSourceEpisodeRecords(episodeNum):
     """ When an Episode is deleted, it must be removed from any Snapshots that claim it. """
 
@@ -5005,6 +5171,11 @@ def ProcessDBDataForUTF8Encoding(text):
 
                             # Begin processing of unicode characters, continue until we have a legal character.
                             while (pos < len(text)):
+
+                                print len(text),
+                                print pos,
+                                print ord(text[pos])
+                                
                                 # Add the current character to the character variable
                                 c += chr(ord(text[pos]))  # "Un-Unicode" the character ????
                                 # Try to encode the character.
