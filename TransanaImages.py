@@ -659,6 +659,21 @@ SearchRoot16 = PyEmbeddedImage(
 ##    "HJ7CGAPAOV9PltRhz9nugR5somV8W1RF214p2nXd3Y7rBSdJstSe58lN8JJ+42CP3nPwhn7p"
 ##    "AEAcx3v0Armuq+of5zRFG3nwgC4AAAAASUVORK5CYII=")
 ##
+
+#----------------------------------------------------------------------
+# (From the wxPython Demo)
+SmallDnArrow = PyEmbeddedImage(
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAEhJ"
+    "REFUOI1jZGRiZqAEMFGke9QABgYGBgYWdIH///7+J6SJkYmZEacLkCUJacZqAD5DsInTLhDR"
+    "bcPlKrwugGnCFy6Mo3mBAQChDgRlP4RC7wAAAABJRU5ErkJggg==")
+
+#----------------------------------------------------------------------
+# (From the wxPython Demo)
+SmallUpArrow = PyEmbeddedImage(
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAADxJ"
+    "REFUOI1jZGRiZqAEMFGke2gY8P/f3/9kGwDTjM8QnAaga8JlCG3CAJdt2MQxDCAUaOjyjKMp"
+    "cRAYAABS2CPsss3BWQAAAABJRU5ErkJggg==")
+
 #----------------------------------------------------------------------
 Snapshot = PyEmbeddedImage(
     "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAHlJ"
