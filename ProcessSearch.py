@@ -94,8 +94,8 @@ class ProcessSearch(object):
             # There's no dialog.  Just say the user said OK.
             result = wx.ID_OK
             # Include Clips.  Do not include Documents or Episodes
-            includeDocuments = False
-            includeEpisodes = False
+            includeDocuments = True
+            includeEpisodes = True
             includeClips = True
             # If Pro, Lab, or MU, include Quotes and Snapshots.  
             if TransanaConstants.proVersion:
