@@ -109,18 +109,24 @@ class ProcessSearch(object):
                 includeSnapshots = dlg.includeSnapshots.IsChecked()
             # Destroy the Search Dialog Box
             dlg.Destroy()
+        # SearchTerms are passed in during Unit_Test_Search
         elif (searchTerms != None):
             # There's no dialog.  Just say the user said OK.
             result = wx.ID_OK
-            # Include Clips.  Include Documents and Episodes now that we allow Text Search!
-            includeDocuments = True
+            # Include Episodes and Clips.
             includeEpisodes = True
             includeClips = True
-            # If Pro, Lab, or MU, include Quotes and Snapshots.  
+            # If Pro, Lab, or MU, include Documents, Quotes, and Snapshots.  
             if TransanaConstants.proVersion:
+                includeDocuments = True
                 includeQuotes = True
                 includeSnapshots = True
+                for term in searchTerms:
+                    if u'Item Text contains' in term:
+                        includeSnapshots = False
+                        break
             else:
+                includeDocuments = False
                 includeQuotes = False
                 includeSnapshots = False
         # if kwg and kw are passed in, we're doing a Quick Search
@@ -318,6 +324,12 @@ class ProcessSearch(object):
                 if includeSnapshots and wholeSnapshotQuery != '':
                     # Adjust query for sqlite, if needed
                     wholeSnapshotQuery = DBInterface.FixQuery(wholeSnapshotQuery)
+
+##                    print snapshotCodingQuery
+##                    print
+##                    print params
+##                    print
+
                     # Execute the Whole Snapshot query
                     dbCursor.execute(wholeSnapshotQuery, params)
 
@@ -599,17 +611,13 @@ class ProcessSearch(object):
         if includesText:
             episodeSQL += 'Tr.TranscriptNum, TranscriptID, '
         # Define the start of the Collection/Quote Query
-        quoteSQL = 'SELECT Q.CollectNum, ParentCollectNum, Q.QuoteNum, CollectID, QuoteID, SortOrder, '
+        quoteSQL = 'SELECT Q.CollectNum, ParentCollectNum, Q.QuoteNum, CollectID, QuoteID, Q.SortOrder, '
         # Define the start of the Collection/Clip Query
         clipSQL = 'SELECT Cl.CollectNum, ParentCollectNum, Cl.ClipNum, CollectID, ClipID, Cl.SortOrder, '
-        if not includesText:
-            # Define the start of the Whole Snapshot Query
-            wholeSnapshotSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, SortOrder, '
-            # Define the start of the Snapshot Coding Query
-            snapshotCodingSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, SortOrder, '
-        else:
-            wholeSnapshotSQL = ''
-            snapshotCodingSQL = ''
+        # Define the start of the Whole Snapshot Query
+        wholeSnapshotSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, Sn.SortOrder, '
+        # Define the start of the Snapshot Coding Query
+        snapshotCodingSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, Sn.SortOrder, '
 
         # Add in the SQL "COUNT" variables that signal the presence or absence of Keyword Group : Keyword pairs
         for lineNum in range(len(countStrings)):
@@ -676,7 +684,7 @@ class ProcessSearch(object):
         # Add in the SQL "HAVING" Clause that was constructed above
         quoteSQL += 'HAVING %s ' % havingStr
         # Add an "ORDER BY" Clause to preserve Quote Sort Order
-        quoteSQL += 'ORDER BY CollectID, SortOrder'
+        quoteSQL += 'ORDER BY CollectID, Q.SortOrder'
 
         # Now add the rest of the SQL for the Collection/Clip Query
         clipSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Clips2 Cl'
@@ -695,7 +703,7 @@ class ProcessSearch(object):
         # Add in the SQL "HAVING" Clause that was constructed above
         clipSQL += 'HAVING %s ' % havingStr
         # Add an "ORDER BY" Clause to preserve Clip Sort Order
-        clipSQL += 'ORDER BY CollectID, SortOrder'
+        clipSQL += 'ORDER BY CollectID, Cl.SortOrder'
 
         if not includesText:
             # Now add the rest of the SQL for the Whole Snapshot Query
@@ -709,7 +717,7 @@ class ProcessSearch(object):
             # Add in the SQL "HAVING" Clause that was constructed above
             wholeSnapshotSQL += 'HAVING %s ' % havingStr
             # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
-            wholeSnapshotSQL += 'ORDER BY CollectID, SortOrder'
+            wholeSnapshotSQL += 'ORDER BY CollectID, Sn.SortOrder'
 
             # Now add the rest of the SQL for the Snapshot Coding Query
             snapshotCodingSQL += 'FROM SnapshotKeywords2 CK1, Collections2 Co, Snapshots2 Sn '
@@ -724,7 +732,7 @@ class ProcessSearch(object):
             # Add in the SQL "HAVING" Clause that was constructed above
             snapshotCodingSQL += 'HAVING %s ' % havingStr
             # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
-            snapshotCodingSQL += 'ORDER BY CollectID, SortOrder'
+            snapshotCodingSQL += 'ORDER BY CollectID, Sn.SortOrder'
 
         tempParams = ()
         for p in params:
