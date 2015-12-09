@@ -3413,7 +3413,7 @@ def FindAdjacentQuotes(documentNum, startChar, endChar):
                         (((EndChar >= %s) AND (EndChar <= %s)) OR
                          ((StartChar >= %s) AND (StartChar <= %s))) AND
                         (q.CollectNum = c.CollectNum)
-                  GROUP BY QuoteNum
+                  GROUP BY q.QuoteNum
                   ORDER BY StartChar, QuoteID """
     # Define the data for the query
     data = (documentNum, (startChar - 5), (startChar + 2), (endChar - 2), (endChar + 5))
@@ -3452,7 +3452,7 @@ def FindAdjacentClips(episodeNum, startTime, endTime, trInfo, trFiles):
                         ((t.ClipStop = %s) OR (t.ClipStart = %s)) AND
                         (c.ClipNum = t.ClipNum) AND
                         (c.CollectNum = co.CollectNum)
-                  GROUP BY ClipNum
+                  GROUP BY c.ClipNum
                   ORDER BY ClipStart, ClipID """
     # Define the data for the query
     data = (episodeNum, startTime, endTime)
