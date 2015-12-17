@@ -267,7 +267,7 @@ class ConfigData(object):
                 self.mediaPlayer = config.ReadInt('/2.0/MediaPlayer', 0)
                 # This cannot not currently be changed without editing the Registry.
                 # 0 is default, uses QuickTime Player for *.mp4 files
-                # 1 is experimental, uses Windows Media Player for *.mp4 files
+                # 1 uses Windows Media Player for *.mp4 files
                 self.mp4MediaPlayer = config.ReadInt('/3.0/mp4MediaPlayer', 0)
 
         # If no version 2.0 Config File exists, ...
@@ -608,7 +608,7 @@ class ConfigData(object):
             config.WriteInt('/2.0/MediaPlayer', self.mediaPlayer)
             # This cannot not currently be changed without editing the Registry.
             # 0 is default, uses QuickTime Player for *.mp4 files
-            # 1 is experimental, uses Windows Media Player for *.mp4 files
+            # 1 uses Windows Media Player for *.mp4 files
             config.WriteInt('/3.0/mp4MediaPlayer', self.mp4MediaPlayer)
         # if the current primary display is valid ...
         if self.primaryScreen < wx.Display.GetCount():

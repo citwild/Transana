@@ -159,6 +159,7 @@ class VideoPlayer(wx.Panel):
                 if self.playerNum > 1:
                     # ... destroy the synchronization indicator
                     self.synch.Destroy()
+
         # Create a new Media Player control
         self.movie = wx.media.MediaCtrl(self, szBackend=self.backend)
         # Create a sizer to handle the media control
@@ -292,10 +293,13 @@ class VideoPlayer(wx.Panel):
                     else:
                         backendNeeded = wx.media.MEDIABACKEND_WMP10
 
-                # EXPERIMENTAL -- Override default MP4 Media Player
+                # Override default MP4 Media Player, if configured to do so
                 if (videoExtension.lower() == '.mp4') and (TransanaGlobal.configData.mp4MediaPlayer == 1):
-                    # ... indicate we need the WMP10 back end
-                    backendNeeded = wx.media.MEDIABACKEND_WMP10
+                    # ... Check the Configuration data to see which wxMediaPlayer back end we need.
+                    if TransanaGlobal.configData.mediaPlayer == 1:
+                        backendNeeded = wx.media.MEDIABACKEND_DIRECTSHOW
+                    else:
+                        backendNeeded = wx.media.MEDIABACKEND_WMP10
                 # If the current back end is different from the needed back end ...
                 if self.backend != backendNeeded:
                     # ... signal the back end that we need ...
@@ -303,17 +307,6 @@ class VideoPlayer(wx.Panel):
                     # ... and recreate the Media Player using the new back end type.
                     self.CreateMediaPlayer(filename)
 
-                if DEBUG:
-                    if self.backend == wx.media.MEDIABACKEND_QUICKTIME:
-                        prompt = 'QuickTime'
-                    elif self.backend == wx.media.MEDIABACKEND_WMP10:
-                        prompt = 'WMP10'
-                    elif self.backend == wx.media.MEDIABACKEND_DIRECTSHOW:
-                        prompt = 'DirectShow'
-                    tmpDlg = Dialogs.InfoDialog(self, prompt)
-                    tmpDlg.ShowModal()
-                    tmpDlg.Destroy()
-                    
             # We need to have a flag that indicates that the video is in the process of loading
             self.isLoading = True
             # We don't know the media length in some back ends until the load is complete.
