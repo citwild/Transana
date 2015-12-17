@@ -358,13 +358,24 @@ class XMLExport(Dialogs.GenForm):
             progress.Update(56, _('Writing Transcript Records  (This will seem slow because of the size of the Transcript Records.)'))
             if db != None:
                 dbCursor = db.cursor()
+                dbCursor2 = db.cursor()
+                # Load Transcript Information WITHOUT RTFText content, which requires too much memory in some large database
+                # NOTE:  This will probably be a bit slower, but won't crash on databases with many, many images.
                 SQLText = 'SELECT TranscriptNum, TranscriptID, EpisodeNum, SourceTranscriptNum, ClipNum, SortOrder, Transcriber, '
-                SQLText += 'ClipStart, ClipStop, Comment, MinTranscriptWidth, RTFText FROM Transcripts2'
+                SQLText += 'ClipStart, ClipStop, Comment, MinTranscriptWidth FROM Transcripts2'
                 dbCursor.execute(SQLText)
                 data = dbCursor.fetchall()
                 if len(data) > 0:
                     f.write('  <TranscriptFile>\n')
                     for transcriptRec in data:
+                        # Now load the RTFText on a Transcript by Transcript basis (to use less memory)
+                        SQLText2 = 'SELECT RTFText FROM Transcripts2 WHERE TranscriptNum = %s'
+                        SQLText2 = DBInterface.FixQuery(SQLText2)
+                        dbCursor2.execute(SQLText2, (transcriptRec[0],))
+                        rtfText = dbCursor2.fetchone()
+                        # Add the RTFText to the Transcript Record
+                        transcriptRec = transcriptRec + rtfText
+                        # Write the Transcript Record to the Export File
                         self.WriteTranscriptRec(f, progress, transcriptRec)
                     f.write('  </TranscriptFile>\n')
                 dbCursor.close()
