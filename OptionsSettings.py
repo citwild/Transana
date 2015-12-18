@@ -260,21 +260,36 @@ class OptionsSettings(wx.Dialog):
             #   wx.media.MEDIABACKEND_WMP10 allows WMV and WMA formats, but speed adjustment is broken.
             # Let's allow the user to select which back end to use!
             if ('wxMSW' in wx.PlatformInfo):
+                # Create a FlexGridSizer for the Media Player Options
+                mediaPlayerSizer = wx.GridSizer(2, 2, 0, 10)
                 # Add the Media Player Option Label to the Transcriber Settings Tab
-                lblMediaPlayer = wx.StaticText(panelTranscriber, -1, _("Media Player Selection"), style=wx.ST_NO_AUTORESIZE)
-                # Add the element to the Panel Sizer
-                panelTranSizer.Add(lblMediaPlayer, 0, wx.LEFT | wx.TOP, 10)
-                # Add a spacer
-                panelTranSizer.Add((0, 3))
+                lblMediaPlayer = wx.StaticText(panelTranscriber, -1, _("Windows Media Player Selection"), style=wx.ST_NO_AUTORESIZE)
 
                 # Add the Media Player Option to the Transcriber Settings Tab
                 self.chMediaPlayer = wx.Choice(panelTranscriber, -1,
                                                choices = [_('Windows Media Player back end'),
                                                           _('DirectShow back end')])
                 self.chMediaPlayer.SetSelection(TransanaGlobal.configData.mediaPlayer)
-                # Add the element to the Panel Sizer
-                panelTranSizer.Add(self.chMediaPlayer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-                
+
+                # Add the MP4 Media Player Option Label to the Transcriber Settings Tab
+                lblMP4Player = wx.StaticText(panelTranscriber, -1, _("MP4 Media Player Selection"), style=wx.ST_NO_AUTORESIZE)
+
+                # Add the MP4 Media Player Option to the Transcriber Settings Tab
+                self.chMP4MediaPlayer = wx.Choice(panelTranscriber, -1,
+                                                  choices = [_('QuickTime back end'),
+                                                             _('Windows Media Player back end')])
+                self.chMP4MediaPlayer.SetSelection(TransanaGlobal.configData.mp4MediaPlayer)
+
+                # Add these items to the Media Player Sizer
+                mediaPlayerSizer.AddMany([(lblMediaPlayer, 0, wx.EXPAND),
+                                          (lblMP4Player, 0, wx.EXPAND),
+                                          (self.chMediaPlayer, 0, wx.EXPAND),
+                                          (self.chMP4MediaPlayer, 0, wx.EXPAND)])
+                # Add the media player sizer to the Panel Sizer
+                panelTranSizer.Add(mediaPlayerSizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
+                # Add a spacer
+                panelTranSizer.Add((0, 3))
+
             # Create a Row Sizer
             lblSpeedSizer = wx.BoxSizer(wx.HORIZONTAL)
             # Add the Media Speed Slider Label to the Transcriber Settings Tab
@@ -692,8 +707,9 @@ class OptionsSettings(wx.Dialog):
             TransanaGlobal.configData.transcriptionSetback = self.transcriptionSetback.GetValue()
             # If on Windows ...
             if ('wxMSW' in wx.PlatformInfo):
-                # Update the Media Player selection
+                # Update the Media Player selections
                 TransanaGlobal.configData.mediaPlayer = self.chMediaPlayer.GetSelection()
+                TransanaGlobal.configData.mp4MediaPlayer = self.chMP4MediaPlayer.GetSelection()
             # Update the Global Media Speed
             TransanaGlobal.configData.videoSpeed = self.videoSpeed.GetValue()
 
