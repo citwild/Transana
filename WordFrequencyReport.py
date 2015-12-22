@@ -153,7 +153,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         else:
             rect = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
         # The width and height of the form should be 80% of the full screen
-        width = rect[2] * .80
+        width = min(int(rect[2] * .80), 800)
         height = rect[3] * .80
         # Create the basic Frame structure with a white background
         wx.Frame.__init__(self, parent, -1, _('Word Frequency Report'), size=wx.Size(width, height), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL | wx.NO_FULL_REPAINT_ON_RESIZE)
@@ -195,7 +195,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.help = wx.BitmapButton(self.toolbar, -1, TransanaImages.ArtProv_HELP.GetBitmap(), size=(24, 24))
         self.help.SetToolTipString(_("Help"))
         self.toolbar.AddControl(self.help)
-##        self.help.Bind(wx.EVT_BUTTON, self.OnHelp)
+        self.help.Bind(wx.EVT_BUTTON, self.OnHelp)
 
         # Create the Close button
         self.closeButton = wx.BitmapButton(self.toolbar, -1, TransanaImages.Exit.GetBitmap(), size=(24, 24))
@@ -247,7 +247,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Create a horizontal Sizer for the Synonyms controls
         addSynonymSizer = wx.BoxSizer(wx.HORIZONTAL)
         # Create a button for adding checked items to a Synonym Group
-        addSynonymBtn = wx.Button(resultsPanel, -1, _("Add Checked Items to Word Group"))
+        addSynonymBtn = wx.Button(resultsPanel, -1, _("Group Checked Items"))
         addSynonymSizer.Add(addSynonymBtn, 0, wx.EXPAND | wx.RIGHT, 10)
         addSynonymBtn.Bind(wx.EVT_BUTTON, self.OnSetSynonyms)
         # Create a Text Control for naming the Synonym Group
@@ -256,7 +256,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.resultsList.SetSynonymGroupCtrl(self.synonymGroup)
         addSynonymSizer.Add(self.synonymGroup, 1, wx.EXPAND | wx.RIGHT, 10)
         # Add a button for a hidden group of words, the "Do Not Show" group.
-        self.addNoShowBtn = wx.Button(resultsPanel, -1, _('Add Checked Items to the "Do Not Show" Group'))
+        self.addNoShowBtn = wx.Button(resultsPanel, -1, _('Do Not Show Checked Items'))
         addSynonymSizer.Add(self.addNoShowBtn, 0, wx.EXPAND | wx.RIGHT, 10)
         self.addNoShowBtn.Bind(wx.EVT_BUTTON, self.OnSetSynonyms)
         # Add button for editing the selected Synonym Group
@@ -297,7 +297,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         pnl3Sizer.Add(self.synonymResults, 1, wx.EXPAND | wx.ALL, 5)
 
         # Add a button for deleting false positive results
-        self.btnDelete = wx.Button(synonymPanel, -1, _("Delete Selected Word Grouping"))
+        self.btnDelete = wx.Button(synonymPanel, -1, _("Delete Selected Word Group"))
         # Define the button press handler
         self.btnDelete.Bind(wx.EVT_BUTTON, self.OnDeleteSynonym)
         pnl3Sizer.Add(self.btnDelete, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
@@ -306,7 +306,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         synonymPanel.SetSizer(pnl3Sizer)
         
         # Add a page to the Notebook control for the Synonym Seeking tab
-        self.notebook.AddPage(synonymPanel, _("Word Groups by Pattern"))
+        self.notebook.AddPage(synonymPanel, _("Group Words by Pattern"))
 
 
 
@@ -421,6 +421,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         
     def OnNotebookPageChanged(self, event):
         """ Handle Notebook Page Change Events """
+        # Allow the underlying Control to process the Page Change
+        event.Skip()
         # If we're changing to the Results Tab ...
         if event.GetSelection() == 0:
             # ... enable the check and print buttons
@@ -1037,6 +1039,10 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... and add the data to the report
             reportText.WriteText("%s\t%s\t%s\n" % (self.resultsList.GetItemText(count, 0), self.resultsList.GetItemText(count, 1),
                                                 self.resultsList.GetItemText(count, 2) ))
+
+    def OnHelp(self, event):
+        # ... call Help!
+        self.ControlObject.Help("Word Frequency Report")
 
     def OnOK(self, event):
         """ Handle the OK / Close button """
