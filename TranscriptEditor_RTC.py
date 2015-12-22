@@ -2019,8 +2019,10 @@ class TranscriptEditor(RichTextEditCtrl):
         # If we're in read_only mode, position immediately with left-click.
         # If we are not in read_only mode, we need to delay the selection until right-click.
         if self.get_read_only():
-            # First, clear the current selection in the visualization window, if there is one.
-            self.parent.ControlObject.ClearVisualizationSelection()
+            # If there's a control object (Not always true in Reports!) ...
+            if self.parent.ControlObject != None:
+                # First, clear the current selection in the visualization window, if there is one.
+                self.parent.ControlObject.ClearVisualizationSelection()
             # If there is NO SELECTION ...  ((-2, -1) comes up when holding shift with cursor keys to eliminate a selection!)
             if self.selection in [(-2, -2), (-2, -1)]:
                 # If we have a Document object ...

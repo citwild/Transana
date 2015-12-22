@@ -4862,9 +4862,6 @@ def delete_keyword(group, kw_name):
 
 def AddSynonym(synonymGroup, synonym):
     """ Add a Synonym to the Synonyms Table """
-
-    print "DBInterface.AddSynonym()", synonymGroup.encode('utf8'), synonym.encode('utf8'), type(synonym)
-
     # Get a Database cursor
     DBCursor = get_db().cursor()
 
@@ -4885,18 +4882,16 @@ def AddSynonym(synonymGroup, synonym):
     # Handle exceptions
     except:
 
-        print "DBInterface.AddSynonym() Exception:"
-        print sys.exc_info()[0]
-        print sys.exc_info()[1]
+        if DEBUG:
+            print "DBInterface.AddSynonym() Exception:"
+            print sys.exc_info()[0]
+            print sys.exc_info()[1]
 
     # Close the Database Cursor
     DBCursor.close()
 
 def UpdateSynonym(synonymGroup, synonym, newSynonymGroup, newSynonym):
     """ Change a Synonym to the Synonyms Table """
-
-    print "DBInterface.UpdateSynonym()", synonymGroup.encode('utf8'), synonym.encode('utf8'), newSynonymGroup.encode('utf8'), newSynonym.encode('utf8')
-
     # Get a Database cursor
     DBCursor = get_db().cursor()
 
@@ -4917,19 +4912,16 @@ def UpdateSynonym(synonymGroup, synonym, newSynonymGroup, newSynonym):
         DBCursor.execute(query, values)
     # Handle exceptions
     except:
-
-        print "DBInterface.UpdateSynonym() Exception:"
-        print sys.exc_info()[0]
-        print sys.exc_info()[1]
+        if DEBUG:
+            print "DBInterface.UpdateSynonym() Exception:"
+            print sys.exc_info()[0]
+            print sys.exc_info()[1]
 
     # Close the Database Cursor
     DBCursor.close()
 
 def DeleteSynonym(synonymGroup, synonym):
     """ Delete a Synonym from the Synonyms Table """
-
-    print "DBInterface.DeleteSynonym()", synonymGroup.encode('utf8'), synonym.encode('utf8')
-
     # Get a Database cursor
     DBCursor = get_db().cursor()
 
@@ -4948,19 +4940,16 @@ def DeleteSynonym(synonymGroup, synonym):
         DBCursor.execute(query, values)
     # Handle exceptions
     except:
-
-        print "DBInterface.DeleteSynonym() Exception:"
-        print sys.exc_info()[0]
-        print sys.exc_info()[1]
+        if DEBUG:
+            print "DBInterface.DeleteSynonym() Exception:"
+            print sys.exc_info()[0]
+            print sys.exc_info()[1]
 
     # Close the Database Cursor
     DBCursor.close()
 
 def GetSynonyms():
     """ Get all synonyms from the Synonyms Table """
-
-    print "DBInterface.GetSynonyms()"
-
     # initialize the Synonyms Dictionary
     synonymsDict = {}
     
@@ -4988,14 +4977,6 @@ def GetSynonyms():
 
     # Close the Database Cursor
     DBCursor.close()
-
-    for key in synonymsDict.keys():
-        print key.encode('utf8'), ' -- ',
-        for item in synonymsDict[key]:
-            print item.encode(TransanaGlobal.encoding),
-            print type(item), ProcessDBDataForUTF8Encoding(item).encode('utf8')
-        print
-    print
 
     # Return the data in a Dictionary
     return synonymsDict
@@ -5172,10 +5153,6 @@ def ProcessDBDataForUTF8Encoding(text):
                             # Begin processing of unicode characters, continue until we have a legal character.
                             while (pos < len(text)):
 
-                                print len(text),
-                                print pos,
-                                print ord(text[pos])
-                                
                                 # Add the current character to the character variable
                                 c += chr(ord(text[pos]))  # "Un-Unicode" the character ????
                                 # Try to encode the character.

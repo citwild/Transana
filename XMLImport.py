@@ -302,71 +302,75 @@ class XMLImport(Dialogs.GenForm):
 
        # Define some dictionaries for processing XML tags
        MainHeads = {}
-       MainHeads['<SERIESFILE>'] =               { 'progPct' : 0,
+       MainHeads['<SERIESFILE>'] =               { 'progPct' : self.CalcPercent(0),
                                                    'progPrompt' : _('Importing Library records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<DOCUMENTFILE>'] =             { 'progPct' : 5,
+       MainHeads['<DOCUMENTFILE>'] =             { 'progPct' : self.CalcPercent(1),
                                                    'progPrompt' : _('Importing Document records (This may be slow because of the size of Document records.)'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<EPISODEFILE>'] =              { 'progPct' : 10,
+       MainHeads['<EPISODEFILE>'] =              { 'progPct' : self.CalcPercent(2),
                                                    'progPrompt' : _('Importing Episode records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<COREDATAFILE>'] =             { 'progPct' : 14,
+       MainHeads['<COREDATAFILE>'] =             { 'progPct' : self.CalcPercent(3),
                                                    'progPrompt' : _('Importing Core Data records'),
                                                    'skipCheck' : True,
                                                    'skipValue' : False }
-       MainHeads['<COLLECTIONFILE>'] =           { 'progPct' : 19,
+       MainHeads['<COLLECTIONFILE>'] =           { 'progPct' : self.CalcPercent(4),
                                                    'progPrompt' : _('Importing Collection records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<QUOTEFILE>'] =                { 'progPct' : 24,
+       MainHeads['<QUOTEFILE>'] =                { 'progPct' : self.CalcPercent(5),
                                                    'progPrompt' : _('Importing Quote records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<QUOTEPOSITIONFILE>'] =        { 'progPct' : 29,
+       MainHeads['<QUOTEPOSITIONFILE>'] =        { 'progPct' : self.CalcPercent(6),
                                                    'progPrompt' : _('Importing Quote Position records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<CLIPFILE>'] =                 { 'progPct' : 33,
+       MainHeads['<CLIPFILE>'] =                 { 'progPct' : self.CalcPercent(7),
                                                    'progPrompt' : _('Importing Clip records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<ADDITIONALVIDSFILE>'] =       { 'progPct' : 38,
+       MainHeads['<ADDITIONALVIDSFILE>'] =       { 'progPct' : self.CalcPercent(8),
                                                    'progPrompt' : _('Importing Additional Video records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<TRANSCRIPTFILE>'] =           { 'progPct' : 43,
+       MainHeads['<TRANSCRIPTFILE>'] =           { 'progPct' : self.CalcPercent(9),
                                                    'progPrompt' : _('Importing Transcript records (This may be slow because of the size of Transcript records.)'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<SNAPSHOTFILE>'] =             { 'progPct' : 48,
+       MainHeads['<SNAPSHOTFILE>'] =             { 'progPct' : self.CalcPercent(10),
                                                    'progPrompt' : _('Importing Snapshot records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<KEYWORDFILE>'] =              { 'progPct' : 52,
+       MainHeads['<KEYWORDFILE>'] =              { 'progPct' : self.CalcPercent(11),
                                                    'progPrompt' : _('Importing Keyword records'),
                                                    'skipCheck' : True,
                                                    'skipValue' : False }
-       MainHeads['<CLIPKEYWORDFILE>'] =          { 'progPct' : 57,
+       MainHeads['<CLIPKEYWORDFILE>'] =          { 'progPct' : self.CalcPercent(12),
                                                    'progPrompt' : _('Importing Clip Keyword records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<SNAPSHOTKEYWORDFILE>'] =      { 'progPct' : 62,
+       MainHeads['<SNAPSHOTKEYWORDFILE>'] =      { 'progPct' : self.CalcPercent(13),
                                                    'progPrompt' : _('Importing Snapshot Keyword records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<SNAPSHOTKEYWORDSTYLEFILE>'] = { 'progPct' : 67,
+       MainHeads['<SNAPSHOTKEYWORDSTYLEFILE>'] = { 'progPct' : self.CalcPercent(14),
                                                    'progPrompt' : _('Importing Snapshot Coding Style records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<NOTEFILE>'] =                 { 'progPct' : 71,
+       MainHeads['<NOTEFILE>'] =                 { 'progPct' : self.CalcPercent(15),
                                                    'progPrompt' : _('Importing Note records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
-       MainHeads['<FILTERFILE>'] =               { 'progPct' : 76,
+       MainHeads['<SYNONYMFILE>'] =              { 'progPct' : self.CalcPercent(16),
+                                                   'progPrompt' : _('Importing Synonym records'),
+                                                   'skipCheck' : False,
+                                                   'skipValue' : False }
+       MainHeads['<FILTERFILE>'] =               { 'progPct' : self.CalcPercent(17),
                                                    'progPrompt' : _('Importing Filter records'),
                                                    'skipCheck' : False,
                                                    'skipValue' : False }
@@ -437,6 +441,8 @@ class XMLImport(Dialogs.GenForm):
                      '<SOURCE>'              : 'Source',
                      '<STARTCHAR>'           : 'StartChar',
                      '<SUBJECT>'             : 'Subject',
+                     '<SYNONYM>'             : 'Synonym',
+                     '<SYNONYMGROUP>'        : 'SynonymGroup',
                      '<TITLE>'               : 'Title',
                      '<TRANSCRIBER>'         : 'Transcriber',
                      '<TRANSCRIPTNUM>'       : 'TranscriptNum',
@@ -544,6 +550,7 @@ class XMLImport(Dialogs.GenForm):
                        # Version 1.7 -- Added Snapshots, Snapshot Keywords, and Snapshot Coding Styles for Transana 2.60
                        # Version 1.8 -- Character Encoding Rules changed completely!!
                        # Version 2.0 -- Transana 3.0.  Documents and Quotes added
+                       # Version 2.1 -- Transana 3.1.  Synonym Records added
 
                        # Transana-XML version 1.0 ...
                        if self.XMLVersionNumber == '1.0':
@@ -554,7 +561,7 @@ class XMLImport(Dialogs.GenForm):
                            # ... use the encoding selected by the user
                            self.importEncoding = self.encodingOptions[self.chImportEncoding.GetSelection()]
                        # Transana-XML version 1.6 ...
-                       elif self.XMLVersionNumber in ['1.6', '1.7', '1.8', '2.0']:
+                       elif self.XMLVersionNumber in ['1.6', '1.7', '1.8', '2.0', '2.1']:
                            # ... use UTF8 encoding
                            self.importEncoding = 'utf8'
                        # All other Transana XML versions ...
@@ -674,6 +681,13 @@ class XMLImport(Dialogs.GenForm):
                        objectType = 'Note'
                        dataType = None
 
+                   elif lineUpper == '<SYNONYMREC>':
+                       currentObj = None
+                       objectType = 'Synonym'
+                       synonymGroup = ''
+                       synonym = ''
+                       dataType = None
+
                    elif lineUpper == '<FILTER>':
                         # There is not an Object for the Filter table.  We have to create the data record by hand.
                         currentObj = None
@@ -702,6 +716,7 @@ class XMLImport(Dialogs.GenForm):
                         lineUpper == '</KEYWORDREC>' or \
                         lineUpper == '</CLIPKEYWORD>' or \
                         lineUpper == '</NOTE>' or \
+                        lineUpper == '</SYNONYMREC>' or \
                         lineUpper == '</FILTER>':
                        dataType = None
 
@@ -903,6 +918,10 @@ class XMLImport(Dialogs.GenForm):
                                    # Save the Snapshot Keyword Style data
                                    if db != None:
                                        dbCursor.execute(query, values)
+
+                           elif objectType == 'Synonym':
+                               if synonymGroup != '' and synonym != '':
+                                   DBInterface.AddSynonym(synonymGroup, synonym)
                                    
                            elif objectType == 'Filter':
                                # Starting with XML Version 1.3, we have to deal with encoding issues for the Filter data
@@ -1181,7 +1200,7 @@ class XMLImport(Dialogs.GenForm):
                            st += currentObj.id.encode(TransanaGlobal.encoding)
                            st += '  (%d)' % currentObj.number
                            if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                               progress.Update(5, st)
+                               progress.Update(MainHeads['<DOCUMENTFILE>']['progPct'], st)
 
                        if objectType == 'Transcript':
                            st = _('Importing Transcript records (This may be slow because of the size of Transcript records.)')
@@ -1191,7 +1210,7 @@ class XMLImport(Dialogs.GenForm):
                            st += currentObj.id.encode(TransanaGlobal.encoding)
                            st += '  (%d)' % currentObj.number
                            if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                               progress.Update(43, st)
+                               progress.Update(MainHeads['<TRANSCRIPTFILE>']['progPct'], st)
 
                    elif dataType == 'Comment':
                        currentObj.comment = self.ProcessLine(line)
@@ -1369,7 +1388,7 @@ class XMLImport(Dialogs.GenForm):
 
                        if objectType == 'Transcript':
                            if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                               progress.Update(43, _('Importing Transcript records (This may be slow because of the size of Transcript records.)') + \
+                               progress.Update(MainHeads['<TRANSCRIPTFILE>']['progPct'], _('Importing Transcript records (This may be slow because of the size of Transcript records.)') + \
                                                '\n  ' + _("Clip Transcript") + ' %d' % currentObj.clip_num)
 
                    elif dataType == 'SnapshotNum':
@@ -1752,6 +1771,12 @@ class XMLImport(Dialogs.GenForm):
                        # We DO NOT reset DataType here, as NoteText may be many lines long!
                        # dataType = None
 
+                   elif dataType == 'SynonymGroup':
+                       synonymGroup = self.ProcessLine(line)
+
+                   elif dataType == 'Synonym':
+                       synonym = self.ProcessLine(line)
+
                    elif dataType == 'ReportType':
                         self.FilterReportType = line
                         dataType = None
@@ -1823,7 +1848,7 @@ class XMLImport(Dialogs.GenForm):
                # Since Clips were imported before Transcripts, the Originating Transcript Numbers in the Clip Records
                # are incorrect.  We must update them now.
                if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                   progress.Update(81, _('Updating Source Transcript Numbers in Clip Transcript records'))
+                   progress.Update(self.CalcPercent(18), _('Updating Source Transcript Numbers in Clip Transcript records'))
                if db != None:
                    dbCursor2 = db.cursor()
                    # Get all NEW transcript records.  We DON'T want to process transcript records that were in the database prior
@@ -1855,7 +1880,7 @@ class XMLImport(Dialogs.GenForm):
                    dbCursor2 = db.cursor()
                    
                    if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                       progress.Update(86, _('Updating HyperLinks in Documents'))
+                       progress.Update(self.CalcPercent(19), _('Updating HyperLinks in Documents'))
                    # Get all Document records
                    SQLText = 'SELECT DocumentNum, XMLText FROM Documents2'
                    SQLText = DBInterface.FixQuery(SQLText)
@@ -1870,7 +1895,7 @@ class XMLImport(Dialogs.GenForm):
                        dbCursor2.execute(SQLText, (self.UpdateHyperlinks(XMLText, recNumbers), DocumentNum))
 
                    if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                       progress.Update(90, _('Updating HyperLinks in Quotes'))
+                       progress.Update(self.CalcPercent(20), _('Updating HyperLinks in Quotes'))
                    # Get all Quote records
                    SQLText = 'SELECT QuoteNum, XMLText FROM Quotes2'
                    SQLText = DBInterface.FixQuery(SQLText)
@@ -1885,7 +1910,7 @@ class XMLImport(Dialogs.GenForm):
                        dbCursor2.execute(SQLText, (self.UpdateHyperlinks(XMLText, recNumbers), QuoteNum))
 
                    if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
-                       progress.Update(95, _('Updating HyperLinks in Transcripts'))
+                       progress.Update(self.CalcPercent(21), _('Updating HyperLinks in Transcripts'))
                    # Get all Transcript records
                    SQLText = 'SELECT TranscriptNum, RTFText FROM Transcripts2'
                    SQLText = DBInterface.FixQuery(SQLText)
@@ -1974,6 +1999,10 @@ class XMLImport(Dialogs.GenForm):
        # DO NOT CLOSE THE DATABASE!!!!
        # db.close()
 
+    def CalcPercent(self, num):
+        """ Calculate the Percent value to be displayed in the Progress Bar """
+        numCategories = 22.0
+        return int(round(100.0 / numCategories * num))
 
     def ProcessLine(self, txt):
         """ Process most lines read from the XML file to apply the proper encoding, if needed. """

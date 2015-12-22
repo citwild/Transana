@@ -28,12 +28,10 @@ import wx
 import wx.lib.mixins.listctrl as ListCtrlMixins
 
 
-
 # If running stand-alone ...
 if __name__ == '__main__':
     # This module expects i18n.  Enable it here.
     __builtins__._ = wx.GetTranslation
-
 
 
 # Import Transana's Clip Object
@@ -44,6 +42,10 @@ import DBInterface
 import Document
 # Import Transana's Quote object
 import Quote
+# Import Transana's Synonym Editor
+import SynonymEditor
+# Import Transana's Text Report infrastructure
+import TextReport
 # Import Transana's Constants
 import TransanaConstants
 # Import Transana's Globals
@@ -91,6 +93,8 @@ class CheckListCtrl(wx.ListCtrl, ListCtrlMixins.CheckListCtrlMixin):
         # Determine which column has been selected
         col = event.GetColumn()
         # Column image is a proxy for sort direction!!  I don't seem to be able to get that information directly.
+        # NOTE that this information is set AFTER the sort has occurred, so the secondary sort need to take that
+        #      into account.
         # If the parent Form has been defined ...
         if self.parentForm != None:
             # ... inform the parent form what column is sorted in which direction
@@ -109,6 +113,7 @@ class CheckListCtrl(wx.ListCtrl, ListCtrlMixins.CheckListCtrlMixin):
         self.synonymGroupCtrl = ctrl
 
 
+
 class AutoWidthListCtrl(wx.ListCtrl, ListCtrlMixins.ListCtrlAutoWidthMixin):
     """ Create a wxListCtrl class with the ListCtrlAutoWidthMixin applied """
     def __init__(self, parent, ID=-1, style=0):
@@ -124,6 +129,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
     def __init__(self, parent, tree, startNode):
         # Remember the parent
         self.parent = parent
+        # Note the Control Object from the parent
+        self.ControlObject = self.parent.ControlObject
         # Remember the tree that is passed in
         self.tree = tree
         # Remember the start node passed in
@@ -137,12 +144,15 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # can recreate it as we manipulate the list.  Start with a Descending sort of the Count
         self.sortColumn = 1
         self.sortAscending = False
+        # Get the global print data
+        self.printData = TransanaGlobal.printData
 
         # Determine the screen size for setting the initial dialog size
         if __name__ == '__main__':
             rect = wx.Display(0).GetClientArea()  # wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
         else:
             rect = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
+        # The width and height of the form should be 80% of the full screen
         width = rect[2] * .80
         height = rect[3] * .80
         # Create the basic Frame structure with a white background
@@ -152,6 +162,49 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Set the report's icon
         transanaIcon = wx.Icon(os.path.join(TransanaGlobal.programDir, "images", "Transana.ico"), wx.BITMAP_TYPE_ICO)
         self.SetIcon(transanaIcon)
+
+        # Create a Toolbar for the Form
+        self.toolbar = self.CreateToolBar()
+        self.toolbar.SetToolBitmapSize((24, 24))
+
+        # Add a Check All button
+        self.checkAll = wx.BitmapButton(self.toolbar, -1, TransanaImages.Check.GetBitmap(), size=(24, 24))
+        self.checkAll.SetToolTipString(_("Check All Selected"))
+        self.toolbar.AddControl(self.checkAll)
+        self.checkAll.Bind(wx.EVT_BUTTON, self.OnCheck)
+
+        # Add a Uncheck All button
+        self.uncheckAll = wx.BitmapButton(self.toolbar, -1, TransanaImages.NoCheck.GetBitmap(), size=(24, 24))
+        self.uncheckAll.SetToolTipString(_("Uncheck All Selected"))
+        self.toolbar.AddControl(self.uncheckAll)
+        self.uncheckAll.Bind(wx.EVT_BUTTON, self.OnCheck)
+
+        # Add a separator
+        self.toolbar.AddSeparator()
+
+        # Add a Print button
+        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.PrintPreview.GetBitmap(), size=(24, 24))
+        self.printReport.SetToolTipString(_("Print"))
+        self.toolbar.AddControl(self.printReport)
+        self.printReport.Bind(wx.EVT_BUTTON, self.OnPrintReport)
+
+        # Add a separator
+        self.toolbar.AddSeparator()
+
+        # Add a Help button
+        self.help = wx.BitmapButton(self.toolbar, -1, TransanaImages.ArtProv_HELP.GetBitmap(), size=(24, 24))
+        self.help.SetToolTipString(_("Help"))
+        self.toolbar.AddControl(self.help)
+##        self.help.Bind(wx.EVT_BUTTON, self.OnHelp)
+
+        # Create the Close button
+        self.closeButton = wx.BitmapButton(self.toolbar, -1, TransanaImages.Exit.GetBitmap(), size=(24, 24))
+        self.closeButton.SetToolTipString(_("Close"))
+        self.toolbar.AddControl(self.closeButton)
+        self.closeButton.Bind(wx.EVT_BUTTON, self.OnOK)
+
+        # Finalize the Toolbar
+        self.toolbar.Realize()
 
         # Define a sizer for the form
         mainSizer = wx.BoxSizer(wx.VERTICAL)
@@ -194,7 +247,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Create a horizontal Sizer for the Synonyms controls
         addSynonymSizer = wx.BoxSizer(wx.HORIZONTAL)
         # Create a button for adding checked items to a Synonym Group
-        addSynonymBtn = wx.Button(resultsPanel, -1, _("Add Checked Items to Synonym Group"))
+        addSynonymBtn = wx.Button(resultsPanel, -1, _("Add Checked Items to Word Group"))
         addSynonymSizer.Add(addSynonymBtn, 0, wx.EXPAND | wx.RIGHT, 10)
         addSynonymBtn.Bind(wx.EVT_BUTTON, self.OnSetSynonyms)
         # Create a Text Control for naming the Synonym Group
@@ -207,14 +260,56 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         addSynonymSizer.Add(self.addNoShowBtn, 0, wx.EXPAND | wx.RIGHT, 10)
         self.addNoShowBtn.Bind(wx.EVT_BUTTON, self.OnSetSynonyms)
         # Add button for editing the selected Synonym Group
-        editSynonymsBtn = wx.Button(resultsPanel, -1, _('Edit Synonyms'))
+        editSynonymsBtn = wx.Button(resultsPanel, -1, _('Edit Word Group'))
+        editSynonymsBtn.Bind(wx.EVT_BUTTON, self.OnEditSynonym)
         addSynonymSizer.Add(editSynonymsBtn, 0, wx.EXPAND)
         # Add the Synonyms Controls' Sizer to the notebook Panel's sizer
         pnl1Sizer.Add(addSynonymSizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
         # Add a page to the Notebook control for the Results tab
         self.notebook.AddPage(resultsPanel, _("Results"))
+
+
+        # Add a Panel for a Synonym Seeking tab
+        synonymPanel = wx.Panel(self.notebook, -1)
+
+        # Create a vertical Sizer for the Synonym Seeking Panel
+        pnl3Sizer = wx.BoxSizer(wx.VERTICAL)
+        # Create a horizontal Sizer for the top row of controls
+        pnl3HSizer1 = wx.BoxSizer(wx.HORIZONTAL)
+        # Add the Synonym Ending prompt
+        txt = wx.StaticText(synonymPanel, -1, _("Word Ending:"))
+        pnl3HSizer1.Add(txt, 0, wx.TOP | wx.LEFT | wx.RIGHT, 5)
+        # Add the Synonym Ending Text Control
+        self.synonymExtension = wx.TextCtrl(synonymPanel, -1)
+        pnl3HSizer1.Add(self.synonymExtension, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 5)
+        # Add the button to apply the extension to the Word List
+        self.btnSynonymExtension = wx.Button(synonymPanel, -1, _("Apply Pattern"))
+        # Define the button press handler
+        self.btnSynonymExtension.Bind(wx.EVT_BUTTON, self.OnSynonymExtension)
+        pnl3HSizer1.Add(self.btnSynonymExtension, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 5)
+        # Add the top row to the vertical Sizer for the panel
+        pnl3Sizer.Add(pnl3HSizer1, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Create a TextCtrl to display the results of Synonym Seeking
+        self.synonymResults = wx.ListCtrl(synonymPanel, -1, style=wx.LC_REPORT | wx.LC_SORT_ASCENDING)
+        # Place the Synonym Seeking Results List on the Synonym Panel Sizer
+        pnl3Sizer.Add(self.synonymResults, 1, wx.EXPAND | wx.ALL, 5)
+
+        # Add a button for deleting false positive results
+        self.btnDelete = wx.Button(synonymPanel, -1, _("Delete Selected Word Grouping"))
+        # Define the button press handler
+        self.btnDelete.Bind(wx.EVT_BUTTON, self.OnDeleteSynonym)
+        pnl3Sizer.Add(self.btnDelete, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+
+        # Assign the Synonym Seeking Sizer to the synonym Panel
+        synonymPanel.SetSizer(pnl3Sizer)
         
+        # Add a page to the Notebook control for the Synonym Seeking tab
+        self.notebook.AddPage(synonymPanel, _("Word Groups by Pattern"))
+
+
+
 
 ##        # Add a Panel for a Word Cloud output tab
 ##        self.wordCloudPanel = wx.Panel(self.notebook, -1)
@@ -222,40 +317,64 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 ##        
 ##        # Add a page to the Notebook control for the Word Cloud tab
 ##        self.notebook.AddPage(self.wordCloudPanel, _("Word Cloud"))
-        
 
-##        # Add a Panel for an Options tab
-##        self.optionsPanel = wx.Panel(self.notebook, -1)
-##        self.optionsPanel.SetBackgroundColour(wx.RED)
+
+
+        
+        # Add a Panel for an Options tab
+        self.optionsPanel = wx.Panel(self.notebook, -1)
+        self.optionsPanel.SetBackgroundColour(wx.WHITE)
+        # Create a Sizer for the Options Panel
+        pnl2Sizer = wx.FlexGridSizer(rows=4, cols=4, hgap=20, vgap=20)
+        self.optionsPanel.SetSizer(pnl2Sizer)
 
         # Minimum Word Frequency
+        txt1 = wx.StaticText(self.optionsPanel, -1, "Minimum Frequency:", style=wx.ALIGN_RIGHT)
+        self.minFrequency = wx.TextCtrl(self.optionsPanel, -1, "1")
 
         # Minimum Word Length
-##        
-##        # Add a page to the Notebook control for the Options tab
-##        self.notebook.AddPage(self.optionsPanel, _("Options"))
+        txt2 = wx.StaticText(self.optionsPanel, -1, "Minimum Word Length:", style=wx.ALIGN_RIGHT)
+        self.minLength = wx.TextCtrl(self.optionsPanel, -1, "1")
+
+        # Use the GridSizer to center our data entry fields both horizontally and vertically
+        pnl2Sizer.AddMany([((1, 1), 12, wx.EXPAND),
+                           ((1, 1), 3, wx.EXPAND),
+                           ((1, 1), 1, wx.EXPAND),
+                           ((1, 1), 14, wx.EXPAND),
+
+                           ((1, 1), 12, wx.EXPAND),
+                           (txt1, 3, wx.EXPAND | wx.ALIGN_RIGHT),
+                           (self.minFrequency, 1, wx.EXPAND),
+                           ((1, 1), 14, wx.EXPAND),
+
+                           ((1, 1), 12, wx.EXPAND),
+                           (txt2, 3, wx.EXPAND | wx.ALIGN_RIGHT),
+                           (self.minLength, 1, wx.EXPAND),
+                           ((1, 1), 14, wx.EXPAND),
+                           
+                           ((1, 1), 12, wx.EXPAND),
+                           ((1, 1), 3, wx.EXPAND),
+                           ((1, 1), 1, wx.EXPAND),
+                           ((1, 1), 14, wx.EXPAND)])
+
+        # Make the top and bottom rows growable to center vertically
+        pnl2Sizer.AddGrowableRow(0, 12)
+        pnl2Sizer.AddGrowableRow(3, 14)
+        # Make the left and right columns growable to center horizontally
+        pnl2Sizer.AddGrowableCol(0, 12)
+        pnl2Sizer.AddGrowableCol(3, 14)
+        
+        # Assign the Results Panel Sizer to the Results Panel
+        self.optionsPanel.SetSizer(pnl2Sizer)
+        # Add a page to the Notebook control for the Options tab
+        self.notebook.AddPage(self.optionsPanel, _("Options"))
         
         # Add the Notebook control to the form's Main Sizer
         mainSizer.Add(self.notebook, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 10)
 
-        # Add a Horizontal Sizer for the form buttons
-        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
-        # Add a spacer on the left to expand, allowing the buttons to be right-justified
-        btnSizer.Add((10, 1), 1)
-        # Add an OK button and a Help button
-        btnOK = wx.Button(self, wx.ID_OK, _("OK"))
-        btnOK.Bind(wx.EVT_BUTTON, self.OnOK)
-        btnHelp = wx.Button(self, -1, _("Help"))
-
-        # Put the buttons in the  Button sizer
-        btnSizer.Add(btnOK, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-        btnSizer.Add(btnHelp, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-
-        # Add the Button Size to the Dialog Sizer
-        mainSizer.Add(btnSizer, 0, wx.EXPAND)
-
         # Add in the Column Sorter mixin to make the results panel sortable
         ListCtrlMixins.ColumnSorterMixin.__init__(self, 3)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
 
         # We need to populate the Synonyms BEFORE we Populate the Word Frequencies!!
         self.PopulateSynonyms()
@@ -273,8 +392,301 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         else:
             self.CenterOnScreen()
 
+        # If a Control Object has been passed in ...
+        if self.ControlObject != None:
+            # Our report needs a title
+            self.title = _("Word Frequency Report")
+            # ... register this report with the Control Object (which adds it to the Windows Menu)
+            self.ControlObject.AddReportWindow(self)
+
+        # Define the Form Close event, which removes the report from Transana's Window menu
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
         # Display the form
         self.Show(True)
+
+    def GetSecondarySortValues(self, col, key1, key2):
+        """ Set the secondary sort for Column Sorting on the Results tab """
+        # Determine whether the sort is ascending or descending
+        ascending = self.GetSortState()[1]
+
+        # If the sort is Ascending ...
+        if ascending:
+            # ... we want key1, then key2 values so the Word sort is alphabetic and ascending
+            return(self.itemDataMap[key1][0].lower(), self.itemDataMap[key2][0].lower())
+        # If the sort is Descending ...
+        else:
+            # ... then we want key2, then key1 values so the Word sort is still alphabetic and ascending
+            return(self.itemDataMap[key2][0].lower(), self.itemDataMap[key1][0].lower())
+        
+    def OnNotebookPageChanged(self, event):
+        """ Handle Notebook Page Change Events """
+        # If we're changing to the Results Tab ...
+        if event.GetSelection() == 0:
+            # ... enable the check and print buttons
+            self.checkAll.Enable(True)
+            self.uncheckAll.Enable(True)
+            self.printReport.Enable(True)
+        
+            # If we're moving to the Results page FROM the Options page ...
+            # (The Word Groups page updates the Results as needed)
+            if event.GetOldSelection() == 2:
+                # ... refresh the Results!
+                self.PopulateWordFrequencies()
+                
+        else:
+            # ... disable the check and print buttons
+            self.checkAll.Enable(False)
+            self.uncheckAll.Enable(False)
+            self.printReport.Enable(False)
+
+    def OnEditSynonym(self, event):
+        """ Edit a Synonym Group """
+        # Get the currently focussed item, ignoring check status
+        sel = self.resultsList.GetFocusedItem()
+        # Initialize the mapItem value
+        mapItem = -1
+        # If there IS a currently focussed item ...
+        if sel > -1:
+            # ... get the mapItem for the focussed item
+            mapItem = self.resultsList.GetItemData(sel)
+        # If there is NOT a currently focussed item ...
+        else:
+            # ... search through the itemDataMap ...
+            for key, data in self.itemDataMap.items():
+                # ... if we find the Do Not Show Group (assuming one has been defined) ...
+                if (data[0] == "Do Not Show Group"):
+                    # ... note it's mapItem
+                    mapItem = key
+                    # ... and stop searching
+                    break
+
+        # If a mapItem has been found ... (it won't be if there's no focussed item and no Do Not Show Group entry)
+        if mapItem > -1:
+            # Create a SynonymEditor form object
+            synonymEditor = SynonymEditor.SynonymEditor(self, self.itemDataMap[mapItem])
+            # Display the Synonym Editor and get the results from the user
+            result = synonymEditor.ShowModal()
+            # If the user pressed OK ...
+            if result == wx.ID_OK:
+                # ... get the old synonym group name and list of synonyms as well as the changed values from the form
+                oldGroupName = self.itemDataMap[mapItem][0]
+                oldSynonyms = self.itemDataMap[mapItem][2]
+                newGroupName = synonymEditor.synonymGroup.GetValue()
+                newSynonyms = synonymEditor.GetSynonymValues()
+
+                # If the Synonym Group Name has changed ...
+                if oldGroupName != newGroupName:
+                    # ... iterate through the OLD synonym list ...
+                    for synonym in oldSynonyms:
+                        # ... and delete each synonym from the database ...
+                        DBInterface.DeleteSynonym(oldGroupName, synonym)
+                        # ... and remove it from the synonym lookup dictionary
+                        del(self.synonymLookups[synonym])
+                    # Remove the old synonym group from the synonyms dictionary
+                    del(self.synonyms[oldGroupName])
+                    # Now iterate through the NEW synonyms list ...
+                    for synonym in newSynonyms:
+                        # ... adding the new synonyms to the database ...
+                        DBInterface.AddSynonym(newGroupName, synonym)
+                        # ... and the synonym lookup dictionary
+                        self.synonymLookups[synonym] = newGroupName
+                # If the Synonym Group Name did NOT change ...
+                else:
+                    # ... iterate through the OLD synonym list ...
+                    for synonym in oldSynonyms:
+                        # ... and if the synonym is not in the NEW synonym list ...
+                        if not synonym in newSynonyms:
+                            # ... delete it from the database ...
+                            DBInterface.DeleteSynonym(oldGroupName, synonym)
+                            # (Start exception handling in case the synonym isn't in the Lookup dictionary)
+                            try:
+                                # ... and try to remove it from the synonym Lookup dictionary
+                                del(self.synonymLookups[synonym])
+                            except KeyError:
+                                pass
+
+                # If there is only one entry in the new Synonym List and it's the same as the new Synonym Group Name ...
+                if (len(newSynonyms) == 1) and (newGroupName == newSynonyms[0]):
+                    # ... we can remove this entry from the database
+                    DBInterface.DeleteSynonym(newGroupName, newSynonyms[0])
+                    # We can also remove the Synonym Lookup and Synonyms Dictionary entries
+                    del(self.synonymLookups[newSynonyms[0]])
+                    del(self.synonyms[newGroupName])
+                # If there are more than one entries in the new Synonym List ...
+                elif len(newSynonyms) >= 1:
+                    # ... we should set the Synonyms List dictionary list to this new list, replacing the old one
+                    self.synonyms[newGroupName] = newSynonyms
+                # If the new Synonyms List is empty ...
+                else:
+                    # ... start exception handling
+                    try:
+                        # Try to delete the Synonyms Dictionary entry
+                        del(self.synonyms[newGroupName])
+                    # If an exception is raised, we can ignore it.
+                    except KeyError:
+                        pass
+
+                # Clear the itemDataMap so that the table will be properly refeshed
+                self.itemDataMap = {}
+                # Populate the Word Frequencies table
+                self.PopulateWordFrequencies()
+                
+            # Destroy the Synonmy Editor dialog
+            synonymEditor.Destroy()
+
+    def OnSynonymExtension(self, event):
+        """ Handle Synonym Seeking requests """
+        # Clear the Synonym Seeking Results display
+        self.synonymResults.ClearAll()
+        # Add Column Heading
+        self.synonymResults.InsertColumn(0, _("Word"))
+        self.synonymResults.InsertColumn(1, _("Words in Group"))
+
+        # Check that a synonym extension has been defined
+        if self.synonymExtension.GetValue().strip() == '':
+            # If not, report it to the user
+            index = self.synonymResults.InsertStringItem(sys.maxint, _("Please enter a Word Extension."))
+            # We can't do any more here
+            return
+        # If a Synonym Extension is defined ...
+        else:
+            # ... remember it!
+            synonymExtension = self.synonymExtension.GetValue().strip().lower()
+
+        # We need a list of all the words in our display.
+        words = []
+        # The itemDataMap has all the words that are in the control.  Iterate through it ...
+        for key in self.itemDataMap.keys():
+            # ... and grab the words it contains
+            words.append(self.itemDataMap[key][0])
+
+        # Sort the Words list for better display to the user            
+        words.sort()
+        # Iterate through all the words
+        for word in words:
+            # If there's a version of the word WITH the extension ...
+            if word + synonymExtension in words:
+                # ... report that it has been found to the user
+
+                # Create a new row in the Results List, adding the word or Synonym Group text
+                index = self.synonymResults.InsertStringItem(sys.maxint, word)
+                # Add the Count information
+                self.synonymResults.SetStringItem(index, 1, word + synonymExtension)
+
+                # If our word already HAS a synonym entry ...
+                if word in self.synonymLookups.keys():
+                    # ... add the extended version to the synonyms list for the synonym group
+                    self.synonyms[self.synonymLookups[word]].append(word + synonymExtension)
+                # If our word does NOT have a synonym entry ...
+                else:
+                    # ... add the original word to the synonym lookup data
+                    self.synonymLookups[word] = word
+                    # ... and add it to the database
+                    DBInterface.AddSynonym(word, word)
+                    # ... and add the extended version to the synonyms table, creating a synonyms group for it
+                    self.synonyms[word] = [word, word + synonymExtension]
+                # Now add the extended version to teh synonym lookup data
+                self.synonymLookups[word + synonymExtension] = word
+                # ... and add the extended version to the database
+                DBInterface.AddSynonym(word, word + synonymExtension) 
+
+        # This code comes here, as width is calculated immediately, so must be AFTER data population.        
+        self.synonymResults.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.synonymResults.SetColumnWidth(1, wx.LIST_AUTOSIZE)
+        # If the Word Column is too narrow to show the column header ...
+        if self.synonymResults.GetColumnWidth(0) < 150:
+            # ... widen the column
+            self.synonymResults.SetColumnWidth(0, 150)
+        # If the Words in Group Column is too narrow to show the column header ...
+        if self.synonymResults.GetColumnWidth(1) < 200:
+            # ... widen the column
+            self.synonymResults.SetColumnWidth(1, 200)
+        # Clear the itemDataMap so that the table will be properly refeshed
+        self.itemDataMap = {}
+        # We need to update the Word Frequencies table before the next Synonym Lookup occurs, so call this
+        # no matter what!
+        self.PopulateWordFrequencies()
+
+        # Clear the extension specification control
+        self.synonymExtension.SetValue('')
+        # Set the focus to the extension specification control, ready for the next synonym seek.
+        self.synonymExtension.SetFocus()
+
+    def OnDeleteSynonym(self, event):
+        """ Event Handler for the Delete Synonym button on the Synonym Patterns Page """
+        # Get the first selected item in the control
+        sel = self.synonymResults.GetFirstSelected()
+        # We need to delete items from the bottom up to avoid problems with changing item numbers.  So let's
+        # remember the items to delete
+        itemsToDelete = []
+        # While there are selections in the control we have not yet processed ...
+        while sel > -1:
+            # ... add the item number to the list of items to delete ...
+            itemsToDelete.append(sel)
+            # ... and get the next selected item, if there is one
+            sel = self.synonymResults.GetNextSelected(sel)
+
+        # Sort the list of items to delete in reverse order
+        itemsToDelete.sort(reverse=True)
+        # Iterate through the list of items to delete
+        for item in itemsToDelete:
+            # Determine the synonym group and synonym value for each item
+            synonymGroup = self.synonymResults.GetItemText(item, 0)
+            synonym = self.synonymResults.GetItemText(item, 1)
+
+            # It's possible that the Synonym Group is actually a synonym itself!  Check for that.
+            if synonymGroup in self.synonymLookups.keys():
+                # If so, use the value from the lookup dictionary rather than from the control
+                synonymGroup = self.synonymLookups[synonymGroup]
+            # Delete the synonym from the database
+            DBInterface.DeleteSynonym(synonymGroup, synonym)
+            # Start exception handling
+            try:
+                # Delete the value from the Synonym Lookup table
+                del(self.synonymLookups[synonym])
+            # If the synonym wasn't in the Lookup Table, we can ignore it!
+            except KeyError:
+                pass
+
+            # Get the current Synonyms for the Synonym Group
+            newSynonyms = self.synonyms[synonymGroup]
+            # Delete the current synonym from this group
+            del(newSynonyms[newSynonyms.index(synonym)])
+
+            # If there is a single new synonym left in the list ...            
+            if (len(newSynonyms) == 1) and (synonymGroup == newSynonyms[0]):
+                # Delete the synonym record from the database
+                DBInterface.DeleteSynonym(synonymGroup, newSynonyms[0])
+                # Remove the synonym from the Lookups dictionary
+                del(self.synonymLookups[newSynonyms[0]])
+                # Remove the synonym from the Synonyms dictionary
+                del(self.synonyms[synonymGroup])
+            # If there's nore than one synonym record left in the list ...
+            elif len(newSynonyms) > 1:
+                # ... replace the list of synonyms for this group with the new list
+                self.synonyms[synonymGroup] = newSynonyms
+
+            else:
+                # ... start exception handling
+                try:
+                    # Try to delete the Synonyms Dictionary entry
+                    del(self.synonyms[synonymGroup])
+                # If an exception is raised, we can ignore it.
+                except KeyError:
+                    pass
+
+            # Remove the item from the Results table
+            self.synonymResults.DeleteItem(item)                    
+
+        # This code comes here, as width is calculated immediately, so must be AFTER data population.        
+        self.synonymResults.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.synonymResults.SetColumnWidth(1, wx.LIST_AUTOSIZE)
+
+        # Clear the itemDataMap so that the table will be properly refeshed
+        self.itemDataMap = {}
+        # Repopulate the Results table based on the new Synonyms data
+        self.PopulateWordFrequencies()
 
     def PopulateSynonyms(self):
         """ Set up the Synonyms data structures and populate them initially """
@@ -285,18 +697,14 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
         # If we're testing ...
         if self.tree == None or self.startNode == None:
-
+            # ... use fake synonym data
             self.synonyms = {'a and the'    : ['a', 'and', 'the'],
                              'name'  : ['ellen', 'feiss'],
                              'pronouns'      : ['i', "i'm", 'my']}
-
+        # If we're NOT testing ...
         else:
-
-            print "WordFrequencyReport.PopulateSynonyms():  Load synonyms from database"
-
+            # Load synonyms from database
             self.synonyms = DBInterface.GetSynonyms()
-
-            
 
         # Now iterate though the items in the Synonym Groups
         for key in self.synonyms.keys():
@@ -305,15 +713,14 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
                 # ... add an entry to the Synonym Lookup table
                 self.synonymLookups[synonym] = key
 
-
     def PopulateWordFrequencies(self):
         """ Clear and Populate the Word Frequency Results """
         # Clear the Control
         self.resultsList.ClearAll()
         # Add Column Heading
-        self.resultsList.InsertColumn(0, _("Text"))
-        self.resultsList.InsertColumn(1, _("Count"), wx.LIST_FORMAT_RIGHT)
-        self.resultsList.InsertColumn(2, _("Synonyms"))
+        self.resultsList.InsertColumn(0, _("Word"))
+        self.resultsList.InsertColumn(1, _("Frequency"), wx.LIST_FORMAT_RIGHT)
+        self.resultsList.InsertColumn(2, _("Word Group"))
 
         # If we haven't read the data yet, or need to refresh it ...
         if len(self.itemDataMap) == 0:
@@ -324,7 +731,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             if self.tree == None or self.startNode == None:
                 # ... define sample text
                 sampleText = u""" I was writing a paper on the PC,
-and it was like   beep   beep   (beep)   beep ....  beep ???  beep   (beep.)
+and it was like   beep   beeps   (beep)   beeping ....  beeps ???  beep   (beep.)
 And then, like, half of my [paper] was gone.
 And I was like  "Huh?"
 It \u201cdevoured\u201d my paper.
@@ -365,16 +772,26 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... then we'll use that!
             itemData = self.itemDataMap
 
-##        print
-##        print "WordFrequencyReport.PopulateWordFrequencies():"
-        
         # Convert the extracted data to the form needed for the ColumnSorterMixin
         for key, data in itemData.items():
+            # Start exception handling
+            try:
+                # Convert the Minimum Frequency from the Options tab
+                minFrequency = int(self.minFrequency.GetValue())
+            # If it's not an integer, ignore it!
+            except:
+                minFrequency = 1
+            # Start separate exception handling process
+            try:
+                # Try to convert the Minimum Word Length from the Options Tab
+                minLength = int(self.minLength.GetValue())
+            # If it's not an integer, ignore it!
+            except:
+                minLength = 1
 
-##            print key, data
-            
-            if data[0] != "Do Not Show Group":
-                # Create a new row in the Results List, adding the word or Synonym Group text
+            # If the item is not part of the "Do Not Show" Group, and it meets the minimum frequency and length requirements ...
+            if (data[0] != "Do Not Show Group") and (data[1] >= minFrequency) and (len(data[0]) >= minLength):
+                # ... create a new row in the Results List, adding the word or Synonym Group text
                 index = self.resultsList.InsertStringItem(sys.maxint, data[0])
                 # Add the Count information
                 self.resultsList.SetStringItem(index, 1, str(data[1]))
@@ -395,14 +812,11 @@ I'm Ellen Feiss, and I'm a student!"""
                 # Set the Results List item's itemData to the integer Key, needed for sorting in the ColumnSorterMixin
                 self.resultsList.SetItemData(index, key)
 
-##        print '---------------------------------------------------------------'
-##        print
-
         # The ColumnSorterMixin requires this data structure with this variable name to function
         self.itemDataMap = itemData
         # This code comes here, as width is calculated immediately, so must be AFTER data population.        
         self.resultsList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-        self.resultsList.SetColumnWidth(1, 80)
+        self.resultsList.SetColumnWidth(1, 100)
         self.resultsList.SetColumnWidth(2, wx.LIST_AUTOSIZE)
 
         # If the Text Column is too narrow to show the column header ...
@@ -414,7 +828,7 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... widen the column
             self.resultsList.SetColumnWidth(2, 200)
 
-        # Sort data by Count, Descending
+        # Sort data by the correct column and direction
         self.SortListItems(self.sortColumn, self.sortAscending)
         # Update the Control to try to fix the first column header's appearance
         self.resultsList.Update()
@@ -505,6 +919,7 @@ I'm Ellen Feiss, and I'm a student!"""
             pass
         # If we have a node of undefined type ...
         else:
+            # ... we should NEVER see this, obviously!
             print "ERROR:  ", tree.GetItemText(startNode).encode('utf8'), " NOT PROCESSED.  Wrong Node Type.", itemData.nodetype
 
         # Return the extracted Word Count data
@@ -543,8 +958,6 @@ I'm Ellen Feiss, and I'm a student!"""
         # Strip multiple whitespace characters, replacing all whitespace with single spaces
         text = re.sub('\s+', '\n', text)
 
-##        print text.encode('utf8')
-
         # Return the prepared text
         return text
 
@@ -558,9 +971,6 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... remove whitespace and compensate for different cases
             word = line.strip().lower()
             # If the word exists in the synonymLookup dictionary ...
-
-#            print "CountWords:", type(word), type(self.synonymLookups.keys()[0])
-            
             if word in self.synonymLookups.keys():
                 # ... substitute the synonym for the original word
                 word = self.synonymLookups[word]
@@ -577,118 +987,147 @@ I'm Ellen Feiss, and I'm a student!"""
         # Return the word dictionary
         return words
 
+    def OnCheck(self, event):
+        """ Handle Check and Uncheck Buttons """
+        # if we're on the Results tab of the Notebook ...
+        if self.notebook.GetSelection() == 0:
+            # ... if this was triggered by CheckAll, check is True, otherwise False
+            check = event.GetId() == self.checkAll.GetId()
+
+            # Get the first selected item
+            sel = self.resultsList.GetFirstSelected()
+            # As long as there are more selected items ...
+            while sel > -1:
+                # ... check the current item ...
+                self.resultsList.CheckItem(sel, check)
+                # ... and move on to the next selected item
+                sel = self.resultsList.GetNextSelected(sel)
+
+    def OnPrintReport(self, event):
+        """ Handle requests for a printable report """
+        # Create a Report Frame
+        self.report = TextReport.TextReport(self, -1, _("Word Frequency Report"), self.ConstructReport)
+        # To speed report creation, freeze GUI updates based on changes to the report text
+        self.report.reportText.Freeze()
+        # Trigger the ReportText method that causes the report to be displayed.
+        self.report.CallDisplay()
+        # Now that we're done, remove the freeze
+        self.report.reportText.Thaw()
+
+    def ConstructReport(self, reportText):
+        """ Populate the TextReport RTFControl for the Word Frequency Report """
+        # Make the control writable
+        reportText.SetReadOnly(False)
+        # Set the font for the Report Title
+        reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 16, fontBold = True, fontUnderline = True,
+                               parAlign = wx.TEXT_ALIGNMENT_CENTER, parSpacingAfter = 42)
+        # Add the Report Title
+        reportText.WriteText(_("Word Frequency Report"))
+        reportText.Newline()
+        # Set the Style for the main report header
+        reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 14, fontBold = True, fontUnderline = True,
+                               parAlign = wx.TEXT_ALIGNMENT_LEFT, parLeftIndent = (0, 900), parSpacingAfter = 12,
+                               parTabs=[600, 900])
+        # Write column headers
+        reportText.WriteText("%s\t%s\t%s\n" % (_("Word"), _("Frequency"), _("Word Group") ))
+        # Adjust the style for the main report data
+        reportText.SetTxtStyle(fontSize = 12, fontBold = False, fontUnderline = False)
+        # Iterate through the items in the Results List ...
+        for count in range(self.resultsList.GetItemCount()):
+            # ... and add the data to the report
+            reportText.WriteText("%s\t%s\t%s\n" % (self.resultsList.GetItemText(count, 0), self.resultsList.GetItemText(count, 1),
+                                                self.resultsList.GetItemText(count, 2) ))
+
     def OnOK(self, event):
-        """ Handle the OK button """
+        """ Handle the OK / Close button """
         # Close the form
         self.Close()
 
+    def OnClose(self, event):
+        """ Handle Form Closure """
+        # If there is a defined Control Object ...
+        if self.ControlObject != None:
+            # ... remove this form from the Windows menu
+            self.ControlObject.RemoveReportWindow(self.title, self.reportNumber)
+        # Inherit the parent Close event so things will, you know, close.
+        event.Skip()
+
     def OnSetSynonyms(self, event):
         """ Handle the Set Synonym Group buttons """
-        
+        # If called by the "Do Not Show" group buttong ...
         if event.GetId() == self.addNoShowBtn.GetId():
+            # ... we should use the "Do Not Show Group" synonym group ...
             synonymGroup = 'Do Not Show Group'
-            usingAlias = True
+        # If we are adding a visible synonym ...
         else:
-            synonymGroup = self.synonymGroup.GetValue()
-            if self.synonyms.has_key(synonymGroup):
-                usingAlias = not (synonymGroup in self.synonyms[synonymGroup])
-            else:
-                usingAlias = True
-                count = self.resultsList.GetItemCount()
-                for itemId in range(count):
-                    item = self.resultsList.GetItemData(itemId)
-                    
-##                    print self.itemDataMap[item], synonymGroup, self.resultsList.IsChecked(itemId)
+            # ... get the name of the synonym group
+            synonymGroup = self.synonymGroup.GetValue().strip()
+            # If the synonym group name is empty ...
+            if synonymGroup == '':
+                # ... set the focus to the synonym group field ...
+                self.synonymGroup.SetFocus()
+                # ... and stop.  There's nothing to do!
+                return
 
-                    if (self.itemDataMap[item][0] == synonymGroup) and (self.resultsList.IsChecked(itemId)):
-                        usingAlias = False
-                        break
-
-##        print "WordFrequencyReport.OnSetSynonyms():", synonymGroup, usingAlias
-##        if self.synonyms.has_key(synonymGroup):
-##            print self.synonyms[synonymGroup]
-##        print
-        
+        # Initialize a List to hold Synonyms
         synonymData = []
+        # Initialize a String to hold the string representation of the Synonyms List
         synonymString = ''
-
-        if synonymGroup == '':
-
-            print "ERROR - No Synonym Group Defined"
-
-            self.synonymGroup.SetFocus()
-            return
 
         # if the Synonym Group already exists ...
         if synonymGroup in self.synonyms.keys():
             # Get the current synonyms as a starting point
             synonymData = self.synonyms[synonymGroup]
 
-        # Iterate through the Results List
-        count = self.resultsList.GetItemCount()
+        # We may need to remember an OLD name for a synonym group.  Initialize a variable for this.
         oldSynonymGroup = ''
+        # Determine the number of items in the Results List
+        count = self.resultsList.GetItemCount()
+        # Iterate through the Results List
         for itemId in range(count):
+            # Get the Item Data value for the current Results List item
             item = self.resultsList.GetItemData(itemId)
             
-#            print self.itemDataMap[item],
-
-            # If the item is checked and not already in the list ...
-
-            #not((self.itemDataMap[item][0] == synonymGroup): or
-
-            # Synonym Group we're adding to, whether it's checked or not! OR
-            # Any checked item
-
+            # If the item matches the Synonym Group name or is checked ...
             if (self.itemDataMap[item][0] == synonymGroup) or \
                (self.resultsList.IsChecked(itemId)):
 
-
+                # If the item matches the Synonym Group name AND this group is already known ...
                 if (self.itemDataMap[item][0] == synonymGroup) and \
                    (synonymGroup in self.synonyms.keys()):
-
+                    # ... we don't need to do anything!
                     pass
-
+                # If not, do we already have synonyms for THIS item?
                 elif self.itemDataMap[item][2] != '':
-
+                    # If so, remember the original synonym group name for this group ...
                     oldSynonymGroup = self.itemDataMap[item][0]
-                    
-                    # ... add it to the synonym DATA
+                    # ... and add the synonyms to the NEW synonym DATA
                     synonymData += self.itemDataMap[item][2]
-
-##                    print ' XXX', self.itemDataMap[item][2], "added"
-
+                    # For each of the OLD synonyms for this item ...
                     for tmpItem in self.itemDataMap[item][2]:
-#                        synonymData.append(tmpItem)
+                        # ... update the synonym Lookup dictionary with the new synonym group name
                         self.synonymLookups[tmpItem] = synonymGroup
-
+                        # ... and update the database to use the NEW synonym group name
                         DBInterface.UpdateSynonym(oldSynonymGroup, tmpItem, synonymGroup, tmpItem)
-
+                    # Finally, delete the OLD group from the Synonyms List
+                    del(self.synonyms[oldSynonymGroup])
+                # If we have a NEW synonym Group ...
                 else:
                     # ... add it to the synonym DATA
                     synonymData.append(self.itemDataMap[item][0])
-
-##                    print "added"
-
+                    # Add the item to the synonym lookup dictionary
                     self.synonymLookups[self.itemDataMap[item][0]] = synonymGroup
-
+                    # add the item to the Database
                     DBInterface.AddSynonym(synonymGroup, self.itemDataMap[item][0]) 
-
-##                print "synonymLookup:", self.itemDataMap[item][0].encode('utf8'), synonymGroup.encode('utf8')
-                
-##            else:
-##                print
 
         # If the user pressed the Do Not Show button without checking any items ...
         if (synonymGroup == 'Do Not Show Group') and (len(synonymData) == 0):
             # ... there's nothing to do!
-
-            print "EXIT"
-            
             return
 
         # Sort the Synonym Data
         synonymData.sort()
-        # Create a String version of the list for display
+        # Create a String version of the synonym list for display
         for synonym in synonymData:
             if len(synonymString) > 0:
                 synonymString += ' '
@@ -697,15 +1136,15 @@ I'm Ellen Feiss, and I'm a student!"""
         # Update the permanent Synonyms data
         self.synonyms[synonymGroup] = synonymData
 
+        # Initialize a flag for the index of an item, assuming the item will not be found
         index = -1
         # Now iterate though the items in the Synonyms List (control)
         for val in range(self.resultsList.GetItemCount()):
-            
-##            print val, self.resultsList.GetItem(val, 0).GetText().encode('utf8'), synonymGroup, self.resultsList.GetItem(val, 0).GetText() == synonymGroup
-
             # If the Synonym Group is found, we can update it
             if self.resultsList.GetItem(val, 0).GetText() == synonymGroup:
+                # Set the index to the Results List item number ...
                 index = val
+                # ... and stop looking
                 break
         # If the Synonym Group was not found ...
         if index == -1:
@@ -717,40 +1156,45 @@ I'm Ellen Feiss, and I'm a student!"""
         # Now we need to look for the synonyms that were just defined in the data, consolidating them.
         itemIndex = -1
         itemValue = 0
+        # Iterate though the itemDataMap
         for key in self.itemDataMap.keys():
-
-##            print self.itemDataMap[key][0].encode('utf8'), synonymGroup.encode('utf8'), oldSynonymGroup.encode('utf8')
-            
             # Here's the trick.  The Synonyms Group name may not be in the sysnonymData list!!
+            # So ... if the itemDataMap item is in the synonym list OR
+            #        if the itemDataMap item matches the new Synonym Group name OR
+            #        if the itemDataMap item is in the OLD synonym list ...
             if (self.itemDataMap[key][0] in synonymData) or (self.itemDataMap[key][0] == synonymGroup) or \
                (self.itemDataMap[key][0] == oldSynonymGroup):
+                # ... remember the item's Map value
                 itemValue += self.itemDataMap[key][1]
+                # If our Map Data item matchs the Synonym Group name ...
                 if self.itemDataMap[key][0] == synonymGroup:
+                    # ... remember the item index
                     itemIndex = key
+                # If the item is not Synonym Group name
                 else:
+                    # ... then we want to remove this item from the Item Data Map, as it is becomeing a synonym for something else!
                     del(self.itemDataMap[key])
+        # If we did not match the Synonym Group name ...
         if itemIndex == -1:
+            # ... we add a NEW item to the Item Data Map
             self.itemDataMap[len(self.itemDataMap)] = (synonymGroup, itemValue, synonymData)
+        # If we DID match the Synonym Group Name ...
         else:
+            # ... then update the existing item for that group
             self.itemDataMap[itemIndex] = (synonymGroup, itemValue, synonymData)
 
+        # Remember the current scroll positoin of the Results List
         scrollPos = self.resultsList.GetScrollPos(wx.VERTICAL)
-
+        # Repopulate the Word Frequencies
         self.PopulateWordFrequencies()
-
+        # Reset the Synonym Group name to blank
         self.synonymGroup.SetValue('')
-
-
-        print "ScrollPos =", scrollPos
-
-        self.resultsList.Freeze()        
+        # Freeze the Results List
+        self.resultsList.Freeze()
+        # Scroll to the original position
         self.resultsList.ScrollLines(scrollPos)
+        # Thaw the Control
         self.resultsList.Thaw()
-
-##        print
-##        print self.synonymLookups
-##        print
-##        print
 
 
 if __name__ == '__main__':
