@@ -1111,6 +1111,7 @@ class XMLImport(Dialogs.GenForm):
                                    # Add the intervention information to the error message
                                    msg = msg + '\n' +  prompt % self.XMLFile.GetValue() + '\n' + \
                                                        prompt2 % (objectType, lineCount)
+                                   msg += u"\n\n%s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
                                # Display our carefully crafted error message to the user.
                                errordlg = Dialogs.ErrorDialog(None, msg, includeSkipCheck=skipCheck)
                                errordlg.ShowModal()
