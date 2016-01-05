@@ -288,7 +288,7 @@ class SearchDialog(wx.Dialog):
                                 # We can identify the parent node using the map dictionary
                                 parentItem = mapDict[dParentCollNo]
 
-#                                print "SearchDialog.__init__(): ", dCollNo, dCollID, dParentCollNo, "*** ADDED ***"
+                                ## print "SearchDialog.__init__(): ", dCollNo, dCollID, dParentCollNo, "*** ADDED ***"
 
                                 # Create a new Checkbox Node for the current item a a child to the Parent Node
                                 item = self.ctcCollections.AppendItem(parentItem, dCollID, ct_type=CT.TREE_ITEMTYPE_CHECK)
@@ -299,7 +299,7 @@ class SearchDialog(wx.Dialog):
                                 # Check the item
                                 self.ctcCollections.CheckItem(item, True)
                                 # Set the item's PyData to the Collection Number
-                                self.ctcCollections.SetPyData(item, collNo)
+                                self.ctcCollections.SetPyData(item, dCollNo)
                                 # Add the new node to the map dictionary
                                 mapDict[dCollNo] = item
                                 # We need to indicate to the while loop that we found an entry that could be the parent of other entries
@@ -316,7 +316,7 @@ class SearchDialog(wx.Dialog):
                 # If the Collection's parent is not yet in the Collection tree or the Map dictionary ...
                 else:
 
-#                    print "SearchDialog.__init__(): ", collNo, collID, parentCollNo, "*** DEFERRED ***"
+                    ## print "SearchDialog.__init__(): ", collNo, collID, parentCollNo, "*** DEFERRED ***"
 
                     # ... we need to place that collection in the list of items to process later, once the parent Collection
                     # has been added to the database tree
