@@ -362,9 +362,6 @@ class KeywordsTab(wx.Panel):
                                 msg = 'Document %d' % obj.number
                             elif isinstance(obj, Quote.Quote):
                                 msg = 'Quote %d' % obj.number
-
-                                print "KeywordsTab.OnEdit():  UKL sent for %s!!" % msg
-                                
                             else:
                                 msg = ''
                             if msg != '':
@@ -514,8 +511,6 @@ class KeywordsTab(wx.Panel):
                         # Unlock the record
                         self.documentObj.unlock_record()
                         
-                        print "KeywordsTab.OnDelete():  UKL sent for %s!!" % msg
-
                     # If there's an MU Chat Message ...
                     if (not TransanaConstants.singleUserVersion) and (msg != ''):
                         if DEBUG:
