@@ -18,6 +18,11 @@
 
 __author__ = 'David Woods <dwoods@wcer.wisc.edu>'
 
+DEBUG = False
+if DEBUG:
+    print "ProcessSearch DEBUG is ON!!"
+    import datetime
+
 # Import wxPython
 import wx
 
@@ -95,6 +100,14 @@ class ProcessSearch(object):
                 collNode = collTree.GetRootItem()
                 # Get a list of all the Checked Collections in the Collections Tree
                 self.collectionList = dlg.GetCollectionList(collTree, collNode, True)
+                # We need to check to see if there are ANY collections that are NOT checked.
+                # If there are NOT any un-checked Collections, we can completely ignore Collection Specification,
+                # making the search simpler and presumably faster!!
+                uncheckedCollectionList = dlg.GetCollectionList(collTree, collNode, False)
+                # If there are NO unchecked Collections ...
+                if len(uncheckedCollectionList) == 0:
+                    # ... we can ignore the CollectionList Completely!!
+                    self.collectionList = []
                 # ... and get the search terms from the dialog
                 searchTerms = dlg.searchQuery.GetValue().split('\n')
                 # Get the includeDocuments info
@@ -202,6 +215,9 @@ class ProcessSearch(object):
                 # Get a Database Cursor
                 dbCursor = DBInterface.get_db().cursor()
 
+                if DEBUG:
+                    t1 = datetime.datetime.now()
+
                 # Episodes
                 if includeEpisodes:
                     # Adjust query for sqlite, if needed
@@ -241,6 +257,9 @@ class ProcessSearch(object):
                                 # Add the Transcript-less Episode Node to the Tree.  
                                 self.dbTree.add_Node('SearchEpisodeNode', nodeList, tempEpisode.number, tempLibrary.number, textSearchItems = textSearchItems)
 
+                if DEBUG:
+                    t2 = datetime.datetime.now()
+                    
                 # Documents
                 if includeDocuments:
                     # Adjust query for sqlite, if needed
@@ -261,6 +280,9 @@ class ProcessSearch(object):
                         # Add the Document Node to the Tree.
                         self.dbTree.add_Node('SearchDocumentNode', nodeList + (tempDocument.id,), tempDocument.number, tempDocument.library_num, textSearchItems = textSearchItems)
 
+                if DEBUG:
+                    t3 = datetime.datetime.now()
+                    
                 # Quotes
                 if includeQuotes:
                     # Adjust query for sqlite, if needed
@@ -290,6 +312,9 @@ class ProcessSearch(object):
                         # Add the Node to the Tree
                         self.dbTree.add_Node('SearchQuoteNode', nodeList, line['QuoteNum'], line['CollectNum'], sortOrder=line['SortOrder'], textSearchItems = textSearchItems)
 
+                if DEBUG:
+                    t4 = datetime.datetime.now()
+                    
                 # Clips
                 if includeClips:
                     # Adjust query for sqlite, if needed
@@ -319,17 +344,20 @@ class ProcessSearch(object):
                         # Add the Node to the Tree
                         self.dbTree.add_Node('SearchClipNode', nodeList, line['ClipNum'], line['CollectNum'], sortOrder=line['SortOrder'], textSearchItems = textSearchItems)
 
+                if DEBUG:
+                    t5 = datetime.datetime.now()
+
+                    print "Episodes: ", t2 - t1
+                    print "Documents: ", t3 - t2
+                    print "Quotes: ", t4 - t3
+                    print "Clips: ", t5 - t4
+                    print "Total: ", t5 - t1
+                    
                 # If Snapshots are check AND there is no Text Search Component ...
                 # (If there is a Text Search component to the search, the wholeSnapshotQuery is blank!!)
                 if includeSnapshots and wholeSnapshotQuery != '':
                     # Adjust query for sqlite, if needed
                     wholeSnapshotQuery = DBInterface.FixQuery(wholeSnapshotQuery)
-
-##                    print snapshotCodingQuery
-##                    print
-##                    print params
-##                    print
-
                     # Execute the Whole Snapshot query
                     dbCursor.execute(wholeSnapshotQuery, params)
 
@@ -459,6 +487,8 @@ class ProcessSearch(object):
         includesKeywords = False
         # We also need to know if the query includes Text, as we can't do that for Snapshots.  This tracks that.
         includesText = False
+        # We also need to track whether the search contains an OR operator
+        includesOrOperator = False
         # We also need to keep track of what the Search Text terms are
         textSearchItems = []
         # Initialize a list for strings to store SQL "COUNT" lines
@@ -491,6 +521,8 @@ class ProcessSearch(object):
 
             # If a line ends with " OR"...
             if tempStr[-3:] == ' OR':
+                # Note that we use an OR operator
+                includesOrOperator = True
                 # ... put the Boolean Operator into the Continuation String ...
                 continStr = ' OR '
                 # ... and remove it from the line being processed.
@@ -584,6 +616,15 @@ class ProcessSearch(object):
                 # Add the appropriate Boolean Operator to the end of the "HAVING" clause, if one was specified
                 havingStr += continStr
 
+        # If we have Keywords AND Text Search AND an OR Operator, only items WITH SOME KEYWORDS will be found.
+        # Items that contain the text but NO KEYWORDS will NOT be included in the Search results.
+        # We must let the user know.
+        if includesKeywords and includesText and includesOrOperator:
+            msg = _('When a Search Specification includes both Keywords and Text Search \nseparated by an "OR" operator, the Search Results will not include items \nthat contain the specified text but have NO Keywords AT ALL.')
+            tmpDlg = Dialogs.InfoDialog(None, msg)
+            tmpDlg.ShowModal()
+            tmpDlg.Destroy()
+
         # Before we continue, let's build the part of the query that implements the Collections selections
         # made on the Collections tab of the Search Form
 
@@ -619,7 +660,8 @@ class ProcessSearch(object):
         # Define the start of the Snapshot Coding Query
         snapshotCodingSQL = 'SELECT Sn.CollectNum, ParentCollectNum, Sn.SnapshotNum, CollectID, SnapshotID, Sn.SortOrder, '
 
-        # Add in the SQL "COUNT" variables that signal the presence or absence of Keyword Group : Keyword pairs
+        # Add in the SQL "COUNT" variables that signal the presence or absence of Keyword Group : Keyword pairs or
+        # text search parameters
         for lineNum in range(len(countStrings)):
             # All SQL "COUNT" lines but he last one need to end with a comma
             if lineNum < len(countStrings)-1:
@@ -643,28 +685,36 @@ class ProcessSearch(object):
                 snapshotCodingSQL += countStrings[lineNum] + tempStr
 
         # Now add the rest of the SQL for the Library/Document Query
-        documentSQL += 'FROM ClipKeywords2 CK1, Series2 Se, Documents2 Doc '
+        documentSQL += 'FROM '
+        if includesKeywords:
+            documentSQL += 'ClipKeywords2 CK1, '
+        documentSQL += 'Series2 Se, Documents2 Doc '
         documentSQL += 'WHERE '
         if includesKeywords:
             documentSQL += '(Doc.DocumentNum = CK1.DocumentNum) AND '
-        documentSQL += '(Doc.LibraryNum = Se.SeriesNum) AND '
-        documentSQL += '(CK1.DocumentNum > 0) '
+        documentSQL += '(Doc.LibraryNum = Se.SeriesNum) '
+        if includesKeywords:
+            documentSQL += 'AND (CK1.DocumentNum > 0) '
         documentSQL += 'GROUP BY Doc.LibraryNum, SeriesID, Doc.DocumentNum, DocumentID '
         # Add in the SQL "HAVING" Clause that was constructed above
         documentSQL += 'HAVING %s ' % havingStr
         documentSQL += 'ORDER BY SeriesID, DocumentID'
 
         # Now add the rest of the SQL for the Library/Episode Query
-        episodeSQL += 'FROM ClipKeywords2 CK1, Series2 Se, Episodes2 Ep'
+        episodeSQL += 'FROM '
+        if includesKeywords:
+            episodeSQL += 'ClipKeywords2 CK1, '
+        episodeSQL += 'Series2 Se, Episodes2 Ep'
         if includesText:
             episodeSQL += ', Transcripts2 Tr'
         episodeSQL += ' WHERE '
         if includesKeywords:
             episodeSQL += '(Ep.EpisodeNum = CK1.EpisodeNum) AND '
-        episodeSQL += '(Ep.SeriesNum = Se.SeriesNum) AND '
-        episodeSQL += '(CK1.EpisodeNum > 0) '
+        episodeSQL += '(Ep.SeriesNum = Se.SeriesNum) '
+        if includesKeywords:
+            episodeSQL += 'AND (CK1.EpisodeNum > 0) '
         if includesText:
-            episodeSQL += 'AND (Tr.EpisodeNum = Ep.EpisodeNum) AND (Tr.ClipNum = 0)'
+            episodeSQL += 'AND (Tr.EpisodeNum = Ep.EpisodeNum) AND (Tr.ClipNum = 0) '
         episodeSQL += 'GROUP BY Ep.SeriesNum, SeriesID, Ep.EpisodeNum, EpisodeID'
         if includesText:
             episodeSQL += ', TranscriptID'
@@ -672,12 +722,16 @@ class ProcessSearch(object):
         episodeSQL += ' HAVING %s ' % havingStr
 
         # Now add the rest of the SQL for the Collection/Quote Query
-        quoteSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Quotes2 Q '
+        quoteSQL += 'FROM '
+        if includesKeywords:
+            quoteSQL += 'ClipKeywords2 CK1, '
+        quoteSQL += 'Collections2 Co, Quotes2 Q '
         quoteSQL += 'WHERE '
         if includesKeywords:
             quoteSQL += '(Q.QuoteNum = CK1.QuoteNum) AND '
-        quoteSQL += '(Q.CollectNum = Co.CollectNum) AND '
-        quoteSQL += '(CK1.QuoteNum > 0) '
+        quoteSQL += '(Q.CollectNum = Co.CollectNum) '
+        if includesKeywords:
+            quoteSQL += 'AND (CK1.QuoteNum > 0) '
         if len(self.collectionList) > 0:
             quoteSQL += collectionSQL % paramsQ
         quoteSQL += 'GROUP BY Q.CollectNum, CollectID, QuoteID '
@@ -687,14 +741,18 @@ class ProcessSearch(object):
         quoteSQL += 'ORDER BY CollectID, Q.SortOrder'
 
         # Now add the rest of the SQL for the Collection/Clip Query
-        clipSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Clips2 Cl'
+        clipSQL += 'FROM '
+        if includesKeywords:
+            clipSQL += 'ClipKeywords2 CK1, '
+        clipSQL += 'Collections2 Co, Clips2 Cl'
         if includesText:
             clipSQL += ', Transcripts2 Tr'
         clipSQL += ' WHERE '
         if includesKeywords:
             clipSQL += '(Cl.ClipNum = CK1.ClipNum) AND '
-        clipSQL += '(Cl.CollectNum = Co.CollectNum) AND '
-        clipSQL += '(CK1.ClipNum > 0) '
+        clipSQL += '(Cl.CollectNum = Co.CollectNum) '
+        if includesKeywords:
+            clipSQL += 'AND (CK1.ClipNum > 0) '
         if includesText:
             clipSQL += 'AND (Tr.ClipNum = Cl.ClipNum) '
         if len(self.collectionList) > 0:
@@ -705,6 +763,7 @@ class ProcessSearch(object):
         # Add an "ORDER BY" Clause to preserve Clip Sort Order
         clipSQL += 'ORDER BY CollectID, Cl.SortOrder'
 
+        # We can't do Snapshot searches with text!!
         if not includesText:
             # Now add the rest of the SQL for the Whole Snapshot Query
             wholeSnapshotSQL += 'FROM ClipKeywords2 CK1, Collections2 Co, Snapshots2 Sn '
@@ -754,13 +813,14 @@ class ProcessSearch(object):
 ##        dlg.ShowModal()
 ##        dlg.Destroy()
 
-#        dlg = wx.TextEntryDialog(None, "Transana Whole Snapshot SQL Statement:", "Transana", wholeSnapshotSQL % tempParams, style=wx.OK)
-#        dlg.ShowModal()
-#        dlg.Destroy()
+##        if not includesText:
+##            dlg = wx.TextEntryDialog(None, "Transana Whole Snapshot SQL Statement:", "Transana", wholeSnapshotSQL % tempParams, style=wx.OK)
+##            dlg.ShowModal()
+##            dlg.Destroy()
 
-#        dlg = wx.TextEntryDialog(None, "Transana Snapshot Coding SQL Statement:", "Transana", snapshotCodingSQL % tempParams, style=wx.OK)
-#        dlg.ShowModal()
-#        dlg.Destroy()
+##            dlg = wx.TextEntryDialog(None, "Transana Snapshot Coding SQL Statement:", "Transana", snapshotCodingSQL % tempParams, style=wx.OK)
+##            dlg.ShowModal()
+##            dlg.Destroy()
 
         # Return the Library/Episode Query, the Collection/Clip Query, the Whole Snapshot Query, the Snapshot Coding Query, 
         # and the list of parameters to use with these queries to the calling routine.
