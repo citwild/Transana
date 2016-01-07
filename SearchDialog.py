@@ -16,8 +16,6 @@
 
 """ This module implements the Search Interface. """
 
-USE_NOTEBOOK = True
-
 __author__ = 'David Woods <dwoods@wcer.wisc.edu>'
 
 # import wxPython
@@ -181,425 +179,308 @@ class SearchDialog(wx.Dialog):
         # Add the Include Sizer on the Main Sizer
         mainSizer.Add(includeSizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-
-        # experimental NOTEBOOK INTERFACE
-        if USE_NOTEBOOK:
-
-            # Create a Notebook Control to allow different types of Search Information
-            selectionNotebook = wx.Notebook(self, -1)
-            # Set the Notebook Background to White (probably prevents a visible anomoly in Arabic!)
-            selectionNotebook.SetBackgroundColour(wx.WHITE)
-
-            # *********************************************************************************************************
-            # Add a Panel to the Notebook for Collection information
-            panelCollections = wx.Panel(selectionNotebook, -1)
-
-            # Add a Sizer to the Collections Panel
-            panelCollectionsSizer = wx.BoxSizer(wx.VERTICAL)
-
-            collToolBar = wx.ToolBar(panelCollections, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
-            # Toggle Button to indicate if child nodes should follow parent node
-            self.btnChildFollow = collToolBar.AddCheckLabelTool(-1, "Checkable", TransanaImages.CheckTree.GetBitmap(), shortHelp=_("Change Nested Collections"))
-            # have this be toggled by default
-            self.btnChildFollow.Toggle()
-            # Create the Check All button
-            self.btnCheckAll = collToolBar.AddTool(T_CHECK_ALL, TransanaImages.Check.GetBitmap(), shortHelpString=_('Check All'))
-            # Create the Uncheck All button
-            self.btnCheckNone = collToolBar.AddTool(T_CHECK_NONE, TransanaImages.NoCheck.GetBitmap(), shortHelpString=_('Uncheck All'))
-            collToolBar.Realize()
-            panelCollectionsSizer.Add(collToolBar, 0, wx.EXPAND, 0)
-
-            self.Bind(wx.EVT_MENU, self.OnCollectionSelectAll, self.btnCheckAll)
-            self.Bind(wx.EVT_MENU, self.OnCollectionSelectAll, self.btnCheckNone)
-
-            # Create a Tree Control with Checkboxes.
-            # (I experimented with the TR_AUTO_CHECK_CHILD style, but that is not appropriate.  Not wanting data
-            # from a certain collection doesn't necessarily imply we don't want it from the children.
-            self.ctcCollections = CT.CustomTreeCtrl(panelCollections, agwStyle=wx.TR_DEFAULT_STYLE )
-            # Set the TreeCtrl's background to white so it looks better
-            self.ctcCollections.SetBackgroundColour(wx.WHITE)
-            # Add the TreeCtrl to the Notebook Tab's Sizer
-            panelCollectionsSizer.Add(self.ctcCollections, 1, wx.EXPAND | wx.ALL, 10)
-
-            # Define the TreeCtrl's Images
-            image_list = wx.ImageList(16, 16, 0, 2)
-            image_list.Add(TransanaImages.Collection16.GetBitmap())
-            image_list.Add(TransanaImages.db.GetBitmap())
-            self.ctcCollections.SetImageList(image_list)
-
-            # Add the TreeCtrl's Root Node
-            self.ctcRoot = self.ctcCollections.AddRoot(_("Collections"))
-            self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_Normal)
-            self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_Selected)
-            self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_Expanded)
-            self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_SelectedExpanded)
-
-            # Create a Mapping Dictionary for the Collections so we can place Nested Collections quickly
-            mapDict = {}
-            # Add the Root Node to the Mapping Dictionary
-            mapDict[0] = self.ctcRoot
-
-            # Sometimes, a Collection appears in the DBInterface list before its Parent Collection has been
-            # established.  When this happens, we need to defer processing of these items until after their
-            # parent collection has been added.  (See DatabaseTreeTab.create_collections_node.)
-            # Initialize a list to hold those deferred collections here.
-            deferredItems = []
-
-            # Get all the Collections from the Database and iterate through them
-            for (collNo, collID, parentCollNo) in DBInterface.list_of_all_collections():
-                # If the Mapping Dictionary has the PARENT Collection ...
-                # (NOTE:  The query's ORDER BY clause means the parent should ALWAYS exist!!)
-                if mapDict.has_key(parentCollNo):
-                    # Get the Parent Node
-                    parentItem = mapDict[parentCollNo]
-                    # Create a new Checkbox Node for the current item a a child to the Parent Node
-                    item = self.ctcCollections.AppendItem(parentItem, collID, ct_type=CT.TREE_ITEMTYPE_CHECK)
-                    self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Normal)
-                    self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Selected)
-                    self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Expanded)
-                    self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_SelectedExpanded)
-                    # Check the item
-                    self.ctcCollections.CheckItem(item, True)
-                    # Set the item's PyData to the Collection Number
-                    self.ctcCollections.SetPyData(item, collNo)
-                    # Add the new item to the Mapping Dictionary
-                    mapDict[collNo] = item
-
-                    # We need to check the items waiting to be processed to see if we've just added the parent
-                    # collection for any of the items in the list.  If the list is empty, though, we don't need to bother.
-                    placementMade = (len(deferredItems) > 0)
-                    # We do this in a while loop, as each item from the list that gets added to the tree could be the
-                    # parent of other items in the list.
-                    while placementMade:
-                        # Re-initialize the while loop variable, assuming that no items will be found
-                        placementMade = False
-                        # Now see if any of the deferred items can be added!  Loop through the list ...
-                        # We can't just use a for loop, as we delete items from the list as we go!
-                        # So start by defining the list index and the number of items in the list
-                        index = 0
-                        endPoint = len(deferredItems)
-                        # As long as the index is less than the last list item ...
-                        while index < endPoint:  # for index in range(len(deferredItems)):
-                            # Get the data from the list item
-                            (dCollNo, dCollID, dParentCollNo) = deferredItems[index]
-                                
-                            # See if the parent collection has now been added to the tree and to the map dictionary
-                            if mapDict.has_key(dParentCollNo):
-                                # We can identify the parent node using the map dictionary
-                                parentItem = mapDict[dParentCollNo]
-
-                                ## print "SearchDialog.__init__(): ", dCollNo, dCollID, dParentCollNo, "*** ADDED ***"
-
-                                # Create a new Checkbox Node for the current item a a child to the Parent Node
-                                item = self.ctcCollections.AppendItem(parentItem, dCollID, ct_type=CT.TREE_ITEMTYPE_CHECK)
-                                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Normal)
-                                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Selected)
-                                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Expanded)
-                                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_SelectedExpanded)
-                                # Check the item
-                                self.ctcCollections.CheckItem(item, True)
-                                # Set the item's PyData to the Collection Number
-                                self.ctcCollections.SetPyData(item, dCollNo)
-                                # Add the new node to the map dictionary
-                                mapDict[dCollNo] = item
-                                # We need to indicate to the while loop that we found an entry that could be the parent of other entries
-                                placementMade = True
-                                # We need to remove the item we just added to the tree from the deferred items list
-                                del deferredItems[index]
-                                # If we delete the item from the list, we reduce the End Point by one and DO NOT increase the index
-                                endPoint -= 1
-                            # If the parent collection is NOT in the mapping dictionalry yet ...
-                            else:
-                                # ... just move on to the next item.  We can't do anything with this yet.
-                                index += 1                    
-
-                # If the Collection's parent is not yet in the Collection tree or the Map dictionary ...
-                else:
-
-                    ## print "SearchDialog.__init__(): ", collNo, collID, parentCollNo, "*** DEFERRED ***"
-
-                    # ... we need to place that collection in the list of items to process later, once the parent Collection
-                    # has been added to the database tree
-                    deferredItems.append((collNo, collID, parentCollNo))
-
-            # Expand the tree's Root Node
-            self.ctcCollections.Expand(self.ctcRoot)
-            # Define the Item Check event handler.
-            self.ctcCollections.Bind(CT.EVT_TREE_ITEM_CHECKED, self.OnCollectionsChecked)
-
-            # Add the Collections Sizer to the Collections Panel
-            panelCollections.SetSizer(panelCollectionsSizer)
-
-            # Add the Collections Panel to the Notebook as the initial page
-            selectionNotebook.AddPage(panelCollections, _("Collections"), True)
-
-
-            # *********************************************************************************************************
-            # Add a Panel to the Notebook for the Keywords information
-            panelKeywords = wx.Panel(selectionNotebook, -1)
-
-            # Add a Sizer to the Keywords Panel
-            panelKeywordsSizer = wx.BoxSizer(wx.VERTICAL)
-
-            # Add Boolean Operators Label
-            operatorsText = wx.StaticText(panelKeywords, -1, _('Operators:'))
-            panelKeywordsSizer.Add(operatorsText, 0, wx.LEFT | wx.TOP, 10)
-            panelKeywordsSizer.Add((0, 3))
-
-            # Create a HORIZONTAL sizer for the first row
-            r1Sizer = wx.BoxSizer(wx.HORIZONTAL)
-            # Add AND Button
-            self.btnAnd = wx.Button(panelKeywords, -1, _('AND'), size=wx.Size(50, 24))
-            r1Sizer.Add(self.btnAnd, 0)
-            self.btnAnd.Enable(False)
-            wx.EVT_BUTTON(self, self.btnAnd.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((10, 0))
-
-            # Add OR Button
-            self.btnOr = wx.Button(panelKeywords, -1, _('OR'), size=wx.Size(50, 24))
-            r1Sizer.Add(self.btnOr, 0)
-            self.btnOr.Enable(False)
-            wx.EVT_BUTTON(self, self.btnOr.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((1, 0), 1, wx.EXPAND)
-
-            # Add NOT Button
-            self.btnNot = wx.Button(panelKeywords, -1, _('NOT'), size=wx.Size(50, 24))
-            r1Sizer.Add(self.btnNot, 0)
-            self.btnNot.Enable(False)
-            wx.EVT_BUTTON(self, self.btnNot.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((1, 0), 1, wx.EXPAND)
-
-            # Add Left Parenthesis Button
-            self.btnLeftParen = wx.Button(panelKeywords, -1, '(', size=wx.Size(30, 24))
-            r1Sizer.Add(self.btnLeftParen, 0)
-            wx.EVT_BUTTON(self, self.btnLeftParen.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((10, 0))
-
-            # Add Right Parenthesis Button
-            self.btnRightParen = wx.Button(panelKeywords, -1, ')', size=wx.Size(30, 24))
-            r1Sizer.Add(self.btnRightParen, 0)
-            self.btnRightParen.Enable(False)
-            wx.EVT_BUTTON(self, self.btnRightParen.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((1, 0), 1, wx.EXPAND)
-
-            # Add "Undo" Button
-            # Get the image for Undo
-            bmp = TransanaImages.Undo16.GetBitmap()
-            self.btnUndo = wx.BitmapButton(panelKeywords, -1, bmp, size=wx.Size(30, 24))
-            self.btnUndo.SetToolTip(wx.ToolTip(_('Undo')))
-            r1Sizer.Add(self.btnUndo, 0)
-            wx.EVT_BUTTON(self, self.btnUndo.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((10, 0))
-
-            # Add Reset Button
-            self.btnReset = wx.Button(panelKeywords, -1, _('Reset'), size=wx.Size(80, 24))
-            r1Sizer.Add(self.btnReset, 0)
-            wx.EVT_BUTTON(self, self.btnReset.GetId(), self.OnBtnClick)
-
-            panelKeywordsSizer.Add(r1Sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            r2Sizer = wx.BoxSizer(wx.HORIZONTAL)
-            # Add Keyword Groups Label
-            keywordGroupsText = wx.StaticText(panelKeywords, -1, _('Keyword Groups:'))
-            r2Sizer.Add(keywordGroupsText, 1, wx.EXPAND)
-
-            r2Sizer.Add((10, 0))
-            
-            # Add Keywords Label
-            keywordsText = wx.StaticText(panelKeywords, -1, _('Keywords:'))
-            r2Sizer.Add(keywordsText, 1, wx.EXPAND)
-
-            panelKeywordsSizer.Add(r2Sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-            panelKeywordsSizer.Add((0, 3))
-            
-            r3Sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-            # Add Keyword Groups
-            self.kw_group_lb = wx.ListBox(panelKeywords, -1, wx.DefaultPosition, wx.DefaultSize, [])
-            r3Sizer.Add(self.kw_group_lb, 1, wx.EXPAND)
-            # Define the "Keyword Group Select" behavior
-            wx.EVT_LISTBOX(self, self.kw_group_lb.GetId(), self.OnKeywordGroupSelect)
-
-            r3Sizer.Add((10, 0))
-            
-            # Add Keywords
-            self.kw_lb = wx.ListBox(panelKeywords, -1, wx.DefaultPosition, wx.DefaultSize, [])
-            r3Sizer.Add(self.kw_lb, 1, wx.EXPAND)
-            # Define the "Keyword Select" behavior
-            wx.EVT_LISTBOX(self, self.kw_lb.GetId(), self.OnKeywordSelect)
-            # Double-clicking a Keyword is equivalent to selecting it and pressing the "Add Keyword to Query" button
-            wx.EVT_LISTBOX_DCLICK(self, self.kw_lb.GetId(), self.OnBtnClick)
-
-            panelKeywordsSizer.Add(r3Sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            # Add "Add Keyword to Query" Button
-            self.btnAdd = wx.Button(panelKeywords, -1, _('Add Keyword to Query'), size=wx.Size(240, 24))
-            panelKeywordsSizer.Add(self.btnAdd, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
-            wx.EVT_BUTTON(self, self.btnAdd.GetId(), self.OnBtnClick)
-
-
-            # Add Text Label
-            keywordsText = wx.StaticText(panelKeywords, -1, _('Text:'))
-            panelKeywordsSizer.Add(keywordsText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-
-            # Add Search Text
-            self.searchText = wx.TextCtrl(panelKeywords, -1, size=wx.Size(240, 24))
-            panelKeywordsSizer.Add(self.searchText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            # Add "Add Text to Query" Button
-            self.btnAddText = wx.Button(panelKeywords, -1, _('Add Text to Query'), size=wx.Size(240, 24))
-            panelKeywordsSizer.Add(self.btnAddText, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
-            wx.EVT_BUTTON(self, self.btnAddText.GetId(), self.OnBtnClick)
-
-
-            # Add Search Query Label
-            searchQueryText = wx.StaticText(panelKeywords, -1, _('Search Query:'))
-            panelKeywordsSizer.Add(searchQueryText, 0, wx.LEFT | wx.RIGHT, 10)
-            panelKeywordsSizer.Add((0, 3))
-            
-            # Add Search Query Text Box
-            # The Search Query is Read-Only
-            self.searchQuery = wx.TextCtrl(panelKeywords, -1, size = wx.Size(200, 120), style=wx.TE_MULTILINE | wx.TE_READONLY)
-            panelKeywordsSizer.Add(self.searchQuery, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            # Add the Keyword Sizer to the Keyword Panel
-            panelKeywords.SetSizer(panelKeywordsSizer)
-
-            # Add the Keywords Panel to tne Notebook and select it
-            selectionNotebook.AddPage(panelKeywords, _("Search Terms"), True)
-
-            # Add the Notebook to the form's Main Sizer
-            mainSizer.Add(selectionNotebook, 5, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            # Set the Collection Panel to AutoLayout
-            panelCollections.SetAutoLayout(True)
-            # Lay Out the Collections Panel
-            panelCollections.Layout()
-
-            # Set the Keyword Panel to AutoLayout
-            panelKeywords.SetAutoLayout(True)
-            # Lay Out the Keyword Panel
-            panelKeywords.Layout()
-
-        # TRADITIONAL Keywords Only Interface
-        else:
-            
-            # Add Boolean Operators Label
-            operatorsText = wx.StaticText(self, -1, _('Operators:'))
-            mainSizer.Add(operatorsText, 0, wx.LEFT, 10)
-            mainSizer.Add((0, 3))
-            
-            # Create a HORIZONTAL sizer for the first row
-            r1Sizer = wx.BoxSizer(wx.HORIZONTAL)
-            # Add AND Button
-            self.btnAnd = wx.Button(self, -1, _('AND'), size=wx.Size(50, 24))
-            r1Sizer.Add(self.btnAnd, 0)
-            self.btnAnd.Enable(False)
-            wx.EVT_BUTTON(self, self.btnAnd.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((10, 0))
-
-            # Add OR Button
-            self.btnOr = wx.Button(self, -1, _('OR'), size=wx.Size(50, 24))
-            r1Sizer.Add(self.btnOr, 0)
-            self.btnOr.Enable(False)
-            wx.EVT_BUTTON(self, self.btnOr.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((1, 0), 1, wx.EXPAND)
-
-            # Add NOT Button
-            self.btnNot = wx.Button(self, -1, _('NOT'), size=wx.Size(50, 24))
-            r1Sizer.Add(self.btnNot, 0)
-            wx.EVT_BUTTON(self, self.btnNot.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((1, 0), 1, wx.EXPAND)
-
-            # Add Left Parenthesis Button
-            self.btnLeftParen = wx.Button(self, -1, '(', size=wx.Size(30, 24))
-            r1Sizer.Add(self.btnLeftParen, 0)
-            wx.EVT_BUTTON(self, self.btnLeftParen.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((10, 0))
-
-            # Add Right Parenthesis Button
-            self.btnRightParen = wx.Button(self, -1, ')', size=wx.Size(30, 24))
-            r1Sizer.Add(self.btnRightParen, 0)
-            self.btnRightParen.Enable(False)
-            wx.EVT_BUTTON(self, self.btnRightParen.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((1, 0), 1, wx.EXPAND)
-
-            # Add "Undo" Button
-            # Get the image for Undo
-            bmp = TransanaImages.Undo16.GetBitmap()
-            self.btnUndo = wx.BitmapButton(self, -1, bmp, size=wx.Size(30, 24))
-            self.btnUndo.SetToolTip(wx.ToolTip(_('Undo')))
-            r1Sizer.Add(self.btnUndo, 0)
-            wx.EVT_BUTTON(self, self.btnUndo.GetId(), self.OnBtnClick)
-
-            r1Sizer.Add((10, 0))
-
-            # Add Reset Button
-            self.btnReset = wx.Button(self, -1, _('Reset'), size=wx.Size(80, 24))
-            r1Sizer.Add(self.btnReset, 0)
-            wx.EVT_BUTTON(self, self.btnReset.GetId(), self.OnBtnClick)
-
-            mainSizer.Add(r1Sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            r2Sizer = wx.BoxSizer(wx.HORIZONTAL)
-            # Add Keyword Groups Label
-            keywordGroupsText = wx.StaticText(self, -1, _('Keyword Groups:'))
-            r2Sizer.Add(keywordGroupsText, 1, wx.EXPAND)
-
-            r2Sizer.Add((10, 0))
-            
-            # Add Keywords Label
-            keywordsText = wx.StaticText(self, -1, _('Keywords:'))
-            r2Sizer.Add(keywordsText, 1, wx.EXPAND)
-
-            mainSizer.Add(r2Sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-            mainSizer.Add((0, 3))
-            
-            r3Sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-            # Add Keyword Groups
-            self.kw_group_lb = wx.ListBox(self, -1, wx.DefaultPosition, wx.DefaultSize, [])
-            r3Sizer.Add(self.kw_group_lb, 1, wx.EXPAND)
-            # Define the "Keyword Group Select" behavior
-            wx.EVT_LISTBOX(self, self.kw_group_lb.GetId(), self.OnKeywordGroupSelect)
-
-            r3Sizer.Add((10, 0))
-            
-            # Add Keywords
-            self.kw_lb = wx.ListBox(self, -1, wx.DefaultPosition, wx.DefaultSize, [])
-            r3Sizer.Add(self.kw_lb, 1, wx.EXPAND)
-            # Define the "Keyword Select" behavior
-            wx.EVT_LISTBOX(self, self.kw_lb.GetId(), self.OnKeywordSelect)
-            # Double-clicking a Keyword is equivalent to selecting it and pressing the "Add Keyword to Query" button
-            wx.EVT_LISTBOX_DCLICK(self, self.kw_lb.GetId(), self.OnBtnClick)
-
-            mainSizer.Add(r3Sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-            # Add "Add Keyword to Query" Button
-            self.btnAdd = wx.Button(self, -1, _('Add Keyword to Query'), size=wx.Size(240, 24))
-            mainSizer.Add(self.btnAdd, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
-            wx.EVT_BUTTON(self, self.btnAdd.GetId(), self.OnBtnClick)
-
-            # Add Search Query Label
-            searchQueryText = wx.StaticText(self, -1, _('Search Query:'))
-            mainSizer.Add(searchQueryText, 0, wx.LEFT | wx.RIGHT, 10)
-            mainSizer.Add((0, 3))
-            
-            # Add Search Query Text Box
-            # The Search Query is Read-Only
-            self.searchQuery = wx.TextCtrl(self, -1, size = wx.Size(200, 120), style=wx.TE_MULTILINE | wx.TE_READONLY)
-            mainSizer.Add(self.searchQuery, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        # Create a Notebook Control to allow different types of Search Information
+        selectionNotebook = wx.Notebook(self, -1)
+        # Set the Notebook Background to White (probably prevents a visible anomoly in Arabic!)
+        selectionNotebook.SetBackgroundColour(wx.WHITE)
+
+        # *********************************************************************************************************
+        # Add a Panel to the Notebook for Collection information
+        panelCollections = wx.Panel(selectionNotebook, -1)
+
+        # Add a Sizer to the Collections Panel
+        panelCollectionsSizer = wx.BoxSizer(wx.VERTICAL)
+
+        collToolBar = wx.ToolBar(panelCollections, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
+        # Toggle Button to indicate if child nodes should follow parent node
+        self.btnChildFollow = collToolBar.AddCheckLabelTool(-1, "Checkable", TransanaImages.CheckTree.GetBitmap(), shortHelp=_("Change Nested Collections"))
+        # have this be toggled by default
+        self.btnChildFollow.Toggle()
+        # Create the Check All button
+        self.btnCheckAll = collToolBar.AddTool(T_CHECK_ALL, TransanaImages.Check.GetBitmap(), shortHelpString=_('Check All'))
+        # Create the Uncheck All button
+        self.btnCheckNone = collToolBar.AddTool(T_CHECK_NONE, TransanaImages.NoCheck.GetBitmap(), shortHelpString=_('Uncheck All'))
+        collToolBar.Realize()
+        panelCollectionsSizer.Add(collToolBar, 0, wx.EXPAND, 0)
+
+        self.Bind(wx.EVT_MENU, self.OnCollectionSelectAll, self.btnCheckAll)
+        self.Bind(wx.EVT_MENU, self.OnCollectionSelectAll, self.btnCheckNone)
+
+        # Create a Tree Control with Checkboxes.
+        # (I experimented with the TR_AUTO_CHECK_CHILD style, but that is not appropriate.  Not wanting data
+        # from a certain collection doesn't necessarily imply we don't want it from the children.
+        self.ctcCollections = CT.CustomTreeCtrl(panelCollections, agwStyle=wx.TR_DEFAULT_STYLE )
+        # Set the TreeCtrl's background to white so it looks better
+        self.ctcCollections.SetBackgroundColour(wx.WHITE)
+        # Add the TreeCtrl to the Notebook Tab's Sizer
+        panelCollectionsSizer.Add(self.ctcCollections, 1, wx.EXPAND | wx.ALL, 10)
+
+        # Define the TreeCtrl's Images
+        image_list = wx.ImageList(16, 16, 0, 2)
+        image_list.Add(TransanaImages.Collection16.GetBitmap())
+        image_list.Add(TransanaImages.db.GetBitmap())
+        self.ctcCollections.SetImageList(image_list)
+
+        # Add the TreeCtrl's Root Node
+        self.ctcRoot = self.ctcCollections.AddRoot(_("Collections"))
+        self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_Normal)
+        self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_Selected)
+        self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_Expanded)
+        self.ctcCollections.SetItemImage(self.ctcRoot, 1, wx.TreeItemIcon_SelectedExpanded)
+
+        # Create a Mapping Dictionary for the Collections so we can place Nested Collections quickly
+        mapDict = {}
+        # Add the Root Node to the Mapping Dictionary
+        mapDict[0] = self.ctcRoot
+
+        # Sometimes, a Collection appears in the DBInterface list before its Parent Collection has been
+        # established.  When this happens, we need to defer processing of these items until after their
+        # parent collection has been added.  (See DatabaseTreeTab.create_collections_node.)
+        # Initialize a list to hold those deferred collections here.
+        deferredItems = []
+
+        # Get all the Collections from the Database and iterate through them
+        for (collNo, collID, parentCollNo) in DBInterface.list_of_all_collections():
+            # If the Mapping Dictionary has the PARENT Collection ...
+            # (NOTE:  The query's ORDER BY clause means the parent should ALWAYS exist!!)
+            if mapDict.has_key(parentCollNo):
+                # Get the Parent Node
+                parentItem = mapDict[parentCollNo]
+                # Create a new Checkbox Node for the current item a a child to the Parent Node
+                item = self.ctcCollections.AppendItem(parentItem, collID, ct_type=CT.TREE_ITEMTYPE_CHECK)
+                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Normal)
+                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Selected)
+                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Expanded)
+                self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_SelectedExpanded)
+                # Check the item
+                self.ctcCollections.CheckItem(item, True)
+                # Set the item's PyData to the Collection Number
+                self.ctcCollections.SetPyData(item, collNo)
+                # Add the new item to the Mapping Dictionary
+                mapDict[collNo] = item
+
+                # We need to check the items waiting to be processed to see if we've just added the parent
+                # collection for any of the items in the list.  If the list is empty, though, we don't need to bother.
+                placementMade = (len(deferredItems) > 0)
+                # We do this in a while loop, as each item from the list that gets added to the tree could be the
+                # parent of other items in the list.
+                while placementMade:
+                    # Re-initialize the while loop variable, assuming that no items will be found
+                    placementMade = False
+                    # Now see if any of the deferred items can be added!  Loop through the list ...
+                    # We can't just use a for loop, as we delete items from the list as we go!
+                    # So start by defining the list index and the number of items in the list
+                    index = 0
+                    endPoint = len(deferredItems)
+                    # As long as the index is less than the last list item ...
+                    while index < endPoint:  # for index in range(len(deferredItems)):
+                        # Get the data from the list item
+                        (dCollNo, dCollID, dParentCollNo) = deferredItems[index]
+                            
+                        # See if the parent collection has now been added to the tree and to the map dictionary
+                        if mapDict.has_key(dParentCollNo):
+                            # We can identify the parent node using the map dictionary
+                            parentItem = mapDict[dParentCollNo]
+
+                            ## print "SearchDialog.__init__(): ", dCollNo, dCollID, dParentCollNo, "*** ADDED ***"
+
+                            # Create a new Checkbox Node for the current item a a child to the Parent Node
+                            item = self.ctcCollections.AppendItem(parentItem, dCollID, ct_type=CT.TREE_ITEMTYPE_CHECK)
+                            self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Normal)
+                            self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Selected)
+                            self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_Expanded)
+                            self.ctcCollections.SetItemImage(item, 0, wx.TreeItemIcon_SelectedExpanded)
+                            # Check the item
+                            self.ctcCollections.CheckItem(item, True)
+                            # Set the item's PyData to the Collection Number
+                            self.ctcCollections.SetPyData(item, dCollNo)
+                            # Add the new node to the map dictionary
+                            mapDict[dCollNo] = item
+                            # We need to indicate to the while loop that we found an entry that could be the parent of other entries
+                            placementMade = True
+                            # We need to remove the item we just added to the tree from the deferred items list
+                            del deferredItems[index]
+                            # If we delete the item from the list, we reduce the End Point by one and DO NOT increase the index
+                            endPoint -= 1
+                        # If the parent collection is NOT in the mapping dictionalry yet ...
+                        else:
+                            # ... just move on to the next item.  We can't do anything with this yet.
+                            index += 1                    
+
+            # If the Collection's parent is not yet in the Collection tree or the Map dictionary ...
+            else:
+
+                ## print "SearchDialog.__init__(): ", collNo, collID, parentCollNo, "*** DEFERRED ***"
+
+                # ... we need to place that collection in the list of items to process later, once the parent Collection
+                # has been added to the database tree
+                deferredItems.append((collNo, collID, parentCollNo))
+
+        # Expand the tree's Root Node
+        self.ctcCollections.Expand(self.ctcRoot)
+        # Define the Item Check event handler.
+        self.ctcCollections.Bind(CT.EVT_TREE_ITEM_CHECKED, self.OnCollectionsChecked)
+
+        # Add the Collections Sizer to the Collections Panel
+        panelCollections.SetSizer(panelCollectionsSizer)
+
+        # Add the Collections Panel to the Notebook as the initial page
+        selectionNotebook.AddPage(panelCollections, _("Collections"), True)
+
+
+        # *********************************************************************************************************
+        # Add a Panel to the Notebook for the Keywords information
+        panelKeywords = wx.Panel(selectionNotebook, -1)
+
+        # Add a Sizer to the Keywords Panel
+        panelKeywordsSizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Add Boolean Operators Label
+        operatorsText = wx.StaticText(panelKeywords, -1, _('Operators:'))
+        panelKeywordsSizer.Add(operatorsText, 0, wx.LEFT | wx.TOP, 10)
+        panelKeywordsSizer.Add((0, 3))
+
+        # Create a HORIZONTAL sizer for the first row
+        r1Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Add AND Button
+        self.btnAnd = wx.Button(panelKeywords, -1, _('AND'), size=wx.Size(50, 24))
+        r1Sizer.Add(self.btnAnd, 0)
+        self.btnAnd.Enable(False)
+        wx.EVT_BUTTON(self, self.btnAnd.GetId(), self.OnBtnClick)
+
+        r1Sizer.Add((10, 0))
+
+        # Add OR Button
+        self.btnOr = wx.Button(panelKeywords, -1, _('OR'), size=wx.Size(50, 24))
+        r1Sizer.Add(self.btnOr, 0)
+        self.btnOr.Enable(False)
+        wx.EVT_BUTTON(self, self.btnOr.GetId(), self.OnBtnClick)
+
+        r1Sizer.Add((1, 0), 1, wx.EXPAND)
+
+        # Add NOT Button
+        self.btnNot = wx.Button(panelKeywords, -1, _('NOT'), size=wx.Size(50, 24))
+        r1Sizer.Add(self.btnNot, 0)
+        self.btnNot.Enable(False)
+        wx.EVT_BUTTON(self, self.btnNot.GetId(), self.OnBtnClick)
+
+        r1Sizer.Add((1, 0), 1, wx.EXPAND)
+
+        # Add Left Parenthesis Button
+        self.btnLeftParen = wx.Button(panelKeywords, -1, '(', size=wx.Size(30, 24))
+        r1Sizer.Add(self.btnLeftParen, 0)
+        wx.EVT_BUTTON(self, self.btnLeftParen.GetId(), self.OnBtnClick)
+
+        r1Sizer.Add((10, 0))
+
+        # Add Right Parenthesis Button
+        self.btnRightParen = wx.Button(panelKeywords, -1, ')', size=wx.Size(30, 24))
+        r1Sizer.Add(self.btnRightParen, 0)
+        self.btnRightParen.Enable(False)
+        wx.EVT_BUTTON(self, self.btnRightParen.GetId(), self.OnBtnClick)
+
+        r1Sizer.Add((1, 0), 1, wx.EXPAND)
+
+        # Add "Undo" Button
+        # Get the image for Undo
+        bmp = TransanaImages.Undo16.GetBitmap()
+        self.btnUndo = wx.BitmapButton(panelKeywords, -1, bmp, size=wx.Size(30, 24))
+        self.btnUndo.SetToolTip(wx.ToolTip(_('Undo')))
+        r1Sizer.Add(self.btnUndo, 0)
+        wx.EVT_BUTTON(self, self.btnUndo.GetId(), self.OnBtnClick)
+
+        r1Sizer.Add((10, 0))
+
+        # Add Reset Button
+        self.btnReset = wx.Button(panelKeywords, -1, _('Reset'), size=wx.Size(80, 24))
+        r1Sizer.Add(self.btnReset, 0)
+        wx.EVT_BUTTON(self, self.btnReset.GetId(), self.OnBtnClick)
+
+        panelKeywordsSizer.Add(r1Sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        r2Sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Add Keyword Groups Label
+        keywordGroupsText = wx.StaticText(panelKeywords, -1, _('Keyword Groups:'))
+        r2Sizer.Add(keywordGroupsText, 1, wx.EXPAND)
+
+        r2Sizer.Add((10, 0))
+        
+        # Add Keywords Label
+        keywordsText = wx.StaticText(panelKeywords, -1, _('Keywords:'))
+        r2Sizer.Add(keywordsText, 1, wx.EXPAND)
+
+        panelKeywordsSizer.Add(r2Sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        panelKeywordsSizer.Add((0, 3))
+        
+        r3Sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        # Add Keyword Groups
+        self.kw_group_lb = wx.ListBox(panelKeywords, -1, wx.DefaultPosition, wx.DefaultSize, [])
+        r3Sizer.Add(self.kw_group_lb, 1, wx.EXPAND)
+        # Define the "Keyword Group Select" behavior
+        wx.EVT_LISTBOX(self, self.kw_group_lb.GetId(), self.OnKeywordGroupSelect)
+
+        r3Sizer.Add((10, 0))
+        
+        # Add Keywords
+        self.kw_lb = wx.ListBox(panelKeywords, -1, wx.DefaultPosition, wx.DefaultSize, [])
+        r3Sizer.Add(self.kw_lb, 1, wx.EXPAND)
+        # Define the "Keyword Select" behavior
+        wx.EVT_LISTBOX(self, self.kw_lb.GetId(), self.OnKeywordSelect)
+        # Double-clicking a Keyword is equivalent to selecting it and pressing the "Add Keyword to Query" button
+        wx.EVT_LISTBOX_DCLICK(self, self.kw_lb.GetId(), self.OnBtnClick)
+
+        panelKeywordsSizer.Add(r3Sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Add "Add Keyword to Query" Button
+        self.btnAdd = wx.Button(panelKeywords, -1, _('Add Keyword to Query'), size=wx.Size(240, 24))
+        panelKeywordsSizer.Add(self.btnAdd, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
+        wx.EVT_BUTTON(self, self.btnAdd.GetId(), self.OnBtnClick)
+
+
+        # Add Text Label
+        keywordsText = wx.StaticText(panelKeywords, -1, _('Text:'))
+        panelKeywordsSizer.Add(keywordsText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+
+        # Add Search Text
+        self.searchText = wx.TextCtrl(panelKeywords, -1, size=wx.Size(240, 24), style=wx.WANTS_CHARS)
+        self.searchText.Bind(wx.EVT_KEY_DOWN, self.OnSearchTextKeyDown)
+        panelKeywordsSizer.Add(self.searchText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Add "Add Text to Query" Button
+        self.btnAddText = wx.Button(panelKeywords, -1, _('Add Text to Query'), size=wx.Size(240, 24))
+        panelKeywordsSizer.Add(self.btnAddText, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
+        wx.EVT_BUTTON(self, self.btnAddText.GetId(), self.OnBtnClick)
+
+
+        # Add Search Query Label
+        searchQueryText = wx.StaticText(panelKeywords, -1, _('Search Query:'))
+        panelKeywordsSizer.Add(searchQueryText, 0, wx.LEFT | wx.RIGHT, 10)
+        panelKeywordsSizer.Add((0, 3))
+        
+        # Add Search Query Text Box
+        # The Search Query is Read-Only
+        self.searchQuery = wx.TextCtrl(panelKeywords, -1, size = wx.Size(200, 120), style=wx.TE_MULTILINE | wx.TE_READONLY)
+        panelKeywordsSizer.Add(self.searchQuery, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Add the Keyword Sizer to the Keyword Panel
+        panelKeywords.SetSizer(panelKeywordsSizer)
+
+        # Add the Keywords Panel to tne Notebook and select it
+        selectionNotebook.AddPage(panelKeywords, _("Search Terms"), True)
+
+        # Add the Notebook to the form's Main Sizer
+        mainSizer.Add(selectionNotebook, 5, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Set the Collection Panel to AutoLayout
+        panelCollections.SetAutoLayout(True)
+        # Lay Out the Collections Panel
+        panelCollections.Layout()
+
+        # Set the Keyword Panel to AutoLayout
+        panelKeywords.SetAutoLayout(True)
+        # Lay Out the Keyword Panel
+        panelKeywords.Layout()
 
         # Create a Row sizer for the buttons at the bottom of the form
         btnSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -735,7 +616,13 @@ class SearchDialog(wx.Dialog):
             enable = False
         # Call the recursive Method for enabling/disabling all Collections
         self.EnableCollections(self.ctcRoot, enable)
-        
+
+    def OnSearchTextKeyDown(self, event):
+        if event.GetKeyCode() == wx.WXK_RETURN:
+            self.OnBtnClick(event)
+        else:
+            event.Skip()
+            
     def OnBtnClick(self, event):
         """ This method handles all Button Clicks for the Search Dialog. """
         
@@ -977,7 +864,7 @@ class SearchDialog(wx.Dialog):
                 # If we're not in the Standard Version ...
                 if TransanaConstants.proVersion:
                     # If there is NO Text Search specification and the Include Snapshot box is disabled ...
-                    if (not 'Item Text contains "' in self.searchQuery.GetValue()) and (not self.includeSnapshot.IsEnabled()):
+                    if (not 'Item Text contains "' in self.searchQuery.GetValue()) and (not self.includeSnapshots.IsEnabled()):
                         # ... enable Include Snapshots
                         self.includeSnapshots.Enable(True)
                         # and restore its former value
