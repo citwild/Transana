@@ -1,4 +1,4 @@
-# Copyright (C) 2003 - 2015 The Board of Regents of the University of Wisconsin System 
+# Copyright (C) 2003 - 2016 The Board of Regents of the University of Wisconsin System 
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -362,9 +362,6 @@ class KeywordsTab(wx.Panel):
                                 msg = 'Document %d' % obj.number
                             elif isinstance(obj, Quote.Quote):
                                 msg = 'Quote %d' % obj.number
-
-                                print "KeywordsTab.OnEdit():  UKL sent for %s!!" % msg
-                                
                             else:
                                 msg = ''
                             if msg != '':
@@ -514,8 +511,6 @@ class KeywordsTab(wx.Panel):
                         # Unlock the record
                         self.documentObj.unlock_record()
                         
-                        print "KeywordsTab.OnDelete():  UKL sent for %s!!" % msg
-
                     # If there's an MU Chat Message ...
                     if (not TransanaConstants.singleUserVersion) and (msg != ''):
                         if DEBUG:
