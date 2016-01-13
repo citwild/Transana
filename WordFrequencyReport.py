@@ -1,4 +1,4 @@
-#Copyright (C) 2002-2015  The Board of Regents of the University of Wisconsin System
+#Copyright (C) 2002-2016  The Board of Regents of the University of Wisconsin System
 
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License
@@ -38,6 +38,8 @@ if __name__ == '__main__':
 import Clip
 # Import Transana's Database Interface
 import DBInterface
+# Import Trasnana's Dialog Boxes
+import Dialogs
 # Import Transana's Document object
 import Document
 # Import Transana's Quote object
@@ -444,8 +446,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
     def OnEditSynonym(self, event):
         """ Edit a Synonym Group """
-        # Get the currently focussed item, ignoring check status
-        sel = self.resultsList.GetFocusedItem()
+        # Get the currently selected item, ignoring check status or multiple selections
+        sel = self.resultsList.GetFirstSelected()
         # Initialize the mapItem value
         mapItem = -1
         # If there IS a currently focussed item ...
@@ -684,6 +686,14 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # This code comes here, as width is calculated immediately, so must be AFTER data population.        
         self.synonymResults.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         self.synonymResults.SetColumnWidth(1, wx.LIST_AUTOSIZE)
+        # If the Word Column is too narrow to show the column header ...
+        if self.synonymResults.GetColumnWidth(0) < 150:
+            # ... widen the column
+            self.synonymResults.SetColumnWidth(0, 150)
+        # If the Words in Group Column is too narrow to show the column header ...
+        if self.synonymResults.GetColumnWidth(1) < 200:
+            # ... widen the column
+            self.synonymResults.SetColumnWidth(1, 200)
 
         # Clear the itemDataMap so that the table will be properly refeshed
         self.itemDataMap = {}
@@ -848,10 +858,14 @@ I'm Ellen Feiss, and I'm a student!"""
     def ExtractDataFromTree(self, tree, startNode):
         """ This routine takes the tree and startNode, figures out what Documents and Transcripts to load, and creates
             a data structure with all the individual words in the appropriate scope along with their counts. """
+        # Ask the user to wait while the report is being assembled
+        popupDlg = Dialogs.PopupDialog(self, _("Word Frequency Report"), _("Please wait ..."))
         # Initialize the data dictionary
         data = {}
         # Extract the data from the tree using this recursive method
         data = self.ExtractDataFromNode(tree, startNode, data)
+        # Destroy the popup
+        popupDlg.Destroy()
         # Return the data dictionary to the calling routine
         return data
 
