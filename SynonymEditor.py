@@ -1,4 +1,4 @@
-#Copyright (C) 2002-2015  The Board of Regents of the University of Wisconsin System
+#Copyright (C) 2002-2016  The Board of Regents of the University of Wisconsin System
 
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License
@@ -99,6 +99,10 @@ class SynonymEditor(wx.Dialog):
         # Set the Word Group and Words list data into the controls
         self.synonymGroup.SetValue(dataItem[0])
         self.synonyms.Set(dataItem[2])
+        # If this is the "Do Not Show" group ...
+        if dataItem[0] == 'Do Not Show Group':
+            # ... disable this field, as we do not allow editing of this group name
+            self.synonymGroup.Enable(False)
 
     def OnOK(self, event):
         """ Handle the OK button """
