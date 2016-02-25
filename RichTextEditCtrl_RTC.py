@@ -861,7 +861,8 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         else:
             formattingFont = False
         # If we are formatting ANY paragraph characteristic ...
-        if parAlign or parLeftIndent or parRightIndent or parTabs or parLineSpacing or parSpacingBefore or parSpacingAfter:
+        if parAlign or (parLeftIndent is not None) or (parRightIndent is not None) or parTabs or \
+           (parLineSpacing is not None) or (parSpacingBefore is not None) or (parSpacingAfter is not None):
             # ... note that we are doing paragraph formatting
             formattingParagraph = True
         # If we're NOT doing paragraph formatting ...

@@ -632,7 +632,7 @@ class XMLToRTFHandler(xml.sax.handler.ContentHandler):
             # Due to a bug in the RichTextEditCtrl, the parspacingafter value may sometimes be NEGATIVE, which of course doesn't
             # make sense outside of the RichTextEditCtrl.  This adjusts for that.
             else:
-                parAfter = int(self.paragraphAttributes[u'paragraph'][u'parspacingafter']) + int(self.paragraphAttributes[u'paragraph'][u'parspacingbefore'])
+                parAfter = int(self.paragraphAttributes[u'paragraph'][u'parspacingafter'])  #  + int(self.paragraphAttributes[u'paragraph'][u'parspacingbefore'])
                 self.outputString.write('\\sa%d' % self.twips(max(parAfter, 0) / 100.0))
 
             # If Tabs are defined ...
