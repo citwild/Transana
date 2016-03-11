@@ -184,9 +184,9 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Add a separator
         self.toolbar.AddSeparator()
 
-        # Add a Print button
-        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.PrintPreview.GetBitmap(), size=(24, 24))
-        self.printReport.SetToolTipString(_("Print"))
+        # Add a Save / Print button
+        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.SavePrint.GetBitmap(), size=(24, 24))
+        self.printReport.SetToolTipString(_("Save / Print"))
         self.toolbar.AddControl(self.printReport)
         self.printReport.Bind(wx.EVT_BUTTON, self.OnPrintReport)
 
@@ -327,7 +327,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.optionsPanel = wx.Panel(self.notebook, -1)
         self.optionsPanel.SetBackgroundColour(wx.WHITE)
         # Create a Sizer for the Options Panel
-        pnl2Sizer = wx.FlexGridSizer(rows=4, cols=4, hgap=20, vgap=20)
+        pnl2Sizer = wx.FlexGridSizer(rows=5, cols=4, hgap=20, vgap=20)
         self.optionsPanel.SetSizer(pnl2Sizer)
 
         # Minimum Word Frequency
@@ -337,6 +337,10 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Minimum Word Length
         txt2 = wx.StaticText(self.optionsPanel, -1, "Minimum Word Length:", style=wx.ALIGN_RIGHT)
         self.minLength = wx.TextCtrl(self.optionsPanel, -1, "1")
+
+        # Clear Word Groupings
+        self.btnClearAll = wx.Button(self.optionsPanel, -1, "Clear all Word Grouping Data", style=wx.ALIGN_CENTER)
+        self.btnClearAll.Bind(wx.EVT_BUTTON, self.OnClearAllWordGroupings)
 
         # Use the GridSizer to center our data entry fields both horizontally and vertically
         pnl2Sizer.AddMany([((1, 1), 12, wx.EXPAND),
@@ -356,12 +360,17 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
                            
                            ((1, 1), 12, wx.EXPAND),
                            ((1, 1), 3, wx.EXPAND),
+                           (self.btnClearAll, 1, wx.EXPAND),
+                           ((1, 1), 14, wx.EXPAND),
+
+                           ((1, 1), 12, wx.EXPAND),
+                           ((1, 1), 3, wx.EXPAND),
                            ((1, 1), 1, wx.EXPAND),
                            ((1, 1), 14, wx.EXPAND)])
 
         # Make the top and bottom rows growable to center vertically
         pnl2Sizer.AddGrowableRow(0, 12)
-        pnl2Sizer.AddGrowableRow(3, 14)
+        pnl2Sizer.AddGrowableRow(4, 14)
         # Make the left and right columns growable to center horizontally
         pnl2Sizer.AddGrowableCol(0, 12)
         pnl2Sizer.AddGrowableCol(3, 14)
@@ -1203,7 +1212,7 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... then update the existing item for that group
             self.itemDataMap[itemIndex] = (synonymGroup, itemValue, synonymData)
 
-        # Remember the current scroll positoin of the Results List
+        # Remember the current scroll position of the Results List
         scrollPos = self.resultsList.GetScrollPos(wx.VERTICAL)
         # Repopulate the Word Frequencies
         self.PopulateWordFrequencies()
@@ -1216,6 +1225,23 @@ I'm Ellen Feiss, and I'm a student!"""
         # Thaw the Control
         self.resultsList.Thaw()
 
+    def OnClearAllWordGroupings(self, event):
+        prompt = _("Are you SURE you want to delete all Word Groupings?")
+        # Build an error dialog
+        dlg = Dialogs.QuestionDialog(None, prompt)
+        dlg.CentreOnScreen()
+        # If the user chooses to overwrite ...
+        if dlg.LocalShowModal() == wx.ID_YES:
+            # Delete all of the Word Groupings        
+            DBInterface.ClearAllSynonyms()
+            # Clear the itemDataMap so that the table will be properly refeshed
+            self.itemDataMap = {}
+            # Repopulate the Synonyms
+            self.PopulateSynonyms()
+            # Repopulate the Word Frequencies
+            self.PopulateWordFrequencies()
+        dlg.Destroy()
+        
 
 if __name__ == '__main__':
     class MyApp(wx.App):
