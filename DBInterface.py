@@ -4981,6 +4981,17 @@ def GetSynonyms():
     # Return the data in a Dictionary
     return synonymsDict
 
+def ClearAllSynonyms():
+    """ Clear the Synonym table; Delete all Word Frequency Word Groupings """
+    # Get a database cursor
+    DBCursor = get_db().cursor()
+    # Define our query
+    query = "DELETE FROM Synonyms2"
+    # Execute the query
+    DBCursor.execute(query)
+    # Close the cursor
+    DBCursor.close()
+
 def ClearSourceEpisodeRecords(episodeNum):
     """ When an Episode is deleted, it must be removed from any Snapshots that claim it. """
 

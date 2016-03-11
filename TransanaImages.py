@@ -604,6 +604,21 @@ SaveJPG16 = PyEmbeddedImage(
     "QinFRGuCMMKKxdqmsxizxXwCGoutNpyZrqsAAAAASUVORK5CYII=")
 
 #----------------------------------------------------------------------
+SavePrint = PyEmbeddedImage(
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAiBJ"
+    "REFUOI19kr1LG3EYxz+/u/NsNMnlfE0otS90aWpQurTgUnBKJ2npkrVCl6I4uWlGBzt2EfoP"
+    "dBB0EoLoLB0C1k5tl2pVaM8Y72K83N3TQQ1IEr/w4zc8D1+e74sCkSSnWFS4DaekqGIh0jIS"
+    "KTInAre+ReYEpAUGwEnhPecf3gLGFWkd6AZVhwB0E4KV+/C59TIDIOwfwHj2AKWuCRQgVz9o"
+    "mhANRm2lGQDu2RlVL0Sjq+2SrkEQmNBmbgAopXBdF9WUcBOaLjQCq/MFBHH8egyl3SSoVv8y"
+    "NfWCXC6HiDA29ofxcdja2sK27eu1zuYvLHyUpaUlMU1TMpmM7OzsSKlUkkKh0ExBgcjo8zKj"
+    "T9bIPnxEYmAQFQhuzUNFP/D9OgCWZRGPx9nY2GB1dRW5KoQCkXuPv7DyKYEdj7G+vsar/Gt6"
+    "rV5KpU0cx6FYLKLUZSKmaaKUahJoAGFwwdBgP8eHx2xvb/Lz13fOT09QSqHrOuVymb29Pfb3"
+    "9wnDsNVEEfh3eEzjwmP0aY47sRiZ9F26ur6RSCSYmZkhnU4zMTGBZVnk8/kmgRJp026gr6+P"
+    "SqWCiNDT04OmaUTRZZlqtRq2bSMiHYIHdF1nevodDd8giOv83t1laHgY0zRxHIdsNovneZ0J"
+    "Zmdncd2IyTebTL78SsPzODk6IpVK4TgOIyMj+L7fWcL8/DwHBwdEoUbUrUG93nRfKUUymWR5"
+    "eZn/AIsRQHCRaE4AAAAASUVORK5CYII=")
+
+#----------------------------------------------------------------------
 SaveTXT16 = PyEmbeddedImage(
     "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAYBJ"
     "REFUOI2tks8uA1EUxn/TkWqrakqDEomxIN5BYuEtbMUTWIgHsLT3JhJrITbsSEjuIGSmkf7R"
