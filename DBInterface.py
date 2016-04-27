@@ -4901,8 +4901,10 @@ def UpdateSynonym(synonymGroup, synonym, newSynonymGroup, newSynonym):
                       Synonym = %s
                   WHERE SynonymGroup = %s AND
                         Synonym = %s """
+
     # Set up the values, and encode them
-    values = (newSynonymGroup, newSynonym, synonymGroup, synonym) # (newSynonymGroup.encode('utf8'), newSynonym.encode('utf8'), synonymGroup.encode('utf8'), synonym.encode('utf8'))
+    values = (newSynonymGroup.encode(TransanaGlobal.encoding), newSynonym.encode(TransanaGlobal.encoding),
+              synonymGroup.encode(TransanaGlobal.encoding), synonym.encode(TransanaGlobal.encoding))
     # Adjust query for sqlite, if needed
     query = FixQuery(query)
 
