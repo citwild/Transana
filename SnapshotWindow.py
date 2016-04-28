@@ -28,6 +28,10 @@ import wx
 from wx.lib.floatcanvas import FloatCanvas, Resources, GUIMode
 # Import the Python os and sys modules
 import os, sys
+
+import exifread
+import iptcinfo
+
 # Import Transana's Collection Object
 import Collection
 # import Transana's Dialogs
@@ -573,6 +577,143 @@ class SnapshotWindow(wx.Frame):
 
         # Call Yield so everything gets drawn properly
         wx.GetApp().Yield(True)
+
+        self.metadata = {}
+
+        print "StapshotWindow.__init__():"
+        print
+        print self.obj.image_filename
+        print
+
+        self.metadata['Filename'] = self.obj.image_filename
+
+        exifFile = open(self.obj.image_filename, 'rb')
+        exifTags = exifread.process_file(exifFile)
+        exifFile.close()
+
+##        keys = exifTags.keys()
+##        keys.sort()
+##
+##        print "EXIF Info:"
+##        for tag in keys:
+##            if tag not in ('JPEGThumbnail', 'TIFFThumbnail', 'EXIF MakerNote'):
+##                print 'Key: %s, value "%s"' % (tag, exifTags[tag]), type(tag), type(exifTags[tag])
+##            else:
+##                print "Key: %s" % tag
+
+        exifTagsToCapture = {
+#            'EXIF ApertureValue' :     'Camera - Aperture          ',
+            'EXIF ColorSpace' :        'Image - ColorSpace         ',
+            'EXIF DateTimeDigitized' : 'Image - Created (Digitized)',
+            'EXIF DateTimeOriginal' :  'Image - Created (Original) ',
+            'EXIF ExifImageLength' :   'Image - Length (EXIF)      ',
+            'EXIF ExifImageWidth' :    'Image - Width (EXIF)       ',
+            'EXIF ExposureBiasValue' : 'Image - Exposure Bias      ',
+            'EXIF ExposureMode' :      'Camera - Exposure Mode     ',
+            'EXIF ExposureProgram' :   'Camera - Exposure Program  ',
+            'EXIF ExposureTime' :      'Camera - Exposure Length   ',
+            'EXIF FNumber' :           'Camera - Aperture (F-stop) ',
+            'EXIF Flash' :             'Flash                      ',
+            'EXIF FocalLength' :       'Lens - Focal Length        ',
+            'EXIF ISOSpeedRatings' :   'Camera - ISO               ',
+            'EXIF MeteringMode' :      'Camera - Metering Mode     ',
+#            'EXIF ShutterSpeedValue' : 'Camera - Exp Shutter Speed ',
+            'EXIF WhiteBalance' :      'Camera - White Balance     ',
+            'Image Artist' :           'Artist / Author            ',
+            'Image Copyright' :        'Image - Copyright Notice   ',
+            'Image DateTime' :         'Image - Last Saved         ',
+            'Image ImageDescription' : 'Image - Description        ',
+            'Image ImageLength' :      'Image - Length (Image)     ',
+            'Image ImageWidth' :       'Image - Width (Image)      ',
+            'Image Make' :             'Camera - Make              ',
+            'Image Model' :            'Camera - Model             ',
+            'Image Orientation' :      'Camera - Orientation       ',
+            'Image XResolution' :      'Image - Resolution - X     ',
+            'Image YResolution' :      'Image - Resolution - Y     ',
+            'Image ResolutionUnit' :   'Image - Resolution Unit    ',
+        }
+        
+        for key in exifTagsToCapture.keys():
+            try:
+                if str(exifTags[key]) != '':
+                    self.metadata[exifTagsToCapture[key]] = exifTags[key]
+            except:
+##                print
+##                print 'EXIF EXCEPTION: ', key
+##                print
+                pass
+
+##        print
+##        print "IPTC Info:"
+        try:
+            iptc = iptcinfo.IPTCInfo(self.obj.image_filename)
+
+##            print
+##            print iptcinfo.c_datasets
+##            print
+##            print iptcinfo.c_datasets_r
+##            print
+##            print
+
+##            keys = iptcinfo.c_datasets_r.keys()
+##            keys.sort()
+##            for tag in keys:
+##                print 'Key: %s, value "%s"' % (tag, iptc.data[tag]), type(tag), type(iptc.data[tag])
+
+            iptcTagsToCapture = {
+                'by-line' :                       'Artist / Author            ',
+                'by-line title' :                 'Image - Title              ',
+                'caption/abstract' :              'Image - Description        ',
+                'category' :                      'Image - Category           ',
+                'city' :                          'Location - City            ',
+                'content location code' :         'Location - Code            ',
+                'content location name' :         'Location - Name            ',
+                'copyright notice' :              'Image - Copyright Notice   ',
+                'country/primary location code' : 'Location - Country Code    ',
+                'country/primary location name' : 'Location - Country Name    ',
+                'credit' :                        'Image - Credit             ',
+                'date created' :                  'Image - Date Created       ',
+                'digital creation date' :         'Image - Date Digitized     ',
+                'digital creation time' :         'Image - Time Digitized     ',
+                'image orientation' :             'Camera - Orientation       ',
+                'image type' :                    'Image - Type               ',
+                'keywords' :                      'Image - Keywords           ',
+                'object name' :                   'Document - Title           ',
+                'province/state' :                'Location - State/Province  ',
+                'time created' :                  'Image - Time Created       ',
+            }
+            
+            for key in iptcTagsToCapture.keys():
+                try:
+                    if (not self.metadata.has_key(iptcTagsToCapture[key])) and (iptc.data[key] != None):
+                        self.metadata[iptcTagsToCapture[key]] = iptc.data[key]
+                except:
+
+##                    print
+##                    print 'IPTC EXCEPTION: ', key
+##                    print
+                    pass
+
+        except Exception, e:
+            if str(e) != "No IPTC data found.":
+                print "IPTC Exception:", e.message
+                raise
+
+        print
+
+        keys = self.metadata.keys()
+        keys.sort()
+        print "Metadata:"
+        for key in keys:
+            if key.strip() != 'Image - Keywords':
+                print '  %s\t"%s"' % (key, self.metadata[key])
+            else:
+                prompt = key
+                for kw in self.metadata[key]:
+                    print '  %s\t"%s"' % (prompt, kw)
+                    prompt = '                           '
+        print
+        
 
     def AddWindowMenuItem(self, itemName, itemNumber):
         """ Add an item to this Snapshot Window's Window menu """
