@@ -48,7 +48,7 @@ import Document
 import Collection
 # import the Transana Clip Object definition
 import Clip
-# import teh Transana Quote Object definition
+# import the Transana Quote Object definition
 import Quote
 # import the Transana Miscellaneous Routines
 import Misc
@@ -85,6 +85,8 @@ import string
 import cPickle
 # import Python's pickle module
 import pickle
+# import Python's time module
+import time
 
 
 class ControlObject(object):
@@ -1579,6 +1581,8 @@ class ControlObject(object):
         hasMods = event.AltDown() or event.ControlDown() or event.CmdDown() or event.ShiftDown()
         # Note whether there is something loaded in the main interface
         loaded = (self.currentObj != None)
+        # Note whether the current object has madia attached.  Some key commands require media!
+        hasMedia = isinstance(self.currentObj, Episode.Episode) or isinstance(self.currentObj, Clip.Clip)
         
         # F1 = Focus on Menu Window
         if (c == wx.WXK_F1) and not hasMods:
@@ -1664,7 +1668,7 @@ class ControlObject(object):
                 self.TranscriptWindow.dlg.editor.save_transcript()
 
         # Ctrl-A is Rewind 10 seconds
-        elif (c == ord('A')) and event.ControlDown() and loaded:
+        elif (c == ord('A')) and event.ControlDown() and loaded and hasMedia:
             # Get the current video position
             vpos = self.GetVideoPosition()
             # Rewind 10 seconds
@@ -1675,7 +1679,7 @@ class ControlObject(object):
             self.Play(False)
 
         # Ctrl-D is Stop / Start without Rewind
-        elif (c == ord('D')) and event.ControlDown() and loaded:
+        elif (c == ord('D')) and event.ControlDown() and loaded and hasMedia:
             if not self.IsPlaying():
                 # Explicitly tell Transana to play to the end of the Episode/Clip
                 self.SetVideoEndPoint(-1)
@@ -1683,7 +1687,7 @@ class ControlObject(object):
             self.PlayPause(False)
 
         # Ctrl-F is Fast Forward 10 seconds
-        elif (c == ord('F')) and event.ControlDown() and loaded:
+        elif (c == ord('F')) and event.ControlDown() and loaded and hasMedia:
             # Get the current video position
             vpos = self.GetVideoPosition()
             # Fast Forward 10 seconds
@@ -1694,7 +1698,7 @@ class ControlObject(object):
             self.Play(False)
 
         # Ctrl-P is Play Previous Time-Coded Segment
-        elif (c == ord("P")) and event.ControlDown() and loaded:
+        elif (c == ord("P")) and event.ControlDown() and loaded and hasMedia:
             # Get the value for the previous time code
             start_timecode = self.TranscriptWindow.dlg.editor.PrevTimeCode()
             # If there WAS a Previous Segment ....
@@ -1707,7 +1711,7 @@ class ControlObject(object):
                 self.Play(0)
 
         # Ctrl-N is Play Next Time-Coded Segment
-        elif (c == ord("N")) and event.ControlDown() and loaded:
+        elif (c == ord("N")) and event.ControlDown() and loaded and hasMedia:
             # Get the value for the next time code
             start_timecode = self.TranscriptWindow.dlg.editor.NextTimeCode()
             # If there WAS a Next Segment ...
@@ -1720,7 +1724,7 @@ class ControlObject(object):
                 self.Play(0)
 
         # Ctrl-S is Stop / Start with Rewind
-        elif (c == ord('S')) and event.ControlDown() and loaded:
+        elif (c == ord('S')) and event.ControlDown() and loaded and hasMedia:
             if not self.IsPlaying():
                 # Explicitly tell Transana to play to the end of the Episode/Clip
                 self.SetVideoEndPoint(-1)
@@ -1729,15 +1733,37 @@ class ControlObject(object):
 
         # Ctrl-T inserts a Time Code
         elif (c == ord('T')) and event.ControlDown() and loaded:
-            self.TranscriptWindow.dlg.editor.insert_timecode()
+            # If we are in a Media file Object ...
+            if hasMedia:
+                # ... add a Time Code
+                self.TranscriptWindow.dlg.editor.insert_timecode()
+            # If we are NOT in a Media file Object AND are in EDIT mode ...
+            elif not self.TranscriptWindow.dlg.editor.get_read_only():
+                # Get the current Date / Time information from the system
+                (year, month, day, hour, minute, second, weekday, yearday, dst) = time.localtime()
+                # Are we in the morning?
+                ampm = _('am')
+                # Let's use 12-hour time.  If it's afternoon ...
+                if hour > 12:
+                    # ... decrement the hour value and signal that it's afternoon
+                    hour -= 12
+                    ampm = _('pm')
+                # Add the Date / Time stamp to the Note Text
+                if TransanaConstants.singleUserVersion:
+                    # TODO:  Localize this!
+                    self.TranscriptWindow.dlg.editor.WriteText("%s/%s/%s  %s:%02d:%02d %s\n" % (month, day, year, hour, minute, second, ampm))
+                else:
+                    # If multi-user, include the username!
+                    # TODO:  Localize this!
+                    self.TranscriptWindow.dlg.editor.WriteText("%s/%s/%s  %s:%02d:%02d %s - %s\n" % (month, day, year, hour, minute, second, ampm, TransanaGlobal.userName))
 
         # Ctrl-. is increases playback speed, if possible
-        elif (c == ord('.')) and event.ControlDown() and loaded:
+        elif (c == ord('.')) and event.ControlDown() and loaded and hasMedia:
             # Ctrl-period increases playback speed by 10% of normal speed
             self.ChangePlaybackSpeed('faster')
 
         # Ctrl-, is decreases playback speed, if possible
-        elif (c == ord(',')) and event.ControlDown() and loaded:
+        elif (c == ord(',')) and event.ControlDown() and loaded and hasMedia:
             # Ctrl-comma decreases playback speed by 10% of normal speed
             self.ChangePlaybackSpeed('slower')
 
