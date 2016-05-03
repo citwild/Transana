@@ -300,6 +300,13 @@ class ControlObject(object):
             self.TranscriptWindow.AddNotebookPage(transcript)
             # Select the new page as the current page
             self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
+            
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # If the current Editor is a Transcript (not None, not a Document) ...
         elif isinstance(self.TranscriptWindow.GetCurrentObject(), Transcript.Transcript):
             # ... then we need to Clear all Windows of media information
@@ -309,6 +316,15 @@ class ControlObject(object):
                 self.TranscriptWindow.AddNotebookPage(transcript)
                 # Select the new page as the current page
                 self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
+                
+        # if Auto Arrange is OFF and we don't yet have a media window layout ...
+        elif (not TransanaGlobal.configData.autoArrange) and (self.VideoWindow.windowLayout is not None):
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # Because transcript names can be identical for different episodes in different Library, all parameters are mandatory.
         # They are:
         #   Library     -  the Library associated with the desired Transcript
@@ -507,6 +523,13 @@ class ControlObject(object):
             self.TranscriptWindow.AddNotebookPage(_("No Document Loaded"))
             # Select the new page as the current page
             self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
+
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # If the current Editor is a Transcript (not None, not a Document) ...
         elif isinstance(self.TranscriptWindow.GetCurrentObject(), Transcript.Transcript):
             # ... then we need to Clear all Windows of media information
@@ -516,7 +539,15 @@ class ControlObject(object):
                 self.TranscriptWindow.AddNotebookPage(clipObj.id)
                 # Select the new page as the current page
                 self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
-        
+
+        # if Auto Arrange is OFF and we don't yet have a media window layout ...
+        elif (not TransanaGlobal.configData.autoArrange) and (self.VideoWindow.windowLayout is not None):
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # Set the current object to the loaded Clip
         self.currentObj = clipObj
         # Load the Collection that contains the loaded Clip
@@ -1389,7 +1420,12 @@ class ControlObject(object):
             If clearAllTabs is True, we close all Documents and Quotes too! """
         # Let's stop the media from playing
         self.VideoWindow.Stop()
-        
+
+        # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+        # We need to capture the position and size of that window HERE, before the window is cleared,
+        # in a place where this will only be called once.
+        self.VideoWindow.CapturePositionAndSize()
+
         # If we're clearing ALL tabs ...
         if clearAllTabs:
             # ... we want a list of all Notebook Page Numbers in descending order
