@@ -157,8 +157,31 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # The width and height of the form should be 80% of the full screen
         width = min(int(rect[2] * .80), 800)
         height = rect[3] * .80
+
+        # Build the Report Title
+        self.title = unicode(_('Word Frequency Report'), 'utf8') + u' '
+        # Get the Item Name and Item Data from the tree node passed in.
+        itemName = tree.GetItemText(startNode)
+        itemData = tree.GetPyData(startNode)
+
+        # Build the Title based on the node type passed in
+        if itemData.nodetype in ['LibraryRootNode']:
+            self.title += unicode(_('for all Libraries'), 'utf8')
+        elif itemData.nodetype in ['LibraryNode', 'SearchLibraryNode']:
+            self.title += unicode(_('for Library "%s"'), 'utf8') % itemName
+        elif itemData.nodetype in ['DocumentNode', 'SearchDocumentNode']:
+            self.title +=unicode( _('for Document "%s"'), 'utf8') % itemName
+        elif itemData.nodetype in ['EpisodeNode', 'SearchEpisodeNode']:
+            self.title += unicode(_('for Episode "%s"'), 'utf8') % itemName
+        elif itemData.nodetype in ['TranscriptNode', 'SearchTranscriptNode']:
+            self.title += unicode(_('for Transcript "%s"'), 'utf8') % itemName
+        elif itemData.nodetype in ['CollectionsRootNode']:
+            self.title += unicode(_('for all Collections'), 'utf8')
+        elif itemData.nodetype in ['CollectionNode', 'SearchCollectionNode']:
+            self.title += unicode(_('for Collection "%s"'), 'utf8') % itemName
+
         # Create the basic Frame structure with a white background
-        wx.Frame.__init__(self, parent, -1, _('Word Frequency Report'), size=wx.Size(width, height), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL | wx.NO_FULL_REPAINT_ON_RESIZE)
+        wx.Frame.__init__(self, parent, -1, self.title, size=wx.Size(width, height), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL | wx.NO_FULL_REPAINT_ON_RESIZE)
         self.SetBackgroundColour(wx.WHITE)
         
         # Set the report's icon
@@ -405,8 +428,6 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
         # If a Control Object has been passed in ...
         if self.ControlObject != None:
-            # Our report needs a title
-            self.title = _("Word Frequency Report")
             # ... register this report with the Control Object (which adds it to the Windows Menu)
             self.ControlObject.AddReportWindow(self)
 
@@ -1047,7 +1068,7 @@ I'm Ellen Feiss, and I'm a student!"""
         reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 16, fontBold = True, fontUnderline = True,
                                parAlign = wx.TEXT_ALIGNMENT_CENTER, parSpacingAfter = 42)
         # Add the Report Title
-        reportText.WriteText(_("Word Frequency Report"))
+        reportText.WriteText(self.title)
         reportText.Newline()
         # Set the Style for the main report header
         reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 14, fontBold = True, fontUnderline = True,
