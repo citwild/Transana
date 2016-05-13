@@ -500,7 +500,7 @@ class ChatWindow(wx.Frame):
         # EVT_POST_MESSAGE handler doesn't get called in response to the message being queued
         # correctly.
         #
-        # So what I've done is set up a time that's called every half second.  All it does is
+        # So what I've done is set up a timer that's called every half second.  All it does is
         # call wx.YieldIfNeeded().  That seems to be enough!
         #
         # I know I shouldn't HAVE to do this, but at least for now, I do.
@@ -692,7 +692,13 @@ class ChatWindow(wx.Frame):
             message = event.data
             messageHeader = message[:message.find(' ')]
             message = message[message.find(' ') + 1:].strip()
-            messageSender = message[:message.find(' ') - 1]  # drop the ":"
+            # If the last character of the messageSender is a colon ...
+            if message[:message.find(' ')][-1] == ':':
+                # drop the ":"
+                messageSender = message[:message.find(' ') - 1]
+            # ... but it might not be?  If there's no message, this wasn't working, anyway.
+            else:
+                messageSender = message[:message.find(' ')]
             message = message[message.find(' ') + 1:].strip()
 
             if DEBUG:
@@ -1590,6 +1596,12 @@ class ChatWindow(wx.Frame):
                                     win.FileRestore(event)
                                     win.OnEnterWindow(event)
                                     
+                        # WordFrequencyReport Message
+                        elif messageHeader == 'WFR':
+                            # Use the Control Object to signal that Word Frequency Reports need to update
+                            # We should NOT queue another MessageServer call when called from the Message Server!!
+                            self.ControlObject.SignalWordFrequencyReports(doNotCall=True)
+
                         else:
                             if DEBUG:
                                 print "Unprocessed Message: ", event.data.encode('latin1')

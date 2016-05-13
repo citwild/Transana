@@ -140,6 +140,10 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # We need a specifically-named dictionary in a particular format for the ColumnSorterMixin.
         # Initialize that here.  (This also tells us if we've gotten the data yet!)
         self.itemDataMap = {}
+        # We need a flag that indicates the need to repoputate the itemDataMap because it is out of date.
+        self.needsUpdate = True
+        # We need a flag that indicates if the report's itemDataMap is CURRENTLY being updated
+        self.isUpdating = False
         # We also need a synonyms list.  Initialize it here
         self.synonyms = {}
         # Let's keep track of what column and what direction our current sort is.  That way, we
@@ -410,9 +414,6 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         ListCtrlMixins.ColumnSorterMixin.__init__(self, 3)
         self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
 
-        # We need to populate the Synonyms BEFORE we Populate the Word Frequencies!!
-        self.PopulateSynonyms()
-
         # Populate the Word Frequency Results
         self.PopulateWordFrequencies()
 
@@ -562,7 +563,9 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
                         pass
 
                 # Clear the itemDataMap so that the table will be properly refeshed
-                self.itemDataMap = {}
+                # This actually requires using the ControlObject to signal ALL Word Frequency Reports!
+                self.ControlObject.SignalWordFrequencyReports()
+                
                 # Populate the Word Frequencies table
                 self.PopulateWordFrequencies()
                 
@@ -637,7 +640,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             # ... widen the column
             self.synonymResults.SetColumnWidth(1, 200)
         # Clear the itemDataMap so that the table will be properly refeshed
-        self.itemDataMap = {}
+        # This actually requires using the ControlObject to signal ALL Word Frequency Reports!
+        self.ControlObject.SignalWordFrequencyReports()
         # We need to update the Word Frequencies table before the next Synonym Lookup occurs, so call this
         # no matter what!
         self.PopulateWordFrequencies()
@@ -726,7 +730,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             self.synonymResults.SetColumnWidth(1, 200)
 
         # Clear the itemDataMap so that the table will be properly refeshed
-        self.itemDataMap = {}
+        # This actually requires using the ControlObject to signal ALL Word Frequency Reports!
+        self.ControlObject.SignalWordFrequencyReports()
         # Repopulate the Results table based on the new Synonyms data
         self.PopulateWordFrequencies()
 
@@ -757,6 +762,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
     def PopulateWordFrequencies(self):
         """ Clear and Populate the Word Frequency Results """
+        # Signal that the control's itemDataMap IS being updated right now!
+        self.isUpdating = True
         # Clear the Control
         self.resultsList.ClearAll()
         # Add Column Heading
@@ -765,7 +772,13 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.resultsList.InsertColumn(2, _("Word Group"))
 
         # If we haven't read the data yet, or need to refresh it ...
-        if len(self.itemDataMap) == 0:
+        if self.needsUpdate:
+            # We can reset the needsUpdate Flag
+            self.needsUpdate = False
+            # Re-initialize the itemDataMap
+            self.itemDataMap = {}
+            # We need to populate the Synonyms BEFORE we Populate the Word Frequencies!!
+            self.PopulateSynonyms()
             # ... initialize a data structure
             data = {}
 
@@ -874,6 +887,8 @@ I'm Ellen Feiss, and I'm a student!"""
         self.SortListItems(self.sortColumn, self.sortAscending)
         # Update the Control to try to fix the first column header's appearance
         self.resultsList.Update()
+        # Signal that the control's itemDataMap is no longer being updated right now!
+        self.isUpdating = False
 
     def GetListCtrl(self):
         """ Pointer to the Results List, required for the ColumnSorterMixin """
@@ -1233,6 +1248,11 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... then update the existing item for that group
             self.itemDataMap[itemIndex] = (synonymGroup, itemValue, synonymData)
 
+        # Because we've changed synonyms, we need to tell ALL Word Frequency Reports that they
+        # need to repopulate their list contents.  But we can skip THIS report, as that's already
+        # been done above.
+        self.ControlObject.SignalWordFrequencyReports(self.reportNumber)
+
         # Remember the current scroll position of the Results List
         scrollPos = self.resultsList.GetScrollPos(wx.VERTICAL)
         # Repopulate the Word Frequencies
@@ -1256,9 +1276,8 @@ I'm Ellen Feiss, and I'm a student!"""
             # Delete all of the Word Groupings        
             DBInterface.ClearAllSynonyms()
             # Clear the itemDataMap so that the table will be properly refeshed
-            self.itemDataMap = {}
-            # Repopulate the Synonyms
-            self.PopulateSynonyms()
+            # This actually requires using the ControlObject to signal ALL Word Frequency Reports!
+            self.ControlObject.SignalWordFrequencyReports()
             # Repopulate the Word Frequencies
             self.PopulateWordFrequencies()
         dlg.Destroy()

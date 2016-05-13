@@ -75,6 +75,8 @@ if TransanaConstants.USESRTC:
     import TranscriptionUI_RTC as TranscriptionUI
 else:
     import TranscriptionUI
+# import Transana's Word Frequency Report
+import WordFrequencyReport
 # import Python's os module
 import os
 # import Python's sys module
@@ -1245,6 +1247,38 @@ class ControlObject(object):
             del(self.ReportWindows[reportNumber])
             # Remove this from the Menu Window's Window's menu
             self.MenuWindow.DeleteWindowMenuItem(reportName, reportNumber)
+
+    def SignalWordFrequencyReports(self, reportNumber=-1, doNotCall=False):
+        """ Signal Word Frequency Reports that they need to repopulate their contents next time they
+            refresh due to changes in the Synonyms List.  This could be called by ANY Word Frequency
+            Report, and the change must be reflected in ALL Word Frequency Reports.
+            
+            if reportNumber is passed in, that report may be skipped.
+            if doNotCall is True, we are receiving this FROM the Message Server, so should not
+              signal the MessageServer to have other MU instances update! """
+        # For each registred Report ...
+        for reportNum in self.ReportWindows.keys():
+            # ... if the report is a Word Frequency Report ...
+            if isinstance(self.ReportWindows[reportNum], WordFrequencyReport.WordFrequencyReport):
+                # ... and the report has not been explicitly excluded ...
+                if reportNum != reportNumber:
+                    # if the report is not in the process of repopulating itself ...
+                    if not self.ReportWindows[reportNum].isUpdating:
+                        # ... then we clear the itemDataMap as the signal that the report needs to
+                        # repopulate.
+                        self.ReportWindows[reportNum].needsUpdate = True
+
+        # If we're in the multiuser version and have not been told not to call the Message Server ...
+        if not TransanaConstants.singleUserVersion and not doNotCall:
+            # ... and if a Chat Windows HAS been defined ...
+            if TransanaGlobal.chatWindow != None:
+
+                if DEBUG:
+                    print 'Message to send = "WFR"'
+
+                # ... signal the Message Server to have other copies of Transana update the
+                #     Word Frequency Report
+                TransanaGlobal.chatWindow.SendMessage("WFR ")
 
     def OpenAdditionalDocument(self, documentNum, libraryID='', isDocument=True):
         """ Open an additional document without replacing the current one """
