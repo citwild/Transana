@@ -371,11 +371,11 @@ class _NotePanel(wx.Panel):
 
         # Add the Date / Time stamp to the Note Text
         if TransanaConstants.singleUserVersion:
-            # Print format "DD MMM YYY hh:mm:ssAMPM TZ"
+            # Print format "DD MMM YYYY hh:mm:ssAMPM TZ"
             self.txt.WriteText("%s\n" % timestamp)
         else:
             # If multi-user, include the username!
-            # Print format "DD MMM YYY hh:mm:ssAMPM TZ - USERNAME"
+            # Print format "DD MMM YYYY hh:mm:ssAMPM TZ - USERNAME"
             self.txt.WriteText("%s - %s\n" % (timestamp, TransanaGlobal.userName))
 
     def OnSaveAs(self, event):
