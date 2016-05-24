@@ -367,24 +367,16 @@ class _NotePanel(wx.Panel):
     def OnDateTime(self, event):
         """ Insert the current Date & Time into a Note """
         # Get the current Date / Time information from the system
-        (year, month, day, hour, minute, second, weekday, yearday, dst) = time.localtime()
-        # Get current timezone from the system 
-        timezone = time.strftime("%z", time.gmtime())
-        # Are we in the morning?
-        ampm = _('am')
-        # Let's use 12-hour time.  If it's afternoon ...
-        if hour > 12:
-            # ... decrement the hour value and signal that it's afternoon
-            hour -= 12
-            ampm = _('pm')
+        timestamp = time.strftime("%d %b %Y %I:%M:%S%p %Z", time.localtime())
+
         # Add the Date / Time stamp to the Note Text
         if TransanaConstants.singleUserVersion:
-            # Print format "MM/DD/YYYY  hh:mm:ss  AMPM  TZ"
-            self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s  %s\n" % (month, day, year, hour, minute, second, ampm, timezone))
+            # Print format "DD MMM YYY hh:mm:ssAMPM TZ"
+            self.txt.WriteText("%s\n" % timestamp)
         else:
             # If multi-user, include the username!
-            # Print format "MM/DD/YYYY  hh:mm:ss  AMPM  TZ - USERNAME"
-            self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s  %s - %s\n" % (month, day, year, hour, minute, second, ampm, timezone, TransanaGlobal.userName))
+            # Print format "DD MMM YYY hh:mm:ssAMPM TZ - USERNAME"
+            self.txt.WriteText("%s - %s\n" % (timestamp, TransanaGlobal.userName))
 
     def OnSaveAs(self, event):
         """Export the note to a TXT file."""
