@@ -249,8 +249,6 @@ class ReportGenerator(wx.Object):
         self.report.reportText.Freeze()
         # Trigger the ReportText method that causes the report to be displayed.
         self.report.CallDisplay()
-        # Apply the Default Filter, if one exists
-        self.report.OnFilter(None)
         # Now that we're done, remove the freeze
         self.report.reportText.Thaw()
 
@@ -894,6 +892,9 @@ class ReportGenerator(wx.Object):
                                 # ... and add the keyword entry to the Keyword Filter List if it's not already there.
                                 self.keywordFilterList.append((kwg, kw, True))
 
+        # Apply Default Filter here, if appropriate
+        self.OnFilter(None)
+	
         # ...  add a subtitle
         if 'unicode' in wx.PlatformInfo:
             # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
