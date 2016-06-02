@@ -38,10 +38,12 @@ if __name__ == '__main__':
 import Clip
 # Import Transana's Database Interface
 import DBInterface
-# Import Trasnana's Dialog Boxes
+# Import Transana's Dialog Boxes
 import Dialogs
 # Import Transana's Document object
 import Document
+# import Transana's Search module
+import ProcessSearch
 # Import Transana's Quote object
 import Quote
 # Import Transana's Synonym Editor
@@ -84,6 +86,21 @@ class CheckListCtrl(wx.ListCtrl, ListCtrlMixins.CheckListCtrlMixin):
             if self.IsChecked(index):
                 # ... add the text of the checked item to the SynonymGroupCtrl
                 self.synonymGroupCtrl.SetValue(self.GetItem(itemId=index, col=0).GetText())
+
+        # We need to know if there are ANY checked items in the list
+        count = 0
+        # Iterate through the list
+        for itemId in range(self.GetItemCount()):
+            # If we find a checked item ...
+            if self.IsChecked(itemId):
+                # ... increment our counter
+                count += 1
+                # ... and stop looking
+                break
+        # if we found NO checked items ...
+        if count == 0:
+            # ... reset the SynonymGroupCtrl to blank
+            self.synonymGroupCtrl.SetValue('')
 
     def OnItemActivated(self, evt):
         """ Handle item double-click """
@@ -207,6 +224,15 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.uncheckAll.SetToolTipString(_("Uncheck All Selected"))
         self.toolbar.AddControl(self.uncheckAll)
         self.uncheckAll.Bind(wx.EVT_BUTTON, self.OnCheck)
+
+        # Add a separator
+        self.toolbar.AddSeparator()
+
+        # Add a Search button
+        self.search = wx.BitmapButton(self.toolbar, -1, TransanaImages.Search16.GetBitmap(), size=(24, 24))
+        self.search.SetToolTipString(_("Text Search for Checked Items"))
+        self.toolbar.AddControl(self.search)
+        self.search.Bind(wx.EVT_BUTTON, self.OnSearch)
 
         # Add a separator
         self.toolbar.AddSeparator()
@@ -1063,6 +1089,64 @@ I'm Ellen Feiss, and I'm a student!"""
                 self.resultsList.CheckItem(sel, check)
                 # ... and move on to the next selected item
                 sel = self.resultsList.GetNextSelected(sel)
+
+    def OnSearch(self, event):
+        """ Request Text Search from the Word Frequency Report """
+        # Initialize variables for counting the number of search terms and building a search name
+        termCount = 0
+        searchName = ''
+        # Create an empty list for search terms
+        searchTerms = []
+
+        # Determine the number of items in the Results List
+        count = self.resultsList.GetItemCount()
+        # Iterate through the Results List
+        for itemId in range(count):
+            
+            # If the item is checked ...
+            if self.resultsList.IsChecked(itemId):
+
+                # If there are no Synonyms ...
+                if self.resultsList.GetItemText(itemId, 2) == '':
+                    # ... add the word itself to the Search terms, using "Word Text" instead of "Item Text" to signal we
+                    #     want whole words instead of plain text search.
+                    searchTerms.append(u'Word Text contains "%s" OR ' % self.resultsList.GetItemText(itemId, 0))
+                    # Increment the counter
+                    termCount += 1
+                    # If no Search Name has been defined yet ...
+                    if searchName == '':
+                        # ... add the first search term to it
+                        searchName = u'"%s"' % self.resultsList.GetItemText(itemId, 0)
+                        
+                # If there ARE Synonmyms ...
+                else:
+                    # Add each word in the Synonyms List
+                    for word in self.resultsList.GetItemText(itemId, 2).split(' '):
+                        # Add the word to the search terms, using "Word Text" instead of "Item Text" to signal we
+                        # want whole words instead of plain text search.
+                        searchTerms.append(u'Word Text contains "%s" OR ' % word)
+                        # Increment the counter
+                        termCount += 1
+                        # If no Search Name has been defined yet ...
+                        if searchName == '':
+                            # ... add the first search term to it
+                            searchName = u'"%s"' % word
+
+        # If there are 2 or more search terms, modify the search name
+        if termCount == 2:
+            searchName += _(' and %s other') % (termCount - 1)
+        elif termCount > 2:
+            searchName += _(' and %s others') % (termCount - 1)
+
+        # if there's at least one search term ...
+        if termCount > 0:
+            # ... remove the " OR " from the final entry in the Search Terms
+            searchTerms[-1] = searchTerms[-1][:-4]
+            # ... finalize the Search Name
+            searchName = 'Word Freq for %s' % searchName
+            # .. and call ProcessSearch to execute the search terms we've assembled here
+            search = ProcessSearch.ProcessSearch(self.tree, self.tree.searchCount, searchName=searchName, \
+                                                 searchTerms=searchTerms, searchScope=self.startNode)
 
     def OnPrintReport(self, event):
         """ Handle requests for a printable report """

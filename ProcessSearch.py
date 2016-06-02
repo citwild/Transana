@@ -55,11 +55,12 @@ import string
 class ProcessSearch(object):
     """ This class handles all processing related to Searching. """
     # searchName and searchTerms are used by unit_test_search
-    def __init__(self, dbTree, searchCount, kwg=None, kw=None, searchName=None, searchTerms=None):
+    def __init__(self, dbTree, searchCount, kwg=None, kw=None, searchName=None, searchTerms=None, searchScope=None):
         """ Initialize the ProcessSearch class.  The dbTree parameter accepts a wxTreeCtrl as the Database Tree where
             Search Results should be displayed.  The searchCount parameter accepts the number that should be included
             in the Default Search Title. Optional kwg (Keyword Group) and kw (Keyword) parameters implement Quick Search
-            for the keyword specified. """
+            for the keyword specified. searchName, searchTerms, and searchScope are used for searches triggereed by
+            the Word Frequency Report (and by unit_test_search) """
 
         # See if there are any records that need Plain Text extraction
         plainTextCount = DBInterface.CountItemsWithoutPlainText()
@@ -79,6 +80,9 @@ class ProcessSearch(object):
 
         # Note the Database Tree that accepts Search Results
         self.dbTree = dbTree
+        # Set up empty lists for different object types, including everything unless otherwise required
+        self.documentList = []
+        self.transcriptList = []
         self.collectionList = []
         # If kwg and kw are None, we are doing a regular (full) search.
         if ((kwg == None) or (kw == None)) and (searchTerms == None):
@@ -122,26 +126,90 @@ class ProcessSearch(object):
                 includeSnapshots = dlg.includeSnapshots.IsChecked()
             # Destroy the Search Dialog Box
             dlg.Destroy()
-        # SearchTerms are passed in during Unit_Test_Search
+        # SearchTerms are passed in by the Word Frequency Report (with searchScope) and
+        # during Unit_Test_Search (without searchScope)
         elif (searchTerms != None):
             # There's no dialog.  Just say the user said OK.
             result = wx.ID_OK
-            # Include Episodes and Clips.
-            includeEpisodes = True
-            includeClips = True
-            # If Pro, Lab, or MU, include Documents, Quotes, and Snapshots.  
-            if TransanaConstants.proVersion:
-                includeDocuments = True
-                includeQuotes = True
-                includeSnapshots = True
-                for term in searchTerms:
-                    if u'Item Text contains' in term:
-                        includeSnapshots = False
-                        break
+            # Call from unit_test_search, so we can hard-code these parameters
+            if searchScope == None:
+                # Include Episodes and Clips.
+                includeEpisodes = True
+                includeClips = True
+                # If Pro, Lab, or MU, include Documents, Quotes, and Snapshots.  
+                if TransanaConstants.proVersion:
+                    includeDocuments = True
+                    includeQuotes = True
+                    includeSnapshots = True
+                    for term in searchTerms:
+                        if u'Item Text contains' in term:
+                            includeSnapshots = False
+                            break
+                else:
+                    includeDocuments = False
+                    includeQuotes = False
+                    includeSnapshots = False
+                    
+            # We need to figure out the scope of the Word Frequency Report that triggered this search
             else:
-                includeDocuments = False
-                includeQuotes = False
+                # Get the Node Data for the triggering tree node
+                itemData = self.dbTree.GetPyData(searchScope)
+                # Library Root, Library, and Document nodes need to show Documents.
+                if itemData.nodetype in ['LibraryRootNode', 'LibraryNode', 'DocumentNode']:
+                    includeDocuments = True
+                else:
+                    includeDocuments = False
+                # Library Root, Library, and Episode nodes need to show Episodes.
+                if itemData.nodetype in ['LibraryRootNode', 'LibraryNode', 'EpisodeNode']:
+                    includeEpisodes = True
+                else:
+                    includeEpisodes = False
+                # Library Root, Library, Episode, and Transcript nodes need to show Documents.
+                if itemData.nodetype in ['LibraryRootNode', 'LibraryNode', 'EpisodeNode', 'TranscriptNode']:
+                    includeTranscripts = True
+                else:
+                    includeTranscripts = False
+                # Collection Root and Collection nodes need to show Quotes
+                if itemData.nodetype in ['CollectionsRootNode', 'CollectionNode']:
+                    includeQuotes = True
+                else:
+                    includeQuotes = False
+                # We never include snapshots with text search!
                 includeSnapshots = False
+                # Collection Root and Collection nodes need to show Clips
+                if itemData.nodetype in ['CollectionsRootNode', 'CollectionNode']:
+                    includeClips = True
+                else:
+                    includeClips = False
+
+                # Determine what Libraries, Documents, Episodes, Transcripts, and Collections to include or exclude.
+                # Leave the lists empty if not applicable to simplify the SQL.
+
+                # If we have a LibraryRoot Node, do NOTHING because we want ALL Documents and Episode Transcripts
+                # If we have a Library Node ...
+                if itemData.nodetype in ['LibraryNode']:
+                    # ... we need only the Documents and Episode Transcripts within that Library.
+                    self.documentList = self.GetNodeList(self.dbTree, searchScope, 'DocumentNode')
+                    self.transcriptList = self.GetNodeList(self.dbTree, searchScope, 'TranscriptNode')
+                # If we have a Document Node ...
+                elif itemData.nodetype in ['DocumentNode']:
+                    # ... we need only the selected Document.
+                    self.documentList = [(itemData.recNum, self.dbTree.GetItemText(searchScope))]
+                # If we have an Episode Node ...
+                elif itemData.nodetype in ['EpisodeNode']:
+                    # ... we need all Transcripts for that Episode.
+                    self.transcriptList = self.GetNodeList(self.dbTree, searchScope, 'TranscriptNode')
+                # If we have a Transcript Node ...
+                elif itemData.nodetype in ['TranscriptNode']:
+                    # ... we need only the selected Transcript.
+                    self.transcriptList = [(itemData.recNum, self.dbTree.GetItemText(searchScope))]
+                # If we have a Collection Node ...
+                elif itemData.nodetype in ['CollectionNode']:
+                    # ... we need the selected Collection plus all nested collections.
+                    #     (The selected collection doesn't get included by the recursive call!)
+                    self.collectionList = [(itemData.recNum, self.dbTree.GetItemText(searchScope))] + \
+                                          self.GetNodeList(self.dbTree, searchScope, 'CollectionNode')
+
         # if kwg and kw are passed in, we're doing a Quick Search
         else:
             # There's no dialog.  Just say the user said OK.
@@ -557,21 +625,44 @@ class ProcessSearch(object):
                 # Temporary Variable Number.)
                 tempVarNum += 1
 
-                # See if we have a Text Search string
-                if tempStr[:20] == 'Item Text contains "':
+                # See if we have a Text Search string, either from the Search Form or the Word Frequency Report ...
+                if tempStr[:20] in ['Item Text contains "', 'Word Text contains "']:
                     # Note that we are including text
                     includesText = True
                     # Remember the Text Search Term
                     textSearchItems.append(tempStr[20:tempStr.rfind('"')])
-                    
-                    # Remove the "Item Text Contains" text and the quotation marks around the search text
-                    tempStr = '%%' + tempStr[20:tempStr.rfind('"')] + '%%'
-
-                    tempStr2 = "COUNT(CASE WHEN (PlainText LIKE %s"
+                    # Converting the Text Search Request into platform-appropriate SQL.
+                    tempStr2 = "COUNT(CASE WHEN ("
+                    # If we are working from Text Search from the Search Dialog ...
+                    if tempStr[:20] == 'Item Text contains "':
+                        # Remove the "Item Text Contains" text and the quotation marks around the search text
+                        tempStr = '%%' + tempStr[20:tempStr.rfind('"')] + '%%'
+                        # Find any matching text 
+                        tempStr2 += "PlainText LIKE %s"
+                    # If we're working from a Word Frequency Text Sarch request ...
+                    else:
+                        # If we're on MySQL ...
+                        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+                            # Remove the "Item Text Contains" text and the quotation marks around the search text
+                            # and add the Regular Expression code that gets whole words, even around punctuation
+                            tempStr = u'([[:blank:][:punct:]]|^)' + tempStr[20:tempStr.rfind('"')] + u'([[:blank:][:punct:]]|$)'
+                            # This theoretically gives whole words only  -- REGEXP '[[:<:]]%s[[:>:]]' also an option
+                            tempStr2 += "PlainText REGEXP %s"
+                        # if we're using SQLite ...
+                        else:
+                            # Remove the "Item Text Contains" text and the quotation marks around the search text
+                            tempStr = '%%' + tempStr[20:tempStr.rfind('"')] + '%%'
+                            # Find any matching text.  The " " || adds whole-word-only functionality to SQLite.
+                            tempStr2 += '(" " || PlainText || " ") LIKE %s'
+                            
                     # If we're on MySQL ...
                     if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
                         # ... make the Text Search Case Insensitive!
                         tempStr2 += " COLLATE utf8_general_ci"
+                    # If we're on SQLite ...
+                    else:
+                        # ... make the Text Search Case Insensitive!
+                        tempStr2 += " COLLATE NOCASE"
                     tempStr2 += ") THEN 1 ELSE NULL END) " + "V%s" % tempVarNum
                     params.append(tempStr)
 
@@ -625,9 +716,28 @@ class ProcessSearch(object):
             tmpDlg.ShowModal()
             tmpDlg.Destroy()
 
-        # Before we continue, let's build the part of the query that implements the Collections selections
-        # made on the Collections tab of the Search Form
+        # Before we continue, let's build the part of the query that implements the Document, Transcript, and
+        # Collections selections
 
+        # If there is a Document list, build the scoping SQL to limit which Documents are displayed
+        if len(self.documentList) > 0:
+            docSQL = ' AND ('
+            for doc in self.documentList:
+                docSQL += "(Doc.DocumentNum = %d) " % doc[0]
+                if doc != self.documentList[-1]:
+                    docSQL += "or "
+            docSQL += ") "
+
+        # If there is a Transcript list, build the scoping SQL to limit which Transcripts are displayed
+        if len(self.transcriptList) > 0:
+            transSQL = ' AND ('
+            for transcript in self.transcriptList:
+                transSQL += "(Tr.TranscriptNum = %d) " % transcript[0]
+                if transcript != self.transcriptList[-1]:
+                    transSQL += "or "
+            transSQL += ") "
+
+        # If there is a Collection list, build the scoping SQL to limit which Quotes, Clips, and Snapshots are displayed
         if len(self.collectionList) > 0:
             paramsQ = ()
             paramsCl = ()
@@ -695,6 +805,10 @@ class ProcessSearch(object):
         documentSQL += '(Doc.LibraryNum = Se.SeriesNum) '
         if includesKeywords:
             documentSQL += 'AND (CK1.DocumentNum > 0) '
+        # If there is a Document List (from Word Frequency Text Search) ..
+        if len(self.documentList) > 0:
+            # ... add the appropriate scoping SQL
+            documentSQL += docSQL
         documentSQL += 'GROUP BY Doc.LibraryNum, SeriesID, Doc.DocumentNum, DocumentID '
         # Add in the SQL "HAVING" Clause that was constructed above
         documentSQL += 'HAVING %s ' % havingStr
@@ -715,6 +829,10 @@ class ProcessSearch(object):
             episodeSQL += 'AND (CK1.EpisodeNum > 0) '
         if includesText:
             episodeSQL += 'AND (Tr.EpisodeNum = Ep.EpisodeNum) AND (Tr.ClipNum = 0) '
+        # If there is a Transcript List (from Word Frequency Text Search) ..
+        if len(self.transcriptList) > 0:
+            # ... add the appropriate scoping SQL
+            episodeSQL += transSQL
         episodeSQL += 'GROUP BY Ep.SeriesNum, SeriesID, Ep.EpisodeNum, EpisodeID'
         if includesText:
             episodeSQL += ', TranscriptID'
@@ -825,3 +943,35 @@ class ProcessSearch(object):
         # Return the Library/Episode Query, the Collection/Clip Query, the Whole Snapshot Query, the Snapshot Coding Query, 
         # and the list of parameters to use with these queries to the calling routine.
         return (documentSQL, episodeSQL, quoteSQL, clipSQL, wholeSnapshotSQL, snapshotCodingSQL, params, textSearchItems)
+
+    def GetNodeList(self, dataTree, dataNode, nodeType):
+        """ Recursively builds a list of all nodes for the Word Frequency Text Search searchScope Node
+            and appropriate child nodes which match nodeType """
+        # Initialize a list of results
+        results = []
+        # Get the First Child record
+        (childNode, cookieItem) = dataTree.GetFirstChild(dataNode)
+        # While there are valid Child records ...
+        while childNode.IsOk():
+            # ... get the node data out of the PyData
+            nodeData = dataTree.GetPyData(childNode)
+            # If the node is the correct type ...
+            if nodeData.nodetype == nodeType:
+                # ... add the node Number and node Name to the Results List
+                results.append((nodeData.recNum, dataTree.GetItemText(childNode)))
+            # If the Node has children ...
+            if dataTree.ItemHasChildren(childNode):
+                # ... recursively call this method to get the results of this node's child nodes, adding those results to these
+                results += self.GetNodeList(dataTree, childNode, nodeType)
+            # If this node is not the LAST child ...
+            if childNode != dataTree.GetLastChild(dataNode):
+                # ... then get the next child
+                (childNode, cookieItem) = dataTree.GetNextChild(dataNode, cookieItem)
+            # if we're at the last child ...
+            else:
+                # ... we can quit
+                break
+        # Return the results to the calling method
+        return results
+
+
