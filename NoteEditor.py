@@ -368,6 +368,8 @@ class _NotePanel(wx.Panel):
         """ Insert the current Date & Time into a Note """
         # Get the current Date / Time information from the system
         (year, month, day, hour, minute, second, weekday, yearday, dst) = time.localtime()
+        # Get TimeZone data
+        tz = time.strftime('%Z', time.localtime())
         # Are we in the morning?
         ampm = _('am')
         # Let's use 12-hour time.  If it's afternoon ...
@@ -377,12 +379,44 @@ class _NotePanel(wx.Panel):
             ampm = _('pm')
         # Add the Date / Time stamp to the Note Text
         if TransanaConstants.singleUserVersion:
-            # TODO:  Localize this!
-            self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s\n" % (month, day, year, hour, minute, second, ampm))
+            # In this system, the ampm indicator gets translated but the time zone doesn't.  
+            self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s (%s)\n" % (month, day, year, hour, minute, second, ampm, tz))
+
+            # This mechanism, suggested by Hasit Mistry, doesn't handle am/pm correctly in French and German at least.
+            # It also doesn't produce any output when Chinese is selected in Transana.  I didn't check Arabic.
+            # Also, the Time Zone value isn't internationalized.
+            # timestamp = time.strftime("%b %d %Y %I:%M:%S%p (%Z)", time.localtime())
+            # self.txt.WriteText("%s\n" % timestamp)
+
         else:
+
             # If multi-user, include the username!
-            # TODO:  Localize this!
-            self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s - %s\n" % (month, day, year, hour, minute, second, ampm, TransanaGlobal.userName))
+
+            # Original code
+            ## self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s - %s\n" % (month, day, year, hour, minute, second, ampm, TransanaGlobal.userName))
+
+            # David Socha requested that timexone be added to this string for international collaborations.
+            
+            # Original code with time zone added.  Some projects will include collaborators in multiple locales, and timezone helps interpret
+            # the time comments were made.
+            self.txt.WriteText("%s/%s/%s  %s:%02d:%02d %s %s - %s\n" % (month, day, year, hour, minute, second, ampm.decode('utf8'), tz, TransanaGlobal.userName))
+
+            # But this creates problems.  First, there's MM/DD/YYYY vs. DD/MM/YYYY layout.  Then there's the issue of appropriate
+            # language to use when multiple languages are involved for the text representation of the month.
+
+            # A proposed solution is to have month name in English followed by DD, YYYY.  This code implements
+            # that approach.
+            ## monthNames = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+            ## prompt = unicode("%s %s, %s  %s:%02d:%02d %s (%s) - %s\n", 'utf8')
+
+            # DO NOT localize this!
+            ## self.txt.WriteText(prompt % (monthNames[month-1], day, year, hour, minute, second, ampm.decode('utf8'), tz, TransanaGlobal.userName))
+
+            # I have several objections to this.
+            # 1.  I don't think we should have different systems for single-user and multi-user versions fo Transana.
+            # 2.  It also doesn't make sense to force English on single-user researchers here.  In the single-user model, the
+            #     researcher in theory will always be working in their own language.
+            # 3.  In this system, the ampm indicator gets translated but the month name doesn't.  
 
     def OnSaveAs(self, event):
         """Export the note to a TXT file."""
