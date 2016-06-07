@@ -351,6 +351,11 @@
            <param name="Local" value="TextReports.htm">
        </object>
   <li> <object type="text/sitemap">
+           <param name="Name" value="Word Frequency Report">
+           <param name="ID" value=355>
+           <param name="Local" value="WordFrequency.htm">
+       </object>
+  <li> <object type="text/sitemap">
            <param name="Name" value="Reports - Document">
            <param name="ID" value=350>
            <param name="Local" value="TextReports.htm">
