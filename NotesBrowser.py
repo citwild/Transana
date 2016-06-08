@@ -91,7 +91,6 @@ class NotesBrowser(wx.Dialog):  # (wx.MDIChildFrame)
     def __init__(self,parent,id,title):
         # Create a Dialog to house the Notes Browser
         wx.Dialog.__init__(self,parent,-1, title, size = (800,600), style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
-#        wx.MDIChildFrame.__init__(self,parent,-1, title, size = (800,600), style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
         # Get the Transana Icon
         transanaIcon = wx.Icon("images/Transana.ico", wx.BITMAP_TYPE_ICO)
         # Specify the Transana Icon as the Dialog's Icon
@@ -213,6 +212,13 @@ class NotesBrowser(wx.Dialog):  # (wx.MDIChildFrame)
         self.treeNotebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnNotebookPageChanging)
         # Add a Page Changed event to the notebook
         self.treeNotebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
+
+        # On OS X, Cut, Copy, and Paste don't work out-of-the-box within the Notes Browser the
+        # way they do on Windows or on OS X outside the Notes Browser.  This code corrects that.
+        if ('wxMac' in wx.PlatformInfo):
+            # Bind the KEY_UP event for the Note Control
+            self.noteEdit.txt.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
+        
         # Capture the Dialog's Close Event
         wx.EVT_CLOSE(self, self.OnClose)
         # Center the Notes Browser on the screen.
@@ -983,6 +989,37 @@ class NotesBrowser(wx.Dialog):  # (wx.MDIChildFrame)
             self.searchRoot = self.PopulateTreeCtrl(self.treeNotebookSearchTabTreeCtrl, self.searchText)
         # Don't forget to call the parent method.  Forgetting this causes problems when EVT_KILL_FOCUS calls this method
         event.Skip()
+
+    def OnKeyUp(self, event):
+        """ Process the KEY_UP event for Notes within the Notes Browser on OS X.
+            On OS X, Cut, Copy, and Paste don't work out-of-the-box within the Notes Browser the
+            way they do on Windows or on OS X outside the Notes Browser.  This code corrects that. """
+
+        # Get the code of the key that was pressed
+        key = event.GetKeyCode()
+        # If we're on OS X and the CMD key is being held down ...
+        if ('wxMac' in wx.PlatformInfo) and (event.CmdDown()):
+            # ... implement Copy
+            if key == ord('C'):
+                self.noteEdit.txt.Copy()
+            # ... implement Paste
+            elif key == ord('V'):
+                self.noteEdit.txt.Paste()
+            # ... implement Cut
+            elif key == ord('X'):
+                self.noteEdit.txt.Cut()
+            # ... implement Redo
+            elif key == ord('Y'):
+                self.noteEdit.txt.Redo()
+            # ... implement Undo
+            elif key == ord('Z'):
+                self.noteEdit.txt.Undo()
+            # Otherwise, pass the key event on to be processed elsewhere
+            else:
+                event.Skip()
+        # Otherwise, pass the key event on to be processed elsewhere
+        else:
+            event.Skip()
 
     def OnTreeCtrlRightDown(self, event):
         """ Implement the right-click menus for the Tree Control """
