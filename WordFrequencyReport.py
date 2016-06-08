@@ -1147,6 +1147,13 @@ I'm Ellen Feiss, and I'm a student!"""
             # .. and call ProcessSearch to execute the search terms we've assembled here
             search = ProcessSearch.ProcessSearch(self.tree, self.tree.searchCount, searchName=searchName, \
                                                  searchTerms=searchTerms, searchScope=self.startNode)
+        # If there are no search terms ...
+        else:
+            # ... display an error message.
+            prompt = unicode(_('No items are checked.  No Text Search has been performed.'), 'utf8')
+            dlg = Dialogs.ErrorDialog(self, prompt)
+            dlg.ShowModal()
+            dlg.Destroy()
 
     def OnPrintReport(self, event):
         """ Handle requests for a printable report """
