@@ -35,6 +35,8 @@ INACTIVE_COLOR = wx.WHITE
 import gettext
 # import Python's os module
 import os
+# import Python's platform module
+import platform
 # import Python's sys module
 import sys
 # import Transana's Constants
@@ -440,6 +442,9 @@ class TranscriptionUI(wx.Frame):
 
     def OnSize(self, event):
         """ Resize method for Transcription UI.  Toolbar requires it. """
+
+#        print "TranscriptionUI_RTC.OnSize():", self.GetSize(), self.GetPosition(), TransanaGlobal.resizingAll
+        
         # Get the Panel's size
 #        (w1, h1) = self.toolbarPanel.GetSize()
         # Get the Frame's size
@@ -1432,17 +1437,22 @@ class TranscriptionUI(wx.Frame):
             container = rect[2:4]
         else:
             screenDims = wx.Display(primaryScreen).GetClientArea()
-            # screenDims2 = wx.Display(primaryScreen).GetGeometry()
             left = screenDims[0]
             top = screenDims[1]
-            width = screenDims[2] - screenDims[0]  # min(screenDims[2], 1280 - self.left)
+            width = screenDims[2] - screenDims[0]
             height = screenDims[3]
             container = (width, height)
 
         # Transcript Compontent should be 71.5% of the WIDTH
-        width = container[0] * .716  # rect[2] * .715
+        width = container[0] * .716
         # Transcript Compontent should be 74% of the HEIGHT, adjusted for the menu height
-        height = (container[1] - TransanaGlobal.menuHeight) * .741  # (rect[3] - TransanaGlobal.menuHeight) * .74
+        height = (container[1] - TransanaGlobal.menuHeight) * .741
+
+        # Windows 10 needs certain acreen adjustments to look right.
+        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+##            width += 16
+            height += 8
+
         # Return the SIZE values
         return wx.Size(width, height)
 
@@ -1468,7 +1478,11 @@ class TranscriptionUI(wx.Frame):
             # rect2 = wx.Display(primaryScreen).GetGeometry()
             y = (rect[3] - rect[1] - 6) * .35 + 24
         else:
-            y = rect[1] + container[1] - height  # rect[1] + rect[3] - height - 3
+            y = rect[1] + container[1] - height
+
+#        # Windows 10 needs certain acreen adjustments to look right.
+#        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+#            y -= 8
 
         if DEBUG:
             print "TranscriptUI_RTC.__pos(): Y = %d, H = %d, Total = %d" % (y, height, y + height)
@@ -1883,8 +1897,16 @@ class _TranscriptPanel(wx.Panel):
 
             # As long as the ControlObject is defined ...
             if (self.ControlObject != None):
-                # ... update all Transana Window Positions
-                self.ControlObject.UpdateWindowPositions('Transcript', width + left, YUpper = top - 1)
+##                # Windows 10 needs certain acreen adjustments to look right.
+##                if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+##                    vAdjust = 8 - 1
+##                    hAdjust = -8 + 1
+##                else:
+##                    vAdjust = -1
+##                    hAdjust = 1
+##                # ... update all Transana Window Positions
+##                self.ControlObject.UpdateWindowPositions('Transcript', width + left + hAdjust, YUpper = top + vAdjust)
+                self.ControlObject.UpdateWindowPositions('Transcript', width + left + 1, YUpper = top -1)
         # Call the Transcript Window's Layout.
         self.Layout()
         # We may need to scroll to keep the current selection in the visible part of the window.

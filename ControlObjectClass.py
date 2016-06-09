@@ -77,6 +77,8 @@ else:
     import TranscriptionUI
 # import Python's os module
 import os
+# import Python's platform module
+import platform
 # import Python's sys module
 import sys
 # import Python's string module
@@ -2849,12 +2851,12 @@ class ControlObject(object):
 
                 if DEBUG:
                     print
-                    print "Call 1", 'Video', wleft-1, wtop + wheight
+                    print "Call 1", 'Video', wleft, wtop + wheight
                     print 'Video:', self.VideoWindow.GetDimensions()
                     print 'Data: ', self.DataWindow.GetDimensions()
                     print
                 
-                self.UpdateWindowPositions('Video', wleft - 1, YLower=wtop + wheight)
+                self.UpdateWindowPositions('Video', wleft, YLower=wtop + wheight)
 
             # Play All Clips Window matches the Data Window's WIDTH
             if self.PlayAllClipsWindow != None:
@@ -2877,9 +2879,10 @@ class ControlObject(object):
         if DEBUG:
             print
             print "ControlObjectClass.UpdateWindowPositions(1):", sender, X, YUpper, YLower, TransanaGlobal.resizingAll
+            print 'Menu:         ', self.MenuWindow.GetRect()
             print 'Visualization:', self.VisualizationWindow.GetDimensions()
-            print 'Transcript:   ', self.TranscriptWindow.GetDimensions()
             print 'Video:        ', self.VideoWindow.GetDimensions()
+            print 'Transcript:   ', self.TranscriptWindow.GetDimensions()
             print 'Data:         ', self.DataWindow.GetDimensions()
             print
 
@@ -2905,6 +2908,7 @@ class ControlObject(object):
 
         if DEBUG:
             print "Adjusts:", (adjustX, adjustY, adjustW, adjustH)
+##            print "winAdjusts:", winAdjusts
 
         # We need to adjust the Window Positions to accomodate multiple transcripts!
         # Basically, if we are not in the "first" transcript, we need to substitute the first transcript's
@@ -2913,62 +2917,80 @@ class ControlObject(object):
             YUpper = self.TranscriptWindow.GetRect()[1] - 1
         # If Auto-Arrange is enabled, resizing one window may alter the positioning of others.
         if TransanaGlobal.configData.autoArrange:
+            # If X is NOT passed in ...
+            if X == -1:
+                X = 0
             # If YUpper is NOT passed in ...
             if YUpper == -1:
                 # Set it to the BOTTOM of the Visualization Window
                 (wleft, wtop, wwidth, wheight) = self.VisualizationWindow.GetDimensions()
-                YUpper = wheight + wtop
+                YUpper = wheight + wtop + 1
             # if YLower is NOT passed in ...
             if YLower == -1:
                 # Set it to the BOTTOM of the Video Window
                 (wleft, wtop, wwidth, wheight) = self.VideoWindow.GetDimensions()
-                YLower = wheight + wtop
+                YLower = wheight + wtop + 1
                 
+            # Windows 10 needs certain acreen adjustments to look right.  These need to be handled separately from other adjustments.
+            if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+                winAdjusts = (-8, -8, 16, 8)
+            else:
+                winAdjusts = (0, 0, 0, 0)
+
+            if DEBUG:
+                print ' ----------------------------------------------------------------- '
+                print "ControlObjectClass.UpdateWindowPositions(2):", sender, X, YUpper, YLower, TransanaGlobal.resizingAll
+
             # This method behaves differently when there are multiple Video Players open
             if (self.currentObj != None) and \
                (isinstance(self.currentObj, Episode.Episode) or (isinstance(self.currentObj, Clip.Clip))) and \
                (len(self.currentObj.additional_media_files) > 0):
+                
                 # Get the current dimensions of all windows
                 visualDims = self.VisualizationWindow.GetDimensions()
                 transcriptDims = self.TranscriptWindow.GetDimensions()
                 videoDims = self.VideoWindow.GetDimensions()
                 dataDims = self.DataWindow.GetDimensions()
+
                 # If the Visualization window has been changed ...
                 if sender == 'Visualization':
                     # Visual changes Video X, width, height
-                    videoDims = (X + 1, videoDims[1], videoDims[2] + (videoDims[0] - X - 1), YUpper - videoDims[1])
+                    videoDims = [X + 1 + 2 * winAdjusts[0], videoDims[1], videoDims[2] + (videoDims[0] - X - 1) + winAdjusts[2], YUpper - videoDims[1]]
                     # Visual changes Transcript Y, height
-                    transcriptDims = (transcriptDims[0], YUpper + 1, transcriptDims[2], transcriptDims[3] + (transcriptDims[1] - YUpper - 1))
+                    transcriptDims = [transcriptDims[0], YUpper + 1 + winAdjusts[1], transcriptDims[2], transcriptDims[3] + (transcriptDims[1] - YUpper - 1) + winAdjusts[3]]
                     # Visual changes Data Y, height
-                    dataDims = (dataDims[0], YUpper + 1, dataDims[2], dataDims[3] + (dataDims[1] - YUpper - 1))
+                    dataDims = [dataDims[0], YUpper + 1 + winAdjusts[1], dataDims[2], dataDims[3] + (dataDims[1] - YUpper - 1) + winAdjusts[3]]
                 # If the Video window has been changed ...
                 elif sender == 'Video':
+                    # Unlike the others, Video CAN change Video Dims to maintain width.
+                    videoDims = [videoDims[0], videoDims[1], videoDims[2] + winAdjusts[2], videoDims[3] + winAdjusts[3]]
                     # Video changes Visual width and height
-                    visualDims = (visualDims[0], visualDims[1], X - visualDims[0] - 1, YUpper - visualDims[1])
+                    visualDims = [visualDims[0], visualDims[1], X - visualDims[0] - 1 + winAdjusts[2], YUpper - visualDims[1]]
                     # Video changes Transcript Y and height
-                    transcriptDims = (transcriptDims[0], YUpper + 1, transcriptDims[2], transcriptDims[3] + (transcriptDims[1] - YUpper))
+                    transcriptDims = [transcriptDims[0], YUpper + 1 + winAdjusts[1], transcriptDims[2], transcriptDims[3] + (transcriptDims[1] - YUpper) + winAdjusts[3]]
                     # Video changes Data Y, height
-                    dataDims = (dataDims[0], YUpper + 1, dataDims[2], dataDims[3] + (dataDims[1] - YUpper))
+                    dataDims = [dataDims[0], YUpper + 1 + winAdjusts[1], dataDims[2], dataDims[3] + (dataDims[1] - YUpper) + winAdjusts[3]]
                 # If the Transcript window has been changed ...
                 elif sender == 'Transcript':
                     # Transcript changes Visual height
-                    visualDims = (visualDims[0], visualDims[1], visualDims[2], YUpper - visualDims[1])
+                    visualDims = [visualDims[0], visualDims[1], visualDims[2], YUpper - visualDims[1] + winAdjusts[3]]
                     # Transcript changes Video height
-                    videoDims = (videoDims[0], videoDims[1], videoDims[2], YUpper - videoDims[1])
+                    videoDims = [videoDims[0], videoDims[1], videoDims[2], YUpper - videoDims[1] + winAdjusts[3]]
                     # Transcript changes Data X, Y, width, height
-                    dataDims = (X + 1, YUpper + 1, dataDims[2] + (dataDims[0] - X - 1), dataDims[3] + (dataDims[1] - YUpper - 1))
+                    dataDims = [X + 1 + 2 * winAdjusts[0], YUpper + 1, dataDims[2] + (dataDims[0] - X - 1) + winAdjusts[2], dataDims[3] + (dataDims[1] - YUpper - 1)]
                 # If the Data window has been changed ...
                 elif sender == 'Data':
                     # Data changes Visual height
-                    visualDims = (visualDims[0], visualDims[1], visualDims[2], YLower - visualDims[1])
+                    visualDims = [visualDims[0], visualDims[1], visualDims[2], YLower - visualDims[1] + winAdjusts[3]]
                     # Data changes Transcript Y, width, height
-                    transcriptDims = (transcriptDims[0], YLower + 1, X - transcriptDims[0], transcriptDims[3] + (transcriptDims[1] - YLower - 1))
+                    transcriptDims = [transcriptDims[0], YLower + 1, X - transcriptDims[0] + winAdjusts[2], transcriptDims[3] + (transcriptDims[1] - YLower - 1)]
                     # Data changes Video height
-                    videoDims = (videoDims[0], videoDims[1], videoDims[2], YLower - videoDims[1])
+                    videoDims = [videoDims[0], videoDims[1], videoDims[2], YLower - videoDims[1] + winAdjusts[3]]
 
                 # We need to signal that we are resizing everything to reduce redundant OnSize calls
                 TransanaGlobal.resizingAll = True
-                # Vertical Adjustments
+
+                # This structure avoids recursion
                 # Adjust Visualization Window
                 if sender != 'Visualization':
                     self.VisualizationWindow.SetDims(visualDims[0], visualDims[1], visualDims[2], visualDims[3])
@@ -2981,122 +3003,301 @@ class ControlObject(object):
                 # Adjust Data Window
                 if sender != 'Data':
                     self.DataWindow.SetDims(dataDims[0], dataDims[1], dataDims[2], dataDims[3])
+
                 # We're done resizing all windows and need to re-enable OnSize calls that would otherwise be redundant
                 TransanaGlobal.resizingAll = False
+
             # If we have only a single video window ...
             else:
 
-                # We need to signal that we are resizing everything to reduce redundant OnSize calls
-                TransanaGlobal.resizingAll = True
 
-                if DEBUG:
-                    print "ControlObjectClass.UpdateWindowPositions(2):", sender, X, YUpper, YLower
-                
-                # Adjust Visualization Window
-                if sender != 'Visualization':
-                    (wleft, wtop, wwidth, wheight) = self.VisualizationWindow.GetDimensions()
-                    (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
 
+                # Trying to replace a convoluted system for single video with a clearer one like I wrote for multi-video.
+                # I don't have time to finish this right now, but I'll get it done eventually
+
+                if False:
+
+                    # Get the current dimensions of all windows
+                    visualDims = self.VisualizationWindow.GetDimensions()
+                    transcriptDims = self.TranscriptWindow.GetDimensions()
+                    videoDims = self.VideoWindow.GetDimensions()
+                    dataDims = self.DataWindow.GetDimensions()
+
+                    print "Original"
+                    print visualDims
+                    print transcriptDims
+                    print videoDims
+                    print dataDims
+                    print
+
+                    # If the Visualization window has been changed ...
+                    if sender == 'Visualization':
+                        # Visual changes Video X, width, height
+                        videoDims = [X + 1 + 2 * winAdjusts[0], videoDims[1], videoDims[2] + (videoDims[0] - X - 1) + winAdjusts[2], YUpper - videoDims[1]]
+                        # Visual changes Transcript Y, height
+                        transcriptDims = [transcriptDims[0], YUpper + 1 + winAdjusts[1], transcriptDims[2], transcriptDims[3] + (transcriptDims[1] - YUpper - 1) + winAdjusts[3]]
+                        # Visual changes Data Y, height
+                        dataDims = [dataDims[0], YUpper + 1 + winAdjusts[1], dataDims[2], dataDims[3] + (dataDims[1] - YUpper - 1) + winAdjusts[3]]
+                    # If the Video window has been changed ...
+                    elif sender == 'Video':
+                        # Video changes Visual width and height
+##
+##                        print "video - visual:"
+##                        print visualDims[0], visualDims[0]
+##                        print visualDims[1], visualDims[1]
+##                        print X - visualDims[0], X - visualDims[0]
+##                        print YUpper - visualDims[1], YUpper - visualDims[1]
+##                        print
+##                        
+                        visualDims = [visualDims[0], visualDims[1], X - visualDims[0] - 1 + winAdjusts[2], YUpper - visualDims[1] - 1]
+                        # Video changes Transcript Y and width
+                        transcriptDims = [transcriptDims[0], YUpper + 1 + winAdjusts[1], X - visualDims[0] - 1 + winAdjusts[2], transcriptDims[3] + (transcriptDims[1] - YUpper) - 1 + winAdjusts[3]]
+                        # Video changes Data X, Width, Y, height
+##
+##                        print "video - data:"
+##                        print X + 1, dataDims[0]
+##                        print YLower + 1, dataDims[1]
+##                        print X - visualDims[0], dataDims[2]
+##                        print YUpper - visualDims[1], YUpper - visualDims[1]
+##                        print
+##
+                        # See if Secondary Monitor adjustment is needed ...
+                        if (dataDims[3] + dataDims[1] - YUpper - 1 < 0) or ((dataDims[3] + dataDims[1] - YUpper - 1 > adjustH) and (adjustY < 0)):
+                            # ... we can adjust the top position
+                            wtop += adjustY
+
+                        if YLower + 1 < adjustY:
+                            tmpAdjustedY = YLower + adjustY + 1 
+                        else:
+                            tmpAdjustedY = YLower + 1
+
+                        ## dataDims = [X + 1 + winAdjusts[0], YLower + 1 + winAdjusts[1], wwidth + wleft - (X + 1)+ winAdjusts[2], wheight + wtop - tmpAdjustedY + winAdjusts[3]]
+                        dataDims = [X + 1, YLower + 1 + winAdjusts[1], dataDims[2] + dataDims[0] - (X + 1), dataDims[3] + dataDims[1] - tmpAdjustedY + winAdjusts[3]]
+    ##                # If the Transcript window has been changed ...
+    ##                elif sender == 'Transcript':
+    ##                    # Transcript changes Visual height
+    ##                    visualDims = [visualDims[0], visualDims[1], visualDims[2], YUpper - visualDims[1] + winAdjusts[3]]
+    ##                    # Transcript changes Video height
+    ##                    videoDims = [videoDims[0], videoDims[1], videoDims[2], YUpper - videoDims[1] + winAdjusts[3]]
+    ##                    # Transcript changes Data X, Y, width, height
+    ##                    dataDims = [X + 1 + 2 * winAdjusts[0], YUpper + 1, dataDims[2] + (dataDims[0] - X - 1) + winAdjusts[2], dataDims[3] + (dataDims[1] - YUpper - 1)]
+    ##                # If the Data window has been changed ...
+    ##                elif sender == 'Data':
+    ##                    # Data changes Visual height
+    ##                    visualDims = [visualDims[0], visualDims[1], visualDims[2], YLower - visualDims[1] + winAdjusts[3]]
+    ##                    # Data changes Transcript Y, width, height
+    ##                    transcriptDims = [transcriptDims[0], YLower + 1, X - transcriptDims[0] + winAdjusts[2], transcriptDims[3] + (transcriptDims[1] - YLower - 1)]
+    ##                    # Data changes Video height
+    ##                    videoDims = [videoDims[0], videoDims[1], videoDims[2], YLower - videoDims[1] + winAdjusts[3]]
+
+                    # We need to signal that we are resizing everything to reduce redundant OnSize calls
+                    TransanaGlobal.resizingAll = True
+
+                    # This structure avoids recursion
+                    # Adjust Visualization Window
+                    if sender != 'Visualization':
+                        self.VisualizationWindow.SetDims(visualDims[0], visualDims[1], visualDims[2], visualDims[3])
+                    # Adjust Transcript Window
+                    if sender != 'Transcript':
+                        self.TranscriptWindow.SetDims(transcriptDims[0], transcriptDims[1], transcriptDims[2], transcriptDims[3])
+                    # Adjust Video Window
+                    if sender != 'Video':
+                        self.VideoWindow.SetDims(videoDims[0], videoDims[1], videoDims[2], videoDims[3])
+                    # Adjust Data Window
+                    if sender != 'Data':
+                        self.DataWindow.SetDims(dataDims[0], dataDims[1], dataDims[2], dataDims[3])
+
+                    print "Final"
+                    print visualDims, self.VisualizationWindow.GetDimensions() 
+                    print transcriptDims, self.TranscriptWindow.GetDimensions()
+                    print videoDims, self.VideoWindow.GetDimensions()
+                    print dataDims, self.DataWindow.GetDimensions()
+                    print
+
+                    # We're done resizing all windows and need to re-enable OnSize calls that would otherwise be redundant
+                    TransanaGlobal.resizingAll = False
+
+                else:
+
+                    # This code is pretty convoluted and fragile, but it works!!
+
+                    # We need to signal that we are resizing everything to reduce redundant OnSize calls
+                    TransanaGlobal.resizingAll = True
 
                     if DEBUG:
-                        print "Visualization:", wleft, wtop, wwidth, wheight
-
-                    if adjustX < wleft - 1:
-                        wleft += adjustX
-
-                    if (oleft != wleft) or (otop != wtop) or (owidth != X - wleft) or (oheight != YUpper - wtop):
-                        self.VisualizationWindow.SetDims(wleft, wtop, X - wleft, YUpper - wtop)
-
-                # Adjust Video Window
-                if sender != 'Video':
-                    (wleft, wtop, wwidth, wheight) = self.VideoWindow.GetDimensions()
-                    (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
-
-                    if DEBUG:
-                        print 'Video:', wleft, wtop, wwidth, wheight, X, YLower
-
-                    # See if Secondary Monitor adjustment is needed ...
-                    if wwidth + wleft - X - 1 < 0:
-                        # ... we can adjust the left position
-                        wleft += adjustX
-
-                    if (oleft != X + 1) or (otop != wtop) or (owidth != wwidth + wleft - X - 1) or (oheight != YLower - wtop):
-                        self.VideoWindow.SetDims(X + 1, wtop, wwidth + wleft - (X + 1), YLower - wtop)
-
-                    self.VideoWindow.Refresh()
-
-                # Adjust Transcript Window
-                if sender != 'Transcript':
-                    (wleft, wtop, wwidth, wheight) = self.TranscriptWindow.GetDimensions()
-                    (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
-
-                    if DEBUG:
-                        print "Transcript:", wleft, wtop, wwidth, wheight
-
-                    # See if Secondary Monitor adjustment is needed ...
-                    if (wheight + wtop - YUpper - 1 < 0) or ((wheight + wtop - YUpper - 1 > adjustH) and (adjustY < 0)):
-                        # ... we can adjust the top position
-                        wtop += adjustY
-
-                    if YUpper + 1 < adjustY:
-                        tmpAdjustedY = YUpper + adjustY + 1
-                    else:
-                        tmpAdjustedY = YUpper + 1
-
-                    # Transcripts are ending up too large on OS X.  I can't figure out why, so let's just correct it here.
-                    # If the bottom of the Data Window is smaller than the bottom of the Transcript Window ...
-                    if (self.DataWindow.GetDimensions()[1] + self.DataWindow.GetDimensions()[3]) < \
-                       (self.TranscriptWindow.GetDimensions()[1] + self.TranscriptWindow.GetDimensions()[3]):
-                        # ... reduce the wheight by the difference!
-                        wheight -= (self.TranscriptWindow.GetDimensions()[1] + self.TranscriptWindow.GetDimensions()[3]) - \
-                                        (self.DataWindow.GetDimensions()[1] + self.DataWindow.GetDimensions()[3])
-
-                    if (oleft != wleft) or (otop != tmpAdjustedY) or (owidth != X - wleft) or (oheight != wheight + wtop - tmpAdjustedY):
-                        self.TranscriptWindow.SetDims(wleft, tmpAdjustedY, X - wleft, wheight + wtop - tmpAdjustedY)
-
-                # Adjust Data Window
-                if sender != 'Data':
-                    (wleft, wtop, wwidth, wheight) = self.DataWindow.GetDimensions()
-                    (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
-
-                    if DEBUG:
-                        print "Data:", wleft, wtop, wwidth, wheight
+                        print "ControlObjectClass.UpdateWindowPositions(2):", sender, X, YUpper, YLower
                     
-                    # See if Secondary Monitor adjustment is needed ...
-                    if (wheight + wtop - YUpper - 1 < 0) or ((wheight + wtop - YUpper - 1 > adjustH) and (adjustY < 0)):
-                        # ... we can adjust the top position
-                        wtop += adjustY
+                    # Adjust Visualization Window
+                    if sender != 'Visualization':
+                        (wleft, wtop, wwidth, wheight) = self.VisualizationWindow.GetDimensions()
+                        # If we're applying winAdjusts, we actually need to remove them to do our calculations!!
+                        wleft -= winAdjusts[0]
+                        wtop -= winAdjusts[1]
+                        wwidth -= winAdjusts[2]
+                        wheight -= winAdjusts[3]
+                        
+                        (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
 
-                    if YLower + 1 < adjustY:
-                        tmpAdjustedY = YLower + adjustY + 1 
+                        if DEBUG:
+                            print "Visualization:", wleft, wtop, wwidth, wheight
+
+                        if adjustX < wleft - 1:
+                            wleft += adjustX
+
+                        visualDims = [wleft + winAdjusts[0], wtop + winAdjusts[1], X - wleft + winAdjusts[2], YUpper - wtop - 1 + winAdjusts[3]]
+                        if sender == 'Transcript':
+                            visualDims[2] += winAdjusts[0]
+                            visualDims[3] -= winAdjusts[1]
+                        elif sender == 'Data':
+                            visualDims[2] - winAdjusts[0]
+
+                        if (oleft != wleft) or (otop != wtop) or (owidth != X - wleft) or (oheight != YUpper - wtop - 1):
+                            self.VisualizationWindow.SetDims(visualDims[0], visualDims[1], visualDims[2], visualDims[3])
+                            self.VisualizationWindow.Refresh()
+
+                    # Adjust Video Window
+                    if sender != 'Video':
+                        (wleft, wtop, wwidth, wheight) = self.VideoWindow.GetDimensions()
+
+                        if DEBUG:
+                            print
+                            print 'Video:', wleft, wtop, wwidth, wheight, X, YLower
+
+                        # If we're applying winAdjusts, we actually need to remove them to do our calculations!!
+                        wleft -= winAdjusts[0]
+                        wtop -= winAdjusts[1]
+                        wwidth -= winAdjusts[2]
+                        wheight -= winAdjusts[3]
+                        (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
+
+                        # See if Secondary Monitor adjustment is needed ...
+                        if wwidth + wleft - X - 1 + winAdjusts[0] < 0:
+                            # ... we can adjust the left position
+                            wleft += adjustX
+
+                        videoDims = [X + 1 + (2 * winAdjusts[0]), wtop + winAdjusts[1], wwidth + wleft - (X + 1 + winAdjusts[0]) + winAdjusts[2], YLower - wtop - 1 + winAdjusts[3]]
+                        if sender == 'Data':
+                            videoDims[0] -= winAdjusts[0]
+                            videoDims[2] += winAdjusts[0]
+
+                        if (oleft != X + 1) or (otop != wtop) or (owidth != wwidth + wleft - (X + 1)) or (oheight != YLower - wtop - 1):
+
+                            if DEBUG :
+                                print (oleft != X + 1), (otop != wtop), (owidth != wwidth + wleft - (X + 1)), (oheight != YLower - wtop - 1),
+                                print videoDims[0], videoDims[1], videoDims[2], videoDims[3]
+                                print
+
+                            self.VideoWindow.SetDims(videoDims[0], videoDims[1], videoDims[2], videoDims[3])
+                            self.VideoWindow.Refresh()
 
                     else:
-                        tmpAdjustedY = YLower + 1
+                        (wleft, wtop, wwidth, wheight) = self.VideoWindow.GetDimensions()
+                        if DEBUG:
+                            print
+                            print 'Video NOT CALLED:', sender, wleft, wtop, wwidth, wheight, X, YLower
 
-                    if (oleft != X + 1) or (otop != YLower + 1) or (owidth != wwidth + wleft - X - 1) or (oheight != wheight + wtop - tmpAdjustedY):
-                        self.DataWindow.SetDims(X + 1, YLower + 1, wwidth + wleft - (X + 1), wheight + wtop - tmpAdjustedY)
+                        self.VideoWindow.SetDims(wleft + winAdjusts[0], wtop, wwidth + winAdjusts[2], wheight)
 
-                if DEBUG:
-                    st = "Final Window Sizes:\n"
-                    st += "  Monitor %s:\t%s\n\n" % (TransanaGlobal.configData.primaryScreen, (adjustX, adjustY, adjustW, adjustH),)
-                    st += "  menu:\t\t%s\n" % self.MenuWindow.GetRect()
-                    st += "  visual:\t%s\n" % (self.VisualizationWindow.GetDimensions(),)
-                    st += "  video:\t%s\n" % (self.VideoWindow.GetDimensions(), )
-                    st += "  trans:\t%s\n" % (self.TranscriptWindow.GetDimensions(), )
-                    st += "  data:\t\t%s\n" % (self.DataWindow.GetDimensions(), )
+                    # Adjust Transcript Window
+                    if sender != 'Transcript':
+                        (wleft, wtop, wwidth, wheight) = self.TranscriptWindow.GetDimensions()
+                        wleft -= winAdjusts[0]
+                        wtop -= winAdjusts[1]
+                        wwidth -= winAdjusts[2]
+                        wheight -= winAdjusts[3]
+                        (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
 
-                    print
-                    print st
-                    print
-                    print "TranWindow: Y = %d, H = %d, Total = %d" % (self.TranscriptWindow.GetDimensions()[1],  self.TranscriptWindow.GetDimensions()[3], self.TranscriptWindow.GetDimensions()[1] + self.TranscriptWindow.GetDimensions()[3])
-                    print "DataWindow: Y = %d, H = %d, Total = %d" % (self.DataWindow.GetDimensions()[1],  self.DataWindow.GetDimensions()[3], self.DataWindow.GetDimensions()[1] + self.DataWindow.GetDimensions()[3])
-                    print
+                        if DEBUG:
+                            print "Transcript:", wleft, wtop, wwidth, wheight
 
-                # We're done resizing all windows and need to re-enable OnSize calls that would otherwise be redundant
-                TransanaGlobal.resizingAll = False
+                        # See if Secondary Monitor adjustment is needed ...
+                        if (wheight + wtop - YUpper - 1 < 0) or ((wheight + wtop - YUpper - 1 > adjustH) and (adjustY < 0)):
+                            # ... we can adjust the top position
+                            wtop += adjustY
 
-#        self.DataWindow.Refresh()
-                    
+                        if YUpper + 1 < adjustY:
+                            tmpAdjustedY = YUpper + adjustY + 1
+                        else:
+                            tmpAdjustedY = YUpper + 1
+
+                        # Transcripts are ending up too large on OS X.  I can't figure out why, so let's just correct it here.
+                        # If the bottom of the Data Window is smaller than the bottom of the Transcript Window ...
+                        if (self.DataWindow.GetDimensions()[1] + self.DataWindow.GetDimensions()[3]) < \
+                           (self.TranscriptWindow.GetDimensions()[1] + self.TranscriptWindow.GetDimensions()[3]):
+                            # ... reduce the wheight by the difference!
+                            wheight -= (self.TranscriptWindow.GetDimensions()[1] + self.TranscriptWindow.GetDimensions()[3]) - \
+                                            (self.DataWindow.GetDimensions()[1] + self.DataWindow.GetDimensions()[3])
+
+                        documentDims = [wleft + winAdjusts[0], tmpAdjustedY + winAdjusts[1], X - wleft + winAdjusts[2], wheight + wtop - tmpAdjustedY + winAdjusts[3]]
+                        if sender == 'Visualization':
+                            documentDims[2] += winAdjusts[0]
+
+                        if (oleft != wleft) or (otop != tmpAdjustedY) or (owidth != X - wleft) or (oheight != wheight + wtop - tmpAdjustedY):
+                            self.TranscriptWindow.SetDims(documentDims[0], documentDims[1], documentDims[2], documentDims[3])
+    #                        self.TranscriptWindow.Refresh()
+
+                    # Adjust Data Window
+                    if sender != 'Data':
+                        (wleft, wtop, wwidth, wheight) = self.DataWindow.GetDimensions()
+                        wleft -= winAdjusts[0]
+                        wtop -= winAdjusts[1]
+                        wwidth -= winAdjusts[2]
+                        wheight -= winAdjusts[3]
+                        (oleft, otop, owidth, oheight) = (wleft, wtop, wwidth, wheight)
+
+                        if DEBUG:
+                            print "Data:", wleft, wtop, wwidth, wheight
+                        
+                        # See if Secondary Monitor adjustment is needed ...
+                        if (wheight + wtop - YUpper - 1 < 0) or ((wheight + wtop - YUpper - 1 > adjustH) and (adjustY < 0)):
+                            # ... we can adjust the top position
+                            wtop += adjustY
+
+                        if YLower + 1 < adjustY:
+                            tmpAdjustedY = YLower + adjustY + 1 
+
+                        else:
+                            tmpAdjustedY = YLower + 1
+
+                        dataDims = [X + 1 + winAdjusts[0], YLower + 1 + winAdjusts[1], wwidth + wleft - (X + 1)+ winAdjusts[2], wheight + wtop - tmpAdjustedY + winAdjusts[3]]
+                        if sender in ['Visualization', 'Transcript']:
+                            dataDims[0] += winAdjusts[0]
+                            dataDims[2] -= winAdjusts[0]
+
+                        if (oleft != X + 1) or (otop != YLower + 1) or (owidth != wwidth + wleft - X - 1) or (oheight != wheight + wtop - tmpAdjustedY):
+                            self.DataWindow.SetDims(dataDims[0], dataDims[1], dataDims[2], dataDims[3])
+    #                        self.DataWindow.Refresh()
+
+                    # I'm not sure why the DataWindow behaves differently here, but it does, so it needs this final adjustment!
+                    else:
+
+                        # Windows 10 needs certain acreen adjustments to look right.  These need to be handled separately from other adjustments.
+                        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):
+                            (wleft, wtop, wwidth, wheight) = self.DataWindow.GetDimensions()
+                            wleft += winAdjusts[0]
+                            wtop += winAdjusts[1]
+                            wwidth += winAdjusts[2] / 2
+                            wheight += winAdjusts[3]
+                            self.DataWindow.SetDims(wleft, wtop, wwidth, wheight)
+
+                    if DEBUG:
+                        st = "Final Window Sizes:\n"
+                        st += "  Monitor %s:\t%s\n\n" % (TransanaGlobal.configData.primaryScreen, (adjustX, adjustY, adjustW, adjustH),)
+                        st += "  menu:\t\t%s\n" % self.MenuWindow.GetRect()
+                        st += "  visual:\t%s\n" % (self.VisualizationWindow.GetDimensions(),)
+                        st += "  video:\t%s\n" % (self.VideoWindow.GetDimensions(), )
+                        st += "  trans:\t%s\n" % (self.TranscriptWindow.GetDimensions(), )
+                        st += "  data:\t\t%s\n" % (self.DataWindow.GetDimensions(), )
+                        w1 = self.VisualizationWindow.GetDimensions()[2] + self.VideoWindow.GetDimensions()[2]
+                        w2 = self.TranscriptWindow.GetDimensions()[2] + self.DataWindow.GetDimensions()[2]
+                        h1 = self.MenuWindow.GetRect()[3] + self.VisualizationWindow.GetDimensions()[3] + self.TranscriptWindow.GetDimensions()[3]
+                        h2 = self.MenuWindow.GetRect()[3] + self.VideoWindow.GetDimensions()[3] + self.DataWindow.GetDimensions()[3]
+                        st += "  Totals:\t%s\n" % ((w1, w2, h1, h2),)
+                        print
+                        print st
+
+                    # We're done resizing all windows and need to re-enable OnSize calls that would otherwise be redundant
+                    TransanaGlobal.resizingAll = False
 
     def VideoSizeChange(self):
         """ Signal that the Video Size has been changed via the Options > Video menu """
