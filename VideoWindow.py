@@ -59,13 +59,8 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         """Initialize the Media Window object"""
         # Initialize a Dialog Box
         wx.Dialog.__init__(self, parent, -1, _("Media"), pos=self.__pos(), size=self.__size(),
-#        wx.MDIChildFrame.__init__(self, parent, -1, _("Video"), pos=self.__pos(), size=self.__size(),
                            style = wx.RESIZE_BORDER | wx.CAPTION )
         # We need to adjust the screen position on the Mac.  I don't know why.
-#        if "__WXMAC__" in wx.PlatformInfo:
-#            pos = self.GetPosition()
-#            self.SetPosition((pos[0], pos[1]-25))
-#        self.SetBackgroundColour(wx.WHITE)
         # Bind the Size event
         self.Bind(wx.EVT_SIZE, self.OnSize)
         # Bind the Right Click event
@@ -931,7 +926,7 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
                 # since we don't have a control bar in the media player, but causes problems with multiple media players.
                 # (It makes the visualization window too short.)
                 if (sizeY == 0) and (len(self.mediaPlayers) > 1):
-                    sizeY = int((wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()[3] - TransanaGlobal.menuHeight) * 0.2)  # wx.ClientDisplayRect()
+                    sizeY = int((wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()[3] - TransanaGlobal.menuHeight) * 0.2)
                 # if the PlayPause button is defined ...
                 if self.btnPlayPause:
                     # ... adjust the vertical size to include it.
@@ -950,10 +945,9 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
             # On Windows ...
             else:
                 # ... use MenuWindow.GetClientWindow.GetSize
-                #screenSize = (0, 0, self.ControlObject.MenuWindow.GetClientWindow().GetSize()[0], self.ControlObject.MenuWindow.GetClientWindow().GetSize()[1])
-                screenSize = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()  # wx.ClientDisplayRect()
-                # We need to adjust by 23 pixels
-                xAdjust = 23
+                screenSize = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
+                # We need to adjust by 16 pixels (Used to be 23!)
+                xAdjust = 16
             # now check width against the screen size.  Allow no more than 2/3 of the screen to be take up by video.
             if sizeX > int(screenSize[2] * 0.66):
                 # Adjust Height proportionally (first, so we can calculate the proportion!)
