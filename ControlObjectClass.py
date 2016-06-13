@@ -2513,12 +2513,14 @@ class ControlObject(object):
         # If there's no current selection ...
         if startPos == endPos:
             # ... get the text between the nearest time codes.
-            (st, end, text) = self.TranscriptWindow.dlg.editor.GetTextBetweenTimeCodes(startTime, endTime)
+            (st, end, text, plainText) = self.TranscriptWindow.dlg.editor.GetTextBetweenTimeCodes(startTime, endTime)
         else:
             if TransanaConstants.USESRTC:
                 text = self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+                plainText = self.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
             else:
                 text = self.TranscriptWindow.dlg.editor.GetRTFBuffer(select_only=1)
+                plainText = ''
         # We also need to know the number of the original Transcript Record
         if self.TranscriptWindow.dlg.editor.TranscriptObj.clip_num == 0:
             # If we have an Episode Transcript, we need the Transcript Number
@@ -2527,7 +2529,7 @@ class ControlObject(object):
             # If we have a Clip Transcript, we need the original Transcript Number, not the Clip Transcript Number.
             # We can get that from the ControlObject's "currentObj", which in this case will be the Clip!
             originalTranscriptNum = self.currentObj.transcripts[self.activeTranscript].source_transcript
-        return (originalTranscriptNum, startTime, endTime, text)
+        return (originalTranscriptNum, startTime, endTime, text, plainText)
 
     def AddQuoteToOpenDocument(self, tmpQuote):
         """ When a Quote is added, we need to make sure the Document, if open, is informed about it!! """
@@ -2681,12 +2683,14 @@ class ControlObject(object):
             self.TranscriptWindow.dlg.editor.SetSelection(startChar, endChar)
             # Get the selected text in XML format
             text = self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+            plainText = self.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
             # Restore the original cursor position
             self.TranscriptWindow.dlg.editor.SetCurrentPos(currentPos)
         # If there is a selection ...
         else:
             # ... get the selected text in XML format
             text = self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+            plainText = self.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
         # Initialize originalDocumentNum
         originalDocumentNum = 0
         # We also need to know the number of the original Document Record
@@ -2700,7 +2704,7 @@ class ControlObject(object):
             # but it's the best we can do!)
             startChar += self.TranscriptWindow.GetCurrentObject().start_char
             endChar += self.TranscriptWindow.GetCurrentObject().start_char
-        return (originalDocumentNum, startChar, endChar, text)
+        return (originalDocumentNum, startChar, endChar, text, plainText)
 
     def GetMultipleTranscriptSelectionInfo(self):
         """ Returns information about the current selection(s) in the transcript editor(s) """
@@ -2735,8 +2739,10 @@ class ControlObject(object):
                 #text = trWindow.editor.GetRTFBuffer(select_only=1)
                 if TransanaConstants.USESRTC:
                     text = trWindow.editor.GetFormattedSelection('XML', selectionOnly=True)
+                    plainText = trWindow.editor.GetPlainTextSelection(selectionOnly=True)
                 else:
                     text = trWindow.editor.GetRTFBuffer(select_only=1)
+                    plainText = ''
             # We also need to know the number of the original Transcript Record.  If we have an Episode ....
             if trWindow.editor.TranscriptObj.clip_num == 0:
                 # ... we need the Transcript Number, which we can get from the Transcript Window's editor's Transcript Object
@@ -2748,7 +2754,7 @@ class ControlObject(object):
                 # We have to pull the source_transcript value from the correct transcript number!
                 originalTranscriptNum = trWindow.editor.TranscriptObj.source_transcript
             # Now we can place this transcript's results into the Results list
-            results.append((originalTranscriptNum, startTime, endTime, text))
+            results.append((originalTranscriptNum, startTime, endTime, text, plainText))
         return results
 
     def GetDatabaseTreeTabObjectNodeType(self):
@@ -3351,6 +3357,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          -1,
                                                                          self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML'),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempObj.keyword_list)
                 else:
                     # Start up the Propagate "Clip" Changes tool
@@ -3359,6 +3366,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          -1,
                                                                          self.TranscriptWindow.dlg.editor.GetRTFBuffer(),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempQuote.keyword_list)
 
             # If we are working with a Clip Transcript ...
@@ -3374,6 +3382,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          transcriptWindowNumber,
                                                                          self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML'),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempClip.keyword_list)
                 else:
                     # Start up the Propagate Clip Changes tool
@@ -3382,6 +3391,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          transcriptWindowNumber,
                                                                          self.TranscriptWindow.dlg.editor.GetRTFBuffer(),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempClip.keyword_list)
 
         # If the user chooses NOT to save the Transcript changes ...
@@ -3717,9 +3727,10 @@ class ControlObject(object):
             # Since this is by definition transcript-less, we won't have a transcript.  However, we use this
             # to signal that we are intentionally leaving the transcript blank.
             text = u'<(transcript-less clip)>'
+            plainText = ''
 
             # We now have enough information to populate a ClipDragDropData object to pass to the Clip Creation method.
-            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, text, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
+            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
 
             # let's convert that object into a portable string using cPickle. (cPickle is faster than Pickle.)
             pdata = cPickle.dumps(clipData, 1)
@@ -3767,7 +3778,7 @@ class ControlObject(object):
             if not transcriptless:
                 # Get the Transcript Selection information from the ControlObject, since we can't communicate with the
                 # TranscriptEditor directly.
-                (transcriptNum, startTime, endTime, text) = self.GetTranscriptSelectionInfo()
+                (transcriptNum, startTime, endTime, text, plainText) = self.GetTranscriptSelectionInfo()
                 # Initialize the Episode Number to 0
                 episodeNum = 0
                 # If our source is an Episode ...
@@ -3813,9 +3824,10 @@ class ControlObject(object):
                 startTime = self.GetVideoStartPoint()
                 endTime = self.GetVideoEndPoint()
                 text = u'<(transcript-less clip)>'
+                plainText = ''
 
             # We now have enough information to populate a ClipDragDropData object to pass to the Clip Creation method.
-            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
+            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
 
             # Let's assemble the keyword list
             kwList = []
@@ -3848,7 +3860,7 @@ class ControlObject(object):
         if (len(dbTreeSelections) > 0) and (dbTreeSelections[0][3] == 'KeywordNode'):
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.GetDocumentSelectionInfo()
             except:
                 if DEBUG or True:
                     print sys.exc_info()[0]
@@ -3884,7 +3896,7 @@ class ControlObject(object):
                 kwList.append((nodeParent, nodeName))
 
             # We now have enough information to populate a QuoteDragDropData object to pass to the Quote Creation method.
-            quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text)
+            quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text, plainText)
             # Pass the accumulated data to the CreateQuickQuote method, which is in the DragAndDropObjects module
             # because drag and drop is an alternate way to create a Quick Quote.
             DragAndDropObjects.CreateQuickQuote(quoteData, kwList[0][0], kwList[0][1], self.DataWindow.DBTab.tree, extraKeywords=kwList[1:])

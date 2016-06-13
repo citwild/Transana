@@ -635,16 +635,7 @@ class TranscriptEditor(RichTextEditCtrl):
                 self.TranscriptObj.text = self.GetFormattedSelection('XML')
 
                 # Get the Plain Text from the Editor
-                plaintext = self.GetValue()
-
-                # Strip Time Codes
-                regex = "%s<[\d]*>" % TransanaConstants.TIMECODE_CHAR
-                reg = re.compile(regex)
-                pos = 0
-                for x in reg.findall(plaintext):
-                    pos = plaintext.find(x, pos, len(plaintext))
-                    plaintext = plaintext[ : pos] + plaintext[pos + len(x) : ]
-
+                plaintext = self.GetPlainTextSelection()
                 # Get the Plain Text version from the control
                 self.TranscriptObj.plaintext = plaintext
 
@@ -1524,11 +1515,13 @@ class TranscriptEditor(RichTextEditCtrl):
         self.select_find(str(endTime))
 
         # Set the text to the XML version of what we now have selected
-        xmlText = self.GetFormattedSelection('XML', selectionOnly=True)  # self.GetXMLBuffer(select_only=True)
+        xmlText = self.GetFormattedSelection('XML', selectionOnly=True)
+        # Get the plain text too.
+        plainText = self.GetPlainTextSelection(selectionOnly=True)
         # Let's try restoring the Cursor Position when all is said and done.
         self.RestoreCursor()
         # Return the start and end times that were found along with the text between them.
-        return (startTimeCode, endTimeCode, xmlText)
+        return (startTimeCode, endTimeCode, xmlText, plainText)
 
     def undo(self):
         """Undo last operation(s)."""
@@ -2381,15 +2374,16 @@ class TranscriptEditor(RichTextEditCtrl):
             # If there is no selection in the Transcript ...
             if not self.HasSelection():
                 # ... get the text between the nearest time codes
-                (start_time, end_time, xmlText) = self.GetTextBetweenTimeCodes(start_time, end_time)
+                (start_time, end_time, xmlText, plainText) = self.GetTextBetweenTimeCodes(start_time, end_time)
             # Otherwise ...
             else:
                 # ... let's get the selected Transcript text in XML format
-                xmlText = self.GetFormattedSelection('XML', selectionOnly=True)  # self.GetXMLBuffer(select_only=1)
+                xmlText = self.GetFormattedSelection('XML', selectionOnly=True)
+                plainText = self.GetPlainTextSelection(selectionOnly=True)
 
             # Create a ClipDragDropData object with all the data we need to create a Clip
             data = DragAndDropObjects.ClipDragDropData(self.TranscriptObj.number, self.TranscriptObj.episode_num, \
-                    start_time, end_time, xmlText, self.GetStringSelection(), videoCheckboxData)
+                    start_time, end_time, xmlText, plainText, videoCheckboxData)
 
             # let's convert that object into a portable string using cPickle. (cPickle is faster than Pickle.)
             pdata = cPickle.dumps(data, 1)
@@ -2401,7 +2395,7 @@ class TranscriptEditor(RichTextEditCtrl):
         elif isinstance(self.TranscriptObj, Document.Document) or isinstance(self.TranscriptObj, Quote.Quote):
 
             # Get the Document Selection information from the ControlObject.
-            (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+            (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
 
             # If we are creating a Quote FROM a Quote ...
             if isinstance(self.TranscriptObj, Quote.Quote):
@@ -2413,7 +2407,7 @@ class TranscriptEditor(RichTextEditCtrl):
                 quoteNum = 0
 
             # Create a QuoteDragDropData object with all the data we need to create a Quote
-            data = DragAndDropObjects.QuoteDragDropData(documentNum, quoteNum, startChar, endChar, text, self.GetStringSelection())
+            data = DragAndDropObjects.QuoteDragDropData(documentNum, quoteNum, startChar, endChar, text, plainText)
 
             # let's convert that object into a portable string using cPickle. (cPickle is faster than Pickle.)
             pdata = cPickle.dumps(data, 1)
@@ -3755,9 +3749,10 @@ class TranscriptEditorDropTarget(wx.PyDropTarget):
                         if startPos == endPos:
                             text = ''
                         else:
-                            text = self.editor.GetFormattedSelection('XML', selectionOnly=True)  # GetXMLBuffer(select_only=1)
+                            text = self.editor.GetFormattedSelection('XML', selectionOnly=True)
+                            plainText = self.editor.GetPlainTextSelection(selectionOnly=True)
                         # Get the Clip Data assembled for creating the Quick Clip
-                        clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, self.editor.GetStringSelection(), self.editor.parent.ControlObject.GetVideoCheckboxDataForClips(startTime))
+                        clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, self.editor.parent.ControlObject.GetVideoCheckboxDataForClips(startTime))
                         # Create the Quick Clip
                         DragAndDropObjects.CreateQuickClip(clipData, sourceData.parent, sourceData.text, dbTree, extraKeywords=kwList[1:])
                         
@@ -3765,7 +3760,7 @@ class TranscriptEditorDropTarget(wx.PyDropTarget):
                     elif isinstance(self.editor.TranscriptObj, Document.Document) or isinstance(self.editor.TranscriptObj, Quote.Quote):
                         try:
                             # Get the Document Selection information from the ControlObject.
-                            (documentNum, startChar, endChar, text) = self.editor.parent.ControlObject.GetDocumentSelectionInfo()
+                            (documentNum, startChar, endChar, text, plainText) = self.editor.parent.ControlObject.GetDocumentSelectionInfo()
                         except:
                             if DEBUG or True:
                                 print sys.exc_info()[0]
@@ -3791,7 +3786,7 @@ class TranscriptEditorDropTarget(wx.PyDropTarget):
                             sourceDocumentNum = self.editor.TranscriptObj.source_document_num
 
                         # We now have enough information to populate a QuoteDragDropData object to pass to the Quote Creation method.
-                        quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text)
+                        quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text, plainText)
                         # Pass the accumulated data to the CreateQuickQuote method, which is in the DragAndDropObjects module
                         # because drag and drop is an alternate way to create a Quick Quote.
                         DragAndDropObjects.CreateQuickQuote(quoteData, sourceData.parent, sourceData.text, dbTree, extraKeywords=kwList[1:])

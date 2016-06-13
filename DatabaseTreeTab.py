@@ -1143,6 +1143,7 @@ class DatabaseTreeTab(wx.Panel):
                                                                                      originalQuote,
                                                                                      -1,
                                                                                      quote.text,
+                                                                                     quote.plaintext,
                                                                                      quote.id,
                                                                                      quote.keyword_list)
 
@@ -1387,12 +1388,14 @@ class DatabaseTreeTab(wx.Panel):
                                 # Signal that the tmpDlg has been closed.
                                 tmpDlg = None
                                 # Start up the Propagate Changes tool, passing in the original clip copy and the proper data
-                                # from the edited clip.
+                                # from the edited clip.  Because clip.transcripts is a list of Transcript OBJECTS, we don't
+                                # need to pass PlainText separately!
                                 propagateDlg = PropagateChanges.PropagateClipChanges(self,
                                                                                      "Clip",
                                                                                      originalClip,
                                                                                      -1,
                                                                                      clip.transcripts,
+                                                                                     '',
                                                                                      clip.id,
                                                                                      clip.keyword_list)
 
@@ -6373,7 +6376,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 3:    # Add Quote
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
                 # If there's a selection in the text ...
                 if text != '':
                     # ... copy it to the clipboard by faking a Drag event!
@@ -6402,7 +6405,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 4:    # Add Clip
             try:
                 # Get the Transcript Selection information from the ControlObject.
-                (transcriptNum, startTime, endTime, text) = self.parent.ControlObject.GetTranscriptSelectionInfo()
+                (transcriptNum, startTime, endTime, text, plainText) = self.parent.ControlObject.GetTranscriptSelectionInfo()
                 # If there's a selection in the text ...
                 if text != '':
                     # ... copy it to the clipboard by faking a Drag event!
@@ -6961,7 +6964,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 4:  # Add Quote
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
                 # If there's a selection in the text ...
                 if text != '':
                     # ... copy it to the clipboard by faking a Drag event!
@@ -6990,7 +6993,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 5:  # Add Clip
             try:
                 # Get the Transcript Selection information from the ControlObject.
-                (transcriptNum, startTime, endTime, text) = self.parent.ControlObject.GetTranscriptSelectionInfo()
+                (transcriptNum, startTime, endTime, text, plainText) = self.parent.ControlObject.GetTranscriptSelectionInfo()
                 # If a selection has been made ...
                 if text != '':
                     # ... copy that to the Clipboard by faking a Drag event!
@@ -7602,7 +7605,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 4:    # Add Quote
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
                 # If there's a selection in the text ...
                 if text != '':
                     # ... copy it to the clipboard by faking a Drag event!
@@ -7631,7 +7634,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 5:    # Add Clip
             try:
                 # Get the Transcript Selection information from the ControlObject.
-                (transcriptNum, startTime, endTime, text) = self.parent.ControlObject.GetTranscriptSelectionInfo()
+                (transcriptNum, startTime, endTime, text, plainText) = self.parent.ControlObject.GetTranscriptSelectionInfo()
                 # If a selection has been made ...
                 if text != '':
                     # ... copy that to the Clipboard by faking a Drag event!
@@ -8345,7 +8348,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 4:      # Add Quote
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
                 # If there's a selection in the text ...
                 if text != '':
                     # ... copy it to the clipboard by faking a Drag event!
@@ -8374,7 +8377,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 5:      # Add Clip
             try:
                 # Get the Transcript Selection information from the ControlObject.
-                (transcriptNum, startTime, endTime, text) = self.parent.ControlObject.GetTranscriptSelectionInfo()
+                (transcriptNum, startTime, endTime, text, plainText) = self.parent.ControlObject.GetTranscriptSelectionInfo()
                 # If a selection has been made ...
                 if text != '':
                     # ... copy that to the Clipboard by faking a Drag event!
@@ -9453,7 +9456,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 4:    # Create Quick Quote
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
             except:
                 if DEBUG or True:
                     print sys.exc_info()[0]
@@ -9492,7 +9495,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 kwList.append((kw_group, kw_name))
 
             # We now have enough information to populate a QuoteDragDropData object to pass to the Quote Creation method.
-            quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text)
+            quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text, plainText)
             # Pass the accumulated data to the CreateQuickQuote method, which is in the DragAndDropObjects module
             # because drag and drop is an alternate way to create a Quick Quote.
             DragAndDropObjects.CreateQuickQuote(quoteData, kwList[0][0], kwList[0][1], self, extraKeywords=kwList[1:])
@@ -9500,7 +9503,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         elif n == 5:    # Create Quick Clip
             # Get the Transcript Selection information from the ControlObject, since we can't communicate with the
             # TranscriptEditor directly.
-            (transcriptNum, startTime, endTime, text) = self.parent.ControlObject.GetTranscriptSelectionInfo()
+            (transcriptNum, startTime, endTime, text, plainText) = self.parent.ControlObject.GetTranscriptSelectionInfo()
             # Initialize the Episode Number to 0
             episodeNum = 0
             # If our source is an Episode ...
@@ -9575,7 +9578,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 # Add the keyword to the Keyword List
                 kwList.append((kw_group, kw_name))
             # We now have enough information to populate a ClipDragDropData object to pass to the Clip Creation method.
-            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, videoCheckboxData=videoCheckboxData)
+            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, videoCheckboxData=videoCheckboxData)
             # Pass the accumulated data to the CreateQuickClip method, which is in the DragAndDropObjects module
             # because drag and drop is an alternate way to create a Quick Clip.
             DragAndDropObjects.CreateQuickClip(clipData, kwList[0][0], kwList[0][1], self, extraKeywords=kwList[1:])
@@ -10539,7 +10542,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             # Initialize the sort order to 0
             sortOrder = 0
             # iterate through the Transcript Selection Info gathered above
-            for (transcriptNum, startTime, endTime, text) in transcriptSelectionInfo:
+            for (transcriptNum, startTime, endTime, text, plainText) in transcriptSelectionInfo:
                 # If the transcript HAS a selection ...
                 if text != "":
                     # ... Create a Transcript object for each Transcript Selection
@@ -10557,6 +10560,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     tempTranscript.clip_stop = endTime
                     # Assign the transcript text to the new transcript
                     tempTranscript.text = text
+                    tempTranscript.plaintext = plainText
                     # Add this new transcript to the clip's list of transcripts
                     tempClip.transcripts.append(tempTranscript)
                     # Check to see if this transcript starts before our current earliest start time, but only if

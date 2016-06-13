@@ -918,6 +918,7 @@ class ClipDragDropData(object):
             clipStart          The starting Time Code for the Clip
             clipStop           the ending Time Code for the Clip
             text               the Text for the Clip, in XML format
+            plainText          the plain text version of the text
             videoCheckboxData  the Video Checkbox information from the Video Window. """
         self.transcriptNum = transcriptNum
         self.episodeNum = episodeNum
@@ -948,7 +949,8 @@ class QuoteDragDropData(object):
               sourceQuote      The Number of the Quote this is taken from, if it is from a Quote
               startChar        The starting character for the quote
               endChar          The ending character for the Quote
-              text             the Text for the Quote, in XML format. """
+              text             the Text for the Quote, in XML format.
+              plainText        The plain text version of the text.  """
         self.documentNum = documentNum
         self.sourceQuote = sourceQuote
         self.startChar = startChar
@@ -1050,6 +1052,7 @@ def CreateClip(clipData, dropData, tree, dropNode):
     tempClipTranscript.clip_stop = clipData.clipStop
     # Assign the Transcript Text
     tempClipTranscript.text = clipData.text
+    tempClipTranscript.plaintext = clipData.plainText
     # Add the Temporary Transcript to the Quick Clip
     tempClip.transcripts.append(tempClipTranscript)
 
@@ -1204,15 +1207,6 @@ def CreateClip(clipData, dropData, tree, dropNode):
                         if not ChangeClipOrder(tree, dropNode, tempClip, tempCollection):
                             pass
 
-#                            tempClip.lock_record()
-                            # If ChangeClipOrder fails, make sure the clip is at the end of the Clip List
-#                            tempClip.sort_order = DBInterface.getMaxSortOrder(dropData.parent) + 1
-                            # Try to save the data from the form
-#                            tempClip.db_save()
-#                            tempClip.unlock_record()
-                            # Reset the order of objects in the node, no need to send MU messages
-#                            tree.UpdateCollectionSortOrder(tree.GetItemParent(dropNode), sendMessage=False)
-
                         # When we dropped Transcript text on a Clip, the screen wouldn't update until we touched the Mouse!
                         # This fixes that.
                         try:
@@ -1317,6 +1311,7 @@ def CreateQuote(quoteData, dropData, tree, dropNode):
     tempQuote.end_char = quoteData.endChar
     # Get the Quote's text from the quoteData Object
     tempQuote.text = quoteData.text
+    tempQuote.plaintext = quoteData.plainText
 
     # If the Quote Creation Object is dropped on a Collection ...
     if dropData.nodetype == 'CollectionNode':
@@ -6002,8 +5997,10 @@ def CreateQuickClip(clipData, kwg, kw, dbTree, extraKeywords=[]):
                 # Assign the Transcript Text
                 if clipData.text == u'<(transcript-less clip)>':
                     tempTranscript.text = ''
+                    tempTranscript.plaintext = ''
                 else:
                     tempTranscript.text = clipData.text
+                    tempTranscript.plaintext = clipData.plainText
                 # Add the Temporary Transcript to the Quick Clip
                 quickClip.transcripts.append(tempTranscript)
 
@@ -6204,6 +6201,7 @@ def CreateQuickQuote(quoteData, kwg, kw, dbTree, extraKeywords=[]):
             quickQuote.sort_order = DBInterface.getMaxSortOrder(collectNum) + 1
             # Assign the Quote Text
             quickQuote.text = quoteData.text
+            quickQuote.plaintext = quoteData.plainText
 
             # Add the Document Keywords as default Quote Keywords
             quickQuote.keyword_list = sourceDocument.keyword_list
