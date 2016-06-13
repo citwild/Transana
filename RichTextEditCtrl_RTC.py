@@ -253,34 +253,6 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         """ Report Modified Status, implemented for wxSTC compatibility """
         return self.IsModified()
 
-##    def PutEditedSelectionInClipboard(self):
-##        """ Put the TEXT for the current selection into the Clipboard """
-##        tempTxt = self.GetStringSelection()
-##        # Initialize an empty string for the modified data
-##        newSt = ''
-##        # Created a TextDataObject to hold the text data from the clipboard
-##        tempDataObject = wx.TextDataObject()
-##        # Track whether we're skipping characters or not.  Start out NOT skipping
-##        skipChars = False
-##        # Now let's iterate through the characters in the text
-##        for ch in tempTxt:
-##            # Detect the time code character
-##            if ch == TransanaConstants.TIMECODE_CHAR:
-##                # If Time Code, start skipping characters
-##                skipChars = True
-##            # if we're skipping characters and we hit the ">" end of time code data symbol ...
-##            elif (ch == '>') and skipChars:
-##                # ... we can stop skipping characters.
-##                skipChars = False
-##            # If we're not skipping characters ...
-##            elif not skipChars:
-##                # ... add the character to the new string.
-##                newSt += ch
-##        # Save the new string in the Text Data Object
-##        tempDataObject.SetText(newSt)
-##        # Place the Text Data Object in the Clipboard
-##        wx.TheClipboard.SetData(tempDataObject)
-##
     def GetFormattedSelection(self, format, selectionOnly=False, stripTimeCodes=False):
         """ Return a string with the formatted contents of the RichText control, or just the
             current selection if specified.  The format parameter can either be 'XML' or 'RTF'. """
@@ -409,6 +381,24 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
 
         # Return the buffer's XML string
         return tmpBuffer
+
+    def GetPlainTextSelection(self, selectionOnly = False):
+        """ Get the plain text version of the contents of the control, or of just the current selection.
+            This selection needs to be stripped of time codes. """
+        if selectionOnly:
+            plaintext = self.GetStringSelection()
+        else:
+            plaintext = self.GetValue()
+
+        # Strip Time Codes
+        regex = "%s<[\d]*>" % TransanaConstants.TIMECODE_CHAR
+        reg = re.compile(regex)
+        pos = 0
+        for x in reg.findall(plaintext):
+            pos = plaintext.find(x, pos, len(plaintext))
+            plaintext = plaintext[ : pos] + plaintext[pos + len(x) : ]
+
+        return plaintext
 
     def OnUndo(self, event):
         self.Undo()
