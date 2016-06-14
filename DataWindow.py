@@ -29,6 +29,8 @@ import DataItemsTab
 from KeywordsTab import *
 import TransanaConstants
 import TransanaGlobal
+# import Python's platform module
+import platform
 
 class DataWindow(wx.Dialog):
     """This class implements the window containing all data display tabs."""
@@ -216,6 +218,9 @@ class DataWindow(wx.Dialog):
 
     def OnSize(self, event):
         """ Data Window Resize Event """
+
+#        print "DataWindow.OnSize():", self.GetSize(), self.GetPosition(), TransanaGlobal.resizingAll
+        
         # If we're not resizing ALL the Transana Windows ...  (avoid recursive calls!)
         if not TransanaGlobal.resizingAll:
             # Get the size of the Data Window
@@ -381,15 +386,19 @@ class DataWindow(wx.Dialog):
             container = rect[2:4]
         else:
             screenDims = wx.Display(primaryScreen).GetClientArea()
-            # screenDims2 = wx.Display(primaryScreen).GetGeometry()
             left = screenDims[0]
             top = screenDims[1]
-            width = screenDims[2] - screenDims[0]  # min(screenDims[2], 1280 - self.left)
+            width = screenDims[2] - screenDims[0]
             height = screenDims[3]
             container = (width, height)
         
-        width = container[0] * .282  # rect[2] * .28
-        height = (container[1] - TransanaGlobal.menuHeight) * 0.931  # .66
+        width = container[0] * .282
+        height = (container[1] - TransanaGlobal.menuHeight) * 0.931
+
+        # Windows 10 needs certain acreen adjustments to look right.
+        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+            width += 16
+            height += 8
 
         # Compensate in Linux.  I'm not sure why this is necessary, but it seems to be.
 #        if 'wxGTK' in wx.PlatformInfo:
@@ -404,7 +413,7 @@ class DataWindow(wx.Dialog):
             primaryScreen = TransanaGlobal.configData.primaryScreen
         else:
             primaryScreen = 0
-        rect = wx.Display(primaryScreen).GetClientArea()  # wx.ClientDisplayRect()
+        rect = wx.Display(primaryScreen).GetClientArea()
         if not 'wxGTK' in wx.PlatformInfo:
             container = rect[2:4]
         else:
@@ -413,14 +422,18 @@ class DataWindow(wx.Dialog):
         (width, height) = self.__size()
         # rect[0] compensates if the Start menu is on the Left
         if 'wxGTK' in wx.PlatformInfo:
-            x = rect[0] + min((rect[2] - 10), (1280 - rect[0])) - width   # min(rect[2], 1440) - width - 3
+            x = rect[0] + min((rect[2] - 10), (1280 - rect[0])) - width
         else:
-            x = rect[0] + container[0] - width - 2  # rect[0] + rect[2] - width - 3
+            x = rect[0] + container[0] - width - 2
         # rect[1] compensates if the Start menu is on the Top
         if 'wxGTK' in wx.PlatformInfo:
             y = rect[1] + rect[3] - height + 24
         else:
-            y = rect[1] + container[1] - height # rect[1] + rect[3] - height - 3
+            y = rect[1] + container[1] - height
+
+##        # Windows 10 needs certain acreen adjustments to look right.
+##        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+##            y -= 8
 
         if DEBUG:
             print "DataWindow.__pos(): Y = %d, H = %d, Total = %d" % (y, height, y + height)

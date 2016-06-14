@@ -555,7 +555,7 @@ class Transana(wx.App):
                         print "Call 3", 'Visualization', w + x
 
                     # Adjust the positions of all other windows to match the Visualization Window's initial position
-                    self.ControlObject.UpdateWindowPositions('Visualization', w + x, YUpper = h + y)
+                    self.ControlObject.UpdateWindowPositions('Visualization', w + x + 1, YUpper = h + y + 1)
 
                     TransanaGlobal.resizingAll = False
 

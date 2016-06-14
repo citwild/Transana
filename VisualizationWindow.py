@@ -69,6 +69,8 @@ import ctypes
 import locale
 # Import Python's os module
 import os
+# import Python's platform module
+import platform
 # Import Python's String module
 import string
 # Import Python's sys module
@@ -949,7 +951,7 @@ class VisualizationWindow(wx.Dialog):
                 self.redrawWhenIdle = True
 
             # now let's adjust the window sizes for the main Transana interface.
-            self.ControlObject.UpdateWindowPositions('Visualization', c + a, YUpper = newHeight + b)
+            self.ControlObject.UpdateWindowPositions('Visualization', c + a + 1, YUpper = newHeight + b)
             # once we do this, we don't need to do it again unless something changes.
             self.heightIsSet = True
         
@@ -2006,6 +2008,9 @@ class VisualizationWindow(wx.Dialog):
         
     def OnSize(self, event):
         """ Handles widget positioning on Resize Event """
+
+#        print "VisualizationWindow.OnSize():", self.GetSize(), self.GetPosition(), TransanaGlobal.resizingAll
+        
         # Determine Frame Size
         (width, height) = self.GetSize()
         # If we're not resizing ALL Transana windows ...   (to avoid recursive OnSize calls)
@@ -2013,7 +2018,7 @@ class VisualizationWindow(wx.Dialog):
             # ... Get the Visualization Window position ...
             (left, top) = self.GetPositionTuple()
             # ... can call the ControlObject's Update Window Position routine with the appropiate parameters
-            self.ControlObject.UpdateWindowPositions('Visualization', width + left, YUpper = height + top)
+            self.ControlObject.UpdateWindowPositions('Visualization', width + left + 1, YUpper = height + top)
 
         # Determine NEW Frame Size
         (width, height) = self.GetSize()
@@ -2052,15 +2057,19 @@ class VisualizationWindow(wx.Dialog):
             container = rect[2:4]
         elif 'wxGTK' in wx.PlatformInfo:
             screenDims = wx.Display(primaryScreen).GetClientArea()
-            # screenDims2 = wx.Display(primaryScreen).GetGeometry()
             left = screenDims[0]
             top = screenDims[1]
-            width = screenDims[2] - screenDims[0]  # min(screenDims[2], 1280 - self.left)
+            width = screenDims[2] - screenDims[0]
             height = screenDims[3]
             container = (width, height)
 
-        width = container[0] * .71  # rect[2] * .715
-        height = (container[1] - TransanaGlobal.menuHeight) * .24  # (rect[3] - TransanaGlobal.menuHeight) * .25
+        width = container[0] * .71
+        height = (container[1] - TransanaGlobal.menuHeight) * .24
+
+        # Windows 10 needs certain acreen adjustments to look right.
+        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+            width += 16
+            height += 8
 
         if DEBUG:
             print "Visualization width:", container[0], container[0] * 0.715, width
@@ -2081,15 +2090,17 @@ class VisualizationWindow(wx.Dialog):
             # Linux rect includes both screens, so we need to use an alternate method!
             container = TransanaGlobal.menuWindow.GetSize()
         # If the Start Menu is on the left side, 0 is incorrect!  Get starting position from wx.Display.
-        x = rect[0] + 1 # 1
-        # rect[1] compensated if the Start menu is at the top of the screen
-#        y = rect[1] + TransanaGlobal.menuHeight + 3
+        x = rect[0] + 1
 
         if 'wxMac' in wx.PlatformInfo:
             y = rect[1] + 2
         else:
             y = rect[1] + TransanaGlobal.menuHeight + 1
 
+        # Windows 10 needs certain acreen adjustments to look right.
+        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+            y -= 8
+            
         if DEBUG:
             print "VisualizationWindow.__pos():", x, y
             

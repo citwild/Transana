@@ -47,6 +47,8 @@ import TransanaImages
 import video_player
 # import Python's os module
 import os
+# import Python's platform module
+import platform
 # import Python's sys module
 import sys
 
@@ -108,7 +110,8 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         # Set the Window's initial size
         self.SetSize((width, newHeight))
 
-#        print "VideoWindow.InitialSize():", winSize, clientSize, btnSize, newHeight, TransanaGlobal.menuHeight, TransanaGlobal.menuHeight + btnSize[1]
+        if DEBUG:
+            print "VideoWindow.InitialSize():", winSize, clientSize, btnSize, newHeight, TransanaGlobal.menuHeight, TransanaGlobal.menuHeight + btnSize[1]
 
     def Register(self, ControlObject=None):
         """ Register a ControlObject """
@@ -872,6 +875,10 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
 
     def OnSize(self, event):
         """ Process Size Change event and notify the ControlObject """
+
+        if DEBUG:
+            print "VideoWindow.OnSize(1):", self.GetRect(), self.GetDimensions(), TransanaGlobal.resizingAll
+        
         # if event is not None (which it can be if this is called from non-event-driven code rather than
         # from a real event,) then we should process underlying OnSize events.
         if event != None:
@@ -892,8 +899,15 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         self.Update()
         self.Refresh()
 
+        if DEBUG:
+            print "VideoWindow.OnSize(2):", self.GetRect(), self.GetDimensions(), TransanaGlobal.resizingAll
+
     def OnSizeChange(self):
         """ Size Change called programatically from outside the Video Window """
+
+        if DEBUG:
+            print "VideoWindow.OnSizeChange():", self.GetRect(), TransanaGlobal.resizingAll
+        
         # If Auto Arrange is enabled ...
         if TransanaGlobal.configData.autoArrange:
 
@@ -926,7 +940,7 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
                 # since we don't have a control bar in the media player, but causes problems with multiple media players.
                 # (It makes the visualization window too short.)
                 if (sizeY == 0) and (len(self.mediaPlayers) > 1):
-                    sizeY = int((wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()[3] - TransanaGlobal.menuHeight) * 0.2)  # wx.ClientDisplayRect()
+                    sizeY = int((wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()[3] - TransanaGlobal.menuHeight) * 0.2)
                 # if the PlayPause button is defined ...
                 if self.btnPlayPause:
                     # ... adjust the vertical size to include it.
@@ -945,10 +959,9 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
             # On Windows ...
             else:
                 # ... use MenuWindow.GetClientWindow.GetSize
-                #screenSize = (0, 0, self.ControlObject.MenuWindow.GetClientWindow().GetSize()[0], self.ControlObject.MenuWindow.GetClientWindow().GetSize()[1])
-                screenSize = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()  # wx.ClientDisplayRect()
-                # We need to adjust by 23 pixels
-                xAdjust = 23
+                screenSize = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
+                # We need to adjust by 16 pixels (Used to be 23!)
+                xAdjust = 16
             # now check width against the screen size.  Allow no more than 2/3 of the screen to be take up by video.
             if sizeX > int(screenSize[2] * 0.66):
                 # Adjust Height proportionally (first, so we can calculate the proportion!)
@@ -1046,18 +1059,23 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
             container = rect[2:4]
         else:
             screenDims = wx.Display(primaryScreen).GetClientArea()
-            # screenDims2 = wx.Display(primaryScreen).GetGeometry()
             left = screenDims[0]
             top = screenDims[1]
-            width = screenDims[2] - screenDims[0]  # min(screenDims[2], 1280 - self.left)
+            width = screenDims[2] - screenDims[0]
             height = screenDims[3]
             container = (width, height)
-        width = container[0] * .282   # rect[2] * .28
+        width = container[0] * .282
         if 'wxMac' in wx.PlatformInfo:
             height = 40
         else:
             # This doesn't really matter.  It gets re-adjusted elsewhere in InitialSize()
-            height = (container[1] - TransanaGlobal.menuHeight) * .068  # .339
+            height = (container[1] - TransanaGlobal.menuHeight) * .068
+            
+        # Windows 10 needs certain acreen adjustments to look right.
+        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8', 
+            width += 16
+            height += 8
+            
         return wx.Size(width, height)
 
     def __pos(self):
@@ -1078,10 +1096,15 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         if 'wxGTK' in wx.PlatformInfo:
             x = rect[0] + min((rect[2] - 10), (1280 - rect[0])) - width
         else:
-            x = rect[0] + container[0] - width - 2  # rect[0] + rect[2] - width - 3
+            x = rect[0] + container[0] - width - 2
         # rect[1] compensates if the Start menu is on the top of the screen
         if 'wxMac' in wx.PlatformInfo:
             y = rect[1] + 2
         else:
             y = rect[1] + TransanaGlobal.menuHeight + 1
+            
+        # Windows 10 needs certain acreen adjustments to look right.
+        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):  # '8',
+            y -= 8
+
         return wx.Point(x, y)

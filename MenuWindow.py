@@ -2023,7 +2023,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                 # Get the size and position of the Visualization Window
                 (x, y, w, h) = self.ControlObject.VisualizationWindow.GetRect()
                 # Adjust the positions of all other windows to match the Visualization Window's initial position
-                self.ControlObject.UpdateWindowPositions('Visualization', w + x, YUpper = h + y)
+                self.ControlObject.UpdateWindowPositions('Visualization', w + x + 1, YUpper = h + y + 1)
 
     def OnWindow(self, event):
         """ Handler for Window Menu """
