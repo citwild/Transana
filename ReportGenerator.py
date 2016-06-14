@@ -249,8 +249,6 @@ class ReportGenerator(wx.Object):
         self.report.reportText.Freeze()
         # Trigger the ReportText method that causes the report to be displayed.
         self.report.CallDisplay()
-        # Apply the Default Filter, if one exists
-        self.report.OnFilter(None)
         # Now that we're done, remove the freeze
         self.report.reportText.Thaw()
 
@@ -274,6 +272,30 @@ class ReportGenerator(wx.Object):
         if (self.filterList == []) and (self.documentFilterList == []) and \
            (self.quoteFilterList == []) and (self.snapshotFilterList == []):
             populateFilterList = True
+
+            # Set Report Default Settings
+            self.showNested = TransanaGlobal.configData.reportNestedData
+            self.showHyperlink = TransanaGlobal.configData.reportHyperlink
+            self.showFile = TransanaGlobal.configData.reportFile
+            self.showTime = TransanaGlobal.configData.reportTime
+            if TransanaConstants.proVersion:
+                self.showDocImportDate = TransanaGlobal.configData.reportDocImportDate
+            self.showSourceInfo = TransanaGlobal.configData.reportSourceInfo
+            if TransanaConstants.proVersion:
+                self.showQuoteText = TransanaGlobal.configData.reportQuoteText
+            self.showTranscripts = TransanaGlobal.configData.reportClipTranscripts
+            if TransanaConstants.proVersion:
+                self.showSnapshotImage = TransanaGlobal.configData.reportSnapshotImage
+                self.showSnapshotCoding = TransanaGlobal.configData.reportSnapshotCodingKey
+            self.showKeywords = TransanaGlobal.configData.reportKeywords
+            self.showComments = TransanaGlobal.configData.reportComments
+            self.showCollectionNotes = TransanaGlobal.configData.reportCollectionNotes
+            if TransanaConstants.proVersion:
+                self.showQuoteNotes = TransanaGlobal.configData.reportQuoteNotes
+            self.showClipNotes = TransanaGlobal.configData.reportClipNotes
+            if TransanaConstants.proVersion:
+                self.showSnapshotNotes = TransanaGlobal.configData.reportSnapshotNotes
+
         else:
             populateFilterList = False
         # Initialize the variable that tracks the request to skip "Image Not Loaded" errors
@@ -391,6 +413,13 @@ class ReportGenerator(wx.Object):
                     # They get added at the FRONT of the list so that the report will mirror the organization of the
                     # database Tree.
                     nestedCollections = DBInterface.list_of_collections(collNum) + nestedCollections
+
+                # If we have 100 or fewer records, only show the Keyword Summary if Keywords are being shown.
+                if len(majorList) <= 100:
+                    self.showKeywordSummary = self.showKeywords
+                # If we have over 100 records, show the Keyword Summary regardless.
+                else:
+                    self.showKeywordSummary = True
 
             # Put all the Keywords for the Clips and Snapshots in the majorList in the minorList.
             # Start by iterating through the Major List
@@ -863,6 +892,9 @@ class ReportGenerator(wx.Object):
                                 # ... and add the keyword entry to the Keyword Filter List if it's not already there.
                                 self.keywordFilterList.append((kwg, kw, True))
 
+        # Apply Default Filter here, if appropriate
+        self.OnFilter(None)
+	
         # ...  add a subtitle
         if 'unicode' in wx.PlatformInfo:
             # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
@@ -1702,39 +1734,41 @@ class ReportGenerator(wx.Object):
                     if DEBUG:
                         print "RESET all FONT and PARAGRAPH settings"
 
-                    # if we are supposed to show Keywords ...
-                    if self.showKeywords:
+                    # if we are supposed to show Keywords OR the Keyword Summary ...
+                    if self.showKeywords or self.showKeywordSummary:
 
                         # If there are keywords in the list ... (even if they might all get filtered out ...)
                         if len(minorList[(objType, groupNo)]) > 0:
-                            # Turn bold on.
-                            reportText.SetTxtStyle(fontBold = useBold, parLeftIndent=baseIndent + 63, parRightIndent = 0,
-                                                   parSpacingAfter = 0)
-                            # Add the header to the report
-                            if self.seriesName != None:
-                                if objType == 'Episode':
-                                    reportText.WriteText(_('Episode Keywords:'))
-                                elif objType == 'Document':
-                                    reportText.WriteText(_('Document Keywords:'))
-                            else:
-                                if majorLabel.encode('utf8') == _('Snapshot'):
-                                    reportText.WriteText(_('Whole') + ' ')
-                                reportText.WriteText(majorLabel + ' ')
-                                reportText.WriteText(_('Keywords:'))
-                            # Turn bold off.
-                            reportText.SetTxtStyle(fontBold = False)
-                            # Finish the Line
-                            reportText.WriteText('\n')
+                            if self.showKeywords:
+                                # Turn bold on.
+                                reportText.SetTxtStyle(fontBold = useBold, parLeftIndent=baseIndent + 63, parRightIndent = 0,
+                                                           parSpacingAfter = 0)
+                                # Add the header to the report
+                                if self.seriesName != None:
+                                    if objType == 'Episode':
+                                        reportText.WriteText(_('Episode Keywords:'))
+                                    elif objType == 'Document':
+                                        reportText.WriteText(_('Document Keywords:'))
+                                else:
+                                    if majorLabel.encode('utf8') == _('Snapshot'):
+                                        reportText.WriteText(_('Whole') + ' ')
+                                    reportText.WriteText(majorLabel + ' ')
+                                    reportText.WriteText(_('Keywords:'))
+                                # Turn bold off.
+                                reportText.SetTxtStyle(fontBold = False)
+                                # Finish the Line
+                                reportText.WriteText('\n')
 #                                reportText.Newline()
-                            # Set formatting for Keyword lines
-                            reportText.SetTxtStyle(parLeftIndent = baseIndent + 127, parRightIndent = 0, parSpacingAfter = 0)
+                                # Set formatting for Keyword lines
+                                reportText.SetTxtStyle(parLeftIndent = baseIndent + 127, parRightIndent = 0, parSpacingAfter = 0)
                         # Iterate through the list of Keywords for the group
                         for (keywordGroup, keyword, example) in minorList[(objType, groupNo)]:
                             # See if the keyword should be included, based on the Keyword Filter List
                             if (keywordGroup, keyword, True) in self.keywordFilterList:
-                                # Add the Keyword to the report
-                                reportText.WriteText('%s : %s\n' % (keywordGroup, keyword))
-#                                reportText.Newline()
+                                if self.showKeywords:
+                                    # Add the Keyword to the report
+                                    reportText.WriteText('%s : %s\n' % (keywordGroup, keyword))
+#                                   reportText.Newline()
                                 if objType in ['Document', 'Episode']:
                                     # if THIS Object with THIS Keyword has NOT already been counted ...
                                     if not ((objType, tmpObj.number, keywordGroup, keyword) in self.itemsCounted):
@@ -1805,7 +1839,7 @@ class ReportGenerator(wx.Object):
                                         # Remember that THIS Snapshot with THIS Keyword HAS been counted now
                                         self.itemsCounted.append(('Snapshot', tmpObj.number, keywordGroup, keyword))
                                 else:
-                                    print "Line 1787", objType
+                                    print "Line 1868", objType
                                     
                     # if we are supposed to show Comments ...
                     if self.showComments:
@@ -2646,7 +2680,7 @@ class ReportGenerator(wx.Object):
 
         # Now add the Report Summary
         # If there's data in the majorList OR if we're showing TIMES or if we're showing Snapshot Coding and there's coding to show ...
-        if (self.showKeywords and (len(majorList) != 0)) or \
+        if ((self.showKeywords or self.showKeywordSummary) and (len(majorList) != 0)) or \
            self.showTime or \
            (self.showSnapshotCoding and (len(self.snapshotFilterList) > 0) and (len(keywordCounts) > 0)):
             # First, set the font for the summary
@@ -2711,7 +2745,7 @@ class ReportGenerator(wx.Object):
                 else:
                     prompt = u'  ' + unicode(_('Quotes:'), 'utf8') + u'\t%6d'
                 data = (self.quoteCount,)
-                if self.showKeywords or self.showTime:
+                if self.showKeywords  or self.showKeywordSummary or self.showTime:
                     prompt += u'  %10s'
                     data += (self.quoteTotalLength,)
                 # Add the total Item Count
@@ -2726,7 +2760,7 @@ class ReportGenerator(wx.Object):
                 else:
                     prompt = u'  ' + unicode(_('Clips:'), 'utf8') + u'\t%6d'
                 data = (self.clipCount,)
-                if self.showKeywords or self.showTime:
+                if self.showKeywords  or self.showKeywordSummary or self.showTime:
                     if ((self.documentName != None) or (self.episodeName != None) or \
                         (self.collection != None) or (self.searchColl != None)) and \
                         (len(keywordLengths) > 0):
@@ -2741,7 +2775,7 @@ class ReportGenerator(wx.Object):
             if self.snapshotCount > 0:
                 prompt = u'  ' + unicode(_('Snapshots:'), 'utf8') + u'\t%6d'
                 data = (self.snapshotCount,)
-                if self.showKeywords or self.showTime:
+                if self.showKeywords  or self.showKeywordSummary or self.showTime:
                     if ((self.documentName != None) or (self.episodeName != None) or \
                         (self.collection != None) or (self.searchColl != None)) and \
                         (len(keywordLengths) > 0):

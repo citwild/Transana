@@ -175,15 +175,16 @@ class TranscriptEditor(RichTextEditCtrl):
         event.Skip()
         
     # Public methods
-    def load_transcript(self, transcript):
+    def load_transcript(self, transcript, showPopup=True):
         """ Load the given transcript object or RTF file name into the editor. """
         # Remember Partial Transcript Editing status
         tmpPartialTranscriptEdit = TransanaConstants.partialTranscriptEdit
         # Temporarily turn partial transcript editing off
         TransanaConstants.partialTranscriptEdit = False
-        
-        # Create a popup telling the user about the load (needed for large files)
-        loadDlg = Dialogs.PopupDialog(None, _("Loading..."), _("Loading your transcript.\nPlease wait...."))
+        # Too many popups can crash the program (at least on Windows), so they're now optional.
+        if showPopup:
+            # Create a popup telling the user about the load (needed for large files)
+            loadDlg = Dialogs.PopupDialog(None, _("Loading..."), _("Loading your transcript.\nPlease wait...."))
         # Freeze the control to speed transcript load / RTF Import times
 	self.Freeze()
 	# Suppress Undo tracking
@@ -348,16 +349,20 @@ class TranscriptEditor(RichTextEditCtrl):
                 self.TranscriptObj = None
             # Is the given transcript a Transcript Object?
             else:
-                # Destroy the Load Popup Dialog
-                loadDlg.Destroy()
+                # If the Popup is shown ...
+                if showPopup:
+                    # Destroy the Load Popup Dialog
+                    loadDlg.Destroy()
                 # Load the Transcript Text using the RTF Data processor
                 self.LoadRTFData(transcript.text)
                 # The transcript that was passed in is our Transcript Object
                 self.TranscriptObj = transcript
                 # Initialize that the transcript has not yet changed.
                 self.TranscriptObj.has_changed = 0
-                # Create a popup telling the user about the load (needed for large files)
-                loadDlg = Dialogs.PopupDialog(None, _("Loading..."), _("Loading your transcript.\nPlease wait...."))
+                # If the Popup is shown ...
+                if showPopup:
+                    # Create a popup telling the user about the load (needed for large files)
+                    loadDlg = Dialogs.PopupDialog(None, _("Loading..."), _("Loading your transcript.\nPlease wait...."))
 
             # Hide the Time Code Data, which may be visible for RTF and TXT data
             self.HideTimeCodeData()
@@ -431,8 +436,10 @@ class TranscriptEditor(RichTextEditCtrl):
         if isinstance(transcript, Transcript.Transcript):
             # Implement Minimum Transcript Width by setting size hints for the TranscriptionUI dialog
             self.parent.SetSizeHints(minH = 0, minW = self.TranscriptObj.minTranscriptWidth)
-        # Destroy the Load Popup Dialog
-        loadDlg.Destroy()
+        # If the Popup is shown ...
+        if showPopup:
+            # Destroy the Load Popup Dialog
+            loadDlg.Destroy()
 
         # if Partial Transcript Editing is enabled ...
         if TransanaConstants.partialTranscriptEdit:
@@ -594,11 +601,13 @@ class TranscriptEditor(RichTextEditCtrl):
             # Look for the next time code.  Result will be -1 if NOT FOUND
             i = txt.find(findstr, i+1)
 
-    def save_transcript(self, continueEditing=True):
+    def save_transcript(self, continueEditing=True, use_transactions=True, showPopup=True):
         """ Save the transcript to the database.
             continueEditing is used for Partial Transcript Editing only. """
-        # Create a popup telling the user about the save (needed for large files)
-        self.saveDlg = Dialogs.PopupDialog(None, _("Saving..."), _("Saving your transcript.\nPlease wait...."))
+        # Too many popups can crash the program (at least on Windows), so they're now optional.
+        if showPopup:
+            # Create a popup telling the user about the save (needed for large files)
+            self.saveDlg = Dialogs.PopupDialog(None, _("Saving..."), _("Saving your transcript.\nPlease wait...."))
         # Let's try to remember the cursor position
         self.SaveCursor()
         # If Partial Transcript editing is enabled ...
@@ -624,10 +633,16 @@ class TranscriptEditor(RichTextEditCtrl):
                 self.TranscriptObj.has_changed = self.modified()
                 # Get the transcript data in XML format
                 self.TranscriptObj.text = self.GetFormattedSelection('XML')
+
+                # Get the Plain Text from the Editor
+                plaintext = self.GetPlainTextSelection()
+                # Get the Plain Text version from the control
+                self.TranscriptObj.plaintext = plaintext
+
                 # Specify the Document Length in Characters (for Documents)
                 self.TranscriptObj.document_length = self.GetLength()
                 # Write it to the database
-                self.TranscriptObj.db_save()
+                self.TranscriptObj.db_save(use_transactions=use_transactions)
         except TransanaExceptions.SaveError, e:
             raise
         except:
@@ -649,8 +664,10 @@ class TranscriptEditor(RichTextEditCtrl):
             self.RestoreCursor()
             # Mark the Edit Control as unmodified.
             self.DiscardEdits()
-            # Destroy the Save Popup Dialog
-            self.saveDlg.Destroy()
+            # If the Popup is shown ...
+            if showPopup:
+                # Destroy the Save Popup Dialog
+                self.saveDlg.Destroy()
             # If Partial Transcript editing is enabled ...
             if TransanaConstants.partialTranscriptEdit and continueEditing:
                 # If we have only part of the transcript in the editor, we need to restore the partial transcript state following save
@@ -1498,11 +1515,13 @@ class TranscriptEditor(RichTextEditCtrl):
         self.select_find(str(endTime))
 
         # Set the text to the XML version of what we now have selected
-        xmlText = self.GetFormattedSelection('XML', selectionOnly=True)  # self.GetXMLBuffer(select_only=True)
+        xmlText = self.GetFormattedSelection('XML', selectionOnly=True)
+        # Get the plain text too.
+        plainText = self.GetPlainTextSelection(selectionOnly=True)
         # Let's try restoring the Cursor Position when all is said and done.
         self.RestoreCursor()
         # Return the start and end times that were found along with the text between them.
-        return (startTimeCode, endTimeCode, xmlText)
+        return (startTimeCode, endTimeCode, xmlText, plainText)
 
     def undo(self):
         """Undo last operation(s)."""
@@ -1993,8 +2012,10 @@ class TranscriptEditor(RichTextEditCtrl):
         # If we're in read_only mode, position immediately with left-click.
         # If we are not in read_only mode, we need to delay the selection until right-click.
         if self.get_read_only():
-            # First, clear the current selection in the visualization window, if there is one.
-            self.parent.ControlObject.ClearVisualizationSelection()
+            # If there's a control object (Not always true in Reports!) ...
+            if self.parent.ControlObject != None:
+                # First, clear the current selection in the visualization window, if there is one.
+                self.parent.ControlObject.ClearVisualizationSelection()
             # If there is NO SELECTION ...  ((-2, -1) comes up when holding shift with cursor keys to eliminate a selection!)
             if self.selection in [(-2, -2), (-2, -1)]:
                 # If we have a Document object ...
@@ -2353,15 +2374,16 @@ class TranscriptEditor(RichTextEditCtrl):
             # If there is no selection in the Transcript ...
             if not self.HasSelection():
                 # ... get the text between the nearest time codes
-                (start_time, end_time, xmlText) = self.GetTextBetweenTimeCodes(start_time, end_time)
+                (start_time, end_time, xmlText, plainText) = self.GetTextBetweenTimeCodes(start_time, end_time)
             # Otherwise ...
             else:
                 # ... let's get the selected Transcript text in XML format
-                xmlText = self.GetFormattedSelection('XML', selectionOnly=True)  # self.GetXMLBuffer(select_only=1)
+                xmlText = self.GetFormattedSelection('XML', selectionOnly=True)
+                plainText = self.GetPlainTextSelection(selectionOnly=True)
 
             # Create a ClipDragDropData object with all the data we need to create a Clip
             data = DragAndDropObjects.ClipDragDropData(self.TranscriptObj.number, self.TranscriptObj.episode_num, \
-                    start_time, end_time, xmlText, self.GetStringSelection(), videoCheckboxData)
+                    start_time, end_time, xmlText, plainText, videoCheckboxData)
 
             # let's convert that object into a portable string using cPickle. (cPickle is faster than Pickle.)
             pdata = cPickle.dumps(data, 1)
@@ -2373,7 +2395,7 @@ class TranscriptEditor(RichTextEditCtrl):
         elif isinstance(self.TranscriptObj, Document.Document) or isinstance(self.TranscriptObj, Quote.Quote):
 
             # Get the Document Selection information from the ControlObject.
-            (documentNum, startChar, endChar, text) = self.parent.ControlObject.GetDocumentSelectionInfo()
+            (documentNum, startChar, endChar, text, plainText) = self.parent.ControlObject.GetDocumentSelectionInfo()
 
             # If we are creating a Quote FROM a Quote ...
             if isinstance(self.TranscriptObj, Quote.Quote):
@@ -2385,7 +2407,7 @@ class TranscriptEditor(RichTextEditCtrl):
                 quoteNum = 0
 
             # Create a QuoteDragDropData object with all the data we need to create a Quote
-            data = DragAndDropObjects.QuoteDragDropData(documentNum, quoteNum, startChar, endChar, text, self.GetStringSelection())
+            data = DragAndDropObjects.QuoteDragDropData(documentNum, quoteNum, startChar, endChar, text, plainText)
 
             # let's convert that object into a portable string using cPickle. (cPickle is faster than Pickle.)
             pdata = cPickle.dumps(data, 1)
@@ -3727,9 +3749,10 @@ class TranscriptEditorDropTarget(wx.PyDropTarget):
                         if startPos == endPos:
                             text = ''
                         else:
-                            text = self.editor.GetFormattedSelection('XML', selectionOnly=True)  # GetXMLBuffer(select_only=1)
+                            text = self.editor.GetFormattedSelection('XML', selectionOnly=True)
+                            plainText = self.editor.GetPlainTextSelection(selectionOnly=True)
                         # Get the Clip Data assembled for creating the Quick Clip
-                        clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, self.editor.GetStringSelection(), self.editor.parent.ControlObject.GetVideoCheckboxDataForClips(startTime))
+                        clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, self.editor.parent.ControlObject.GetVideoCheckboxDataForClips(startTime))
                         # Create the Quick Clip
                         DragAndDropObjects.CreateQuickClip(clipData, sourceData.parent, sourceData.text, dbTree, extraKeywords=kwList[1:])
                         
@@ -3737,7 +3760,7 @@ class TranscriptEditorDropTarget(wx.PyDropTarget):
                     elif isinstance(self.editor.TranscriptObj, Document.Document) or isinstance(self.editor.TranscriptObj, Quote.Quote):
                         try:
                             # Get the Document Selection information from the ControlObject.
-                            (documentNum, startChar, endChar, text) = self.editor.parent.ControlObject.GetDocumentSelectionInfo()
+                            (documentNum, startChar, endChar, text, plainText) = self.editor.parent.ControlObject.GetDocumentSelectionInfo()
                         except:
                             if DEBUG or True:
                                 print sys.exc_info()[0]
@@ -3763,7 +3786,7 @@ class TranscriptEditorDropTarget(wx.PyDropTarget):
                             sourceDocumentNum = self.editor.TranscriptObj.source_document_num
 
                         # We now have enough information to populate a QuoteDragDropData object to pass to the Quote Creation method.
-                        quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text)
+                        quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text, plainText)
                         # Pass the accumulated data to the CreateQuickQuote method, which is in the DragAndDropObjects module
                         # because drag and drop is an alternate way to create a Quick Quote.
                         DragAndDropObjects.CreateQuickQuote(quoteData, sourceData.parent, sourceData.text, dbTree, extraKeywords=kwList[1:])

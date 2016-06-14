@@ -99,10 +99,20 @@ class Transcript(DataObject.DataObject):
 #        str += "isLocked = %s\n" % self._isLocked
 #        str += "recordlock = %s\n" % self.recordlock
 #        str += "locktime = %s\n" % self.locktime
-        if len(self.text) > 250:
-            str = str + "text[:50] = %s\n\n" % self.text[:50]
+        if self.text != None:
+            if len(self.text) > 250:
+                str = str + "text[:50] = %s\n\n" % self.text[:50]
+            else:
+                str = str + "text = %s\n\n" % self.text
         else:
-            str = str + "text = %s\n\n" % self.text
+            str += "text = None\n\n"
+        if self.plaintext != None:
+            if len(self.plaintext) > 250:
+                str = str + "plaintext[:50] = %s\n\n" % self.plaintext[:50]
+            else:
+                str = str + "plaintext = %s\n\n" % self.plaintext
+        else:
+            str += "plaintext = None\n\n"
         return str.encode('utf8')
 
     def __eq__(self, other):
@@ -385,11 +395,17 @@ class Transcript(DataObject.DataObject):
                 comment = self.comment.encode(TransanaGlobal.encoding)
             else:
                 comment = self.comment
+            # Encode the plain text
+            if self.plaintext != None:
+                plaintext = self.plaintext.encode(TransanaGlobal.encoding)
+            else:
+                plaintext = self.plaintext
         else:
             # If we don't need to encode the string values, we still need to copy them to our local variables.
             id = self.id
             transcriber = self.transcriber
             comment = self.comment
+            plaintext = self.plaintext
 
         # If we have a NEW transcript and it HAS an ID and it is EMPTY ...
         if (self.number == 0) and (self.id != "") and (len(self.text) == 0):
@@ -427,6 +443,8 @@ class Transcript(DataObject.DataObject):
         if self.source_transcript == 'None':
             self.source_transcript = 0
 
+        # We're going to handle PlainText separately here.  Queries are getting ridiculously large if we include
+        # both the XMLText and the PlainText in one query.
         fields = ("TranscriptID", "EpisodeNum", "SourceTranscriptNum", "ClipNum", "SortOrder", "Transcriber", \
                         "ClipStart", "ClipStop", "RTFText", "Comment", "MinTranscriptWidth", "LastSaveTime")
         values = (id, self.episode_num, self.source_transcript, self.clip_num, self.sort_order, transcriber, \
@@ -491,12 +509,14 @@ class Transcript(DataObject.DataObject):
             dlg = Dialogs.InfoDialog(None, msg)
             dlg.ShowModal()
             dlg.Destroy()
+            
         # Adjust the query for sqlite if needed
         query = DBInterface.FixQuery(query)
         # Get a database cursor
         c = DBInterface.get_db().cursor()
         # Execure the Save query
         c.execute(query, values)
+
         # If the object number is 0, we have a new object
         if self.number == 0:
             # Load the auto-assigned new number record if necessary and the saved time.
@@ -560,6 +580,22 @@ class Transcript(DataObject.DataObject):
                 raise RecordNotFoundError, (self.id, len(recs))
             # Close the temporary database cursor
             tempDBCursor.close()
+
+        # If we have plaintext ...
+        if plaintext != None:
+            # Add the Plain Text here.  The record has already been added if new, so we can ALWAYS use UPDATE.
+            query = """UPDATE Transcripts2
+                         SET PlainText = %s
+                         WHERE TranscriptNum = %s
+                    """
+            values = (plaintext, self.number)
+            # Adjust the query for sqlite if needed
+            query = DBInterface.FixQuery(query)
+
+            # Execure the Save query
+            c.execute(query, values)
+            
+        c.close()
 
         # For Partial Transcript Editing, update the Paragraph Information for long transcripts
         self.UpdateParagraphs()
@@ -768,6 +804,14 @@ class Transcript(DataObject.DataObject):
     def _del_text(self):
         self._text = ''
 
+    # Implementation for PlainText Property
+    def _get_plaintext(self):
+        return self._plaintext
+    def _set_plaintext(self, txt):
+        self._plaintext = txt
+    def _del_plaintext(self):
+        self._plaintext = None
+
     # Implementation for Has_Changed Property
     def _get_changed(self):
         return self._has_changed
@@ -803,6 +847,8 @@ class Transcript(DataObject.DataObject):
                                   """ Minimim Transcript Display Width """)
     text = property(_get_text, _set_text, _del_text,
                         """Text of the transcript, stored in the database as a BLOB.""")
+    plaintext = property(_get_plaintext, _set_plaintext, _del_plaintext,
+                        """PlainText version of the transcript, stored in the database as a BLOB.""")
     locked_by_me = property(None, None, None,
                         """Determines if this instance owns the Transcript lock.""")
     has_changed = property(_get_changed, _set_changed, _del_changed,
@@ -865,11 +911,14 @@ class Transcript(DataObject.DataObject):
 
             # self.text gets set to be our data
             # then load_transcript is called, from transcriptionui.LoadTranscript()
+
+            self.plaintext = row['PlainText']
             
         # If we ARE skipping the text ...
         else:
             # set the text to None
             self.text = None
+            self.plaintext = None
 
         self.comment = row['Comment']
         self.minTranscriptWidth = row['MinTranscriptWidth']
@@ -893,3 +942,5 @@ class Transcript(DataObject.DataObject):
                 self.series_id = DBInterface.ProcessDBDataForUTF8Encoding(self.series_id)
             if row.has_key('EpisodeID'):
                 self.episode_id = DBInterface.ProcessDBDataForUTF8Encoding(self.episode_id)
+            if self.plaintext != None:
+                self.plaintext = self.plaintext.decode(TransanaGlobal.encoding)

@@ -391,6 +391,24 @@ class ConfigData(object):
             # If so, set to main screen (0)
             self.primaryScreen = 0
 
+        # Let's get the Report Default fields taken care of
+        self.reportNestedData = config.ReadInt('/3.0/reportNestedData', 1)
+        self.reportHyperlink = config.ReadInt('/3.0/reportHyperlink', 1)
+        self.reportFile = config.ReadInt('/3.0/reportFile', 1)
+        self.reportTime = config.ReadInt('/3.0/reportTime', 1)
+        self.reportDocImportDate = config.ReadInt('/3.0/reportDocImportDate', 1)
+        self.reportSourceInfo = config.ReadInt('/3.0/reportSourceInfo', 1)
+        self.reportQuoteText = config.ReadInt('/3.0/reportQuoteText', 1)
+        self.reportClipTranscripts = config.ReadInt('/3.0/reportClipTranscripts', 1)
+        self.reportSnapshotImage = config.ReadInt('/3.0/reportSnapshotImage', 0)  # large
+        self.reportSnapshotCodingKey = config.ReadInt('/3.0/reportSnapshotCodingKey', 1)
+        self.reportKeywords = config.ReadInt('/3.0/reportKeywords', 1)
+        self.reportComments = config.ReadInt('/3.0/reportComments', 0)
+        self.reportCollectionNotes = config.ReadInt('/3.0/reportCollectionNotes', 0)
+        self.reportQuoteNotes = config.ReadInt('/3.0/reportQuoteNotes', 0)
+        self.reportClipNotes = config.ReadInt('/3.0/reportClipNotes', 0)
+        self.reportSnapshotNotes = config.ReadInt('/3.0/reportSnapshotNotes', 0)
+
         # Load the databaseList, if it exists
         # NOTE:  if using Unicode, this MUST be a String object!
         if TransanaConstants.singleUserVersion:
@@ -614,6 +632,23 @@ class ConfigData(object):
         if self.primaryScreen < wx.Display.GetCount():
             # ... save the Primary Screen setting
             config.WriteInt('/2.0/PrimaryScreen', self.primaryScreen)
+
+        config.WriteInt('/3.0/reportNestedData', self.reportNestedData)
+        config.WriteInt('/3.0/reportHyperlink', self.reportHyperlink)
+        config.WriteInt('/3.0/reportFile', self.reportFile)
+        config.WriteInt('/3.0/reportTime', self.reportTime)
+        config.WriteInt('/3.0/reportDocImportDate', self.reportDocImportDate)
+        config.WriteInt('/3.0/reportSourceInfo', self.reportSourceInfo)
+        config.WriteInt('/3.0/reportQuoteText', self.reportQuoteText)
+        config.WriteInt('/3.0/reportClipTranscripts', self.reportClipTranscripts)
+        config.WriteInt('/3.0/reportSnapshotImage', self.reportSnapshotImage)
+        config.WriteInt('/3.0/reportSnapshotCodingKey', self.reportSnapshotCodingKey)
+        config.WriteInt('/3.0/reportKeywords', self.reportKeywords)
+        config.WriteInt('/3.0/reportComments', self.reportComments)
+        config.WriteInt('/3.0/reportCollectionNotes', self.reportCollectionNotes)
+        config.WriteInt('/3.0/reportQuoteNotes', self.reportQuoteNotes)
+        config.WriteInt('/3.0/reportClipNotes', self.reportClipNotes)
+        config.WriteInt('/3.0/reportSnapshotNotes', self.reportSnapshotNotes)
 
     def GetDefaultProfilePath(self):
         """ Query the operating system and get the default path for user data. """

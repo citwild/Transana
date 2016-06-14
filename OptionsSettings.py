@@ -50,13 +50,17 @@ class OptionsSettings(wx.Dialog):
         if 'wxMSW' in wx.PlatformInfo:
             if self.lab:
                 dlgHeight = 445
+            elif TransanaConstants.proVersion:
+                dlgHeight = 585
             else:
-                dlgHeight = 445
+                dlgHeight = 475
         else:
             if self.lab:
                 dlgHeight = 395
+            elif TransanaConstants.proVersion:
+                dlgHeight = 560
             else:
-                dlgHeight = 345
+                dlgHeight = 400
         # Define the Dialog Box
         wx.Dialog.__init__(self, parent, -1, _("Transana Settings"), wx.DefaultPosition, wx.Size(dlgWidth, dlgHeight), style=wx.CAPTION | wx.SYSTEM_MENU | wx.THICK_FRAME)
 
@@ -550,6 +554,9 @@ class OptionsSettings(wx.Dialog):
             panelTranscriber.SetAutoLayout(True)
             panelTranscriber.Layout()
 
+            # Add the Report Default Settings Tab to the Notebook
+            self.panelReportDefaults = ReportDefaultsPanel(notebook, name='OptionSettings.ReportDefaultsPanel')
+
         # The Message Server Tab should only appear for the Multi-user version of the program.
         if not TransanaConstants.singleUserVersion:
             
@@ -557,16 +564,14 @@ class OptionsSettings(wx.Dialog):
             self.panelMessageServer = MessageServerPanel(notebook, name='OptionsSettings.MessageServerPanel')
 
 
-
-
-
-      
         # Add the three Panels as Tabs in the Notebook
         notebook.AddPage(panelDirectories, _("Directories"), True)
         # If we're not in the Lab version initial configuration screen ...
         if not self.lab:
             # ... add the Transcriber Settings tab.
             notebook.AddPage(panelTranscriber, _("Transcriber Settings"), False)
+            # ... add the Report Defaults tab.
+            notebook.AddPage(self.panelReportDefaults, _("Default Report Settings"), False)
         # If we're in the Multi-user version ...
         if not TransanaConstants.singleUserVersion:
             # ... then add the Message Server tab.
@@ -737,6 +742,29 @@ class OptionsSettings(wx.Dialog):
             # Update the Global Special Font Size
             TransanaGlobal.configData.specialFontSize = int(self.specialFontSize.GetValue())
 
+            # Save Report Default Settings
+            TransanaGlobal.configData.reportNestedData = self.panelReportDefaults.showNestedData.IsChecked()
+            TransanaGlobal.configData.reportHyperlink = self.panelReportDefaults.showHyperlink.IsChecked()
+            TransanaGlobal.configData.reportFile = self.panelReportDefaults.showFile.IsChecked()
+            TransanaGlobal.configData.reportTime = self.panelReportDefaults.showTime.IsChecked()
+            if TransanaConstants.proVersion:
+                TransanaGlobal.configData.reportDocImportDate = self.panelReportDefaults.showDocImportDate.IsChecked()
+            TransanaGlobal.configData.reportSourceInfo = self.panelReportDefaults.showSourceInfo.IsChecked()
+            if TransanaConstants.proVersion:
+                TransanaGlobal.configData.reportQuoteText = self.panelReportDefaults.showQuoteText.IsChecked()
+            TransanaGlobal.configData.reportClipTranscripts = self.panelReportDefaults.showClipTranscripts.IsChecked()
+            if TransanaConstants.proVersion:
+                TransanaGlobal.configData.reportSnapshotImage = self.panelReportDefaults.showSnapshotImage.GetSelection()
+                TransanaGlobal.configData.reportSnapshotCodingKey = self.panelReportDefaults.showSnapshotCodingKey.IsChecked()
+            TransanaGlobal.configData.reportKeywords = self.panelReportDefaults.showKeywords.IsChecked()
+            TransanaGlobal.configData.reportComments = self.panelReportDefaults.showComments.IsChecked()
+            TransanaGlobal.configData.reportCollectionNotes = self.panelReportDefaults.showCollectionNotes.IsChecked()
+            if TransanaConstants.proVersion:
+                TransanaGlobal.configData.reportQuoteNotes = self.panelReportDefaults.showQuoteNotes.IsChecked()
+            TransanaGlobal.configData.reportClipNotes = self.panelReportDefaults.showClipNotes.IsChecked()
+            if TransanaConstants.proVersion:
+                TransanaGlobal.configData.reportSnapshotNotes = self.panelReportDefaults.showSnapshotNotes.IsChecked()
+
         # Make sure the current Media Library and visualization path settings are saved in the configuration under the (username, server, database) key.
         TransanaGlobal.configData.pathsByDB[(TransanaGlobal.userName.encode('utf8'), TransanaGlobal.configData.host.encode('utf8'), TransanaGlobal.configData.database.encode('utf8'))] = \
             {'videoPath' : TransanaGlobal.configData.videoPath.encode('utf8'),
@@ -829,45 +857,138 @@ class OptionsSettings(wx.Dialog):
         elif event.GetSelection() == 1:
             # ... the Transcription Setback slider should receive focus
             wx.CallAfter(self.transcriptionSetback.SetFocus)
-        # If the Message Server tab is showing ...
+        # If the Report Default Settings tab is showing ...
         elif event.GetSelection() == 2:
+            # ... the Show Nested Collections checkbox should receive focus
+            wx.CallAfter(self.panelReportDefaults.showNestedData.SetFocus)
+        # If the Message Server tab is showing ...
+        elif event.GetSelection() == 3:
             # ... the Message Server should receive focus
             wx.CallAfter(self.panelMessageServer.messageServer.SetFocus)
 
 
+class ReportDefaultsPanel(wx.Panel):
+    """ The Report Default Settings Panel.  While this is very similar to the Report Contents tab
+        of the Filter Dialog, it's not shared, so if you update here, update there too! """
+    def __init__(self, parent, name):
+        # Add the Message Server Tab to the Notebook
+        wx.Panel.__init__(self, parent, -1, size=parent.GetSizeTuple(), name=name)
+        
+        # Define the main VERTICAL sizer for the Notebook Page
+        panelReportSizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.showNestedData = wx.CheckBox(self, -1, _("Include Items from Nested Collections"))
+        self.showNestedData.SetValue(TransanaGlobal.configData.reportNestedData)
+        panelReportSizer.Add(self.showNestedData, 0, wx.TOP | wx.LEFT, 10)
+        text1 = wx.StaticText(self, -1, _("(Unchecking this will cause items from nested collections to\nbe skipped even if checked on the Quote, Clip or Snapshot tabs.)"))
+        panelReportSizer.Add(text1, 0, wx.LEFT, 30)
+
+        self.showHyperlink = wx.CheckBox(self, -1, _("Enable Hyperlinks"))
+        self.showHyperlink.SetValue(TransanaGlobal.configData.reportHyperlink)
+        panelReportSizer.Add(self.showHyperlink, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showFile = wx.CheckBox(self, -1, _("Show File Name"))
+        self.showFile.SetValue(TransanaGlobal.configData.reportFile)
+        panelReportSizer.Add(self.showFile, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showTime = wx.CheckBox(self, -1, _("Show Item Time / Position"))
+        self.showTime.SetValue(TransanaGlobal.configData.reportTime)
+        panelReportSizer.Add(self.showTime, 0, wx.TOP | wx.LEFT, 10)
+
+        if TransanaConstants.proVersion:
+            self.showDocImportDate = wx.CheckBox(self, -1, _("Show Document Import Date"))
+            self.showDocImportDate.SetValue(TransanaGlobal.configData.reportDocImportDate)
+            panelReportSizer.Add(self.showDocImportDate, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showSourceInfo = wx.CheckBox(self, -1, _("Show Source Information"))
+        self.showSourceInfo.SetValue(TransanaGlobal.configData.reportSourceInfo)
+        panelReportSizer.Add(self.showSourceInfo, 0, wx.TOP | wx.LEFT, 10)
+
+        if TransanaConstants.proVersion:
+            self.showQuoteText = wx.CheckBox(self, -1, _("Show Quote Text"))
+            self.showQuoteText.SetValue(TransanaGlobal.configData.reportQuoteText)
+            panelReportSizer.Add(self.showQuoteText, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showClipTranscripts = wx.CheckBox(self, -1, _("Show Clip Transcripts"))
+        self.showClipTranscripts.SetValue(TransanaGlobal.configData.reportClipTranscripts)
+        panelReportSizer.Add(self.showClipTranscripts, 0, wx.TOP | wx.LEFT, 10)
+
+        if TransanaConstants.proVersion:
+            choices = [_('Large'), _('Medium'), _('Small'), _("Don't Show")]
+            self.showSnapshotImage = wx.RadioBox(self, -1, _('Show Snapshots'), choices=choices)
+            self.showSnapshotImage.SetSelection(TransanaGlobal.configData.reportSnapshotImage)
+            panelReportSizer.Add(self.showSnapshotImage, 0, wx.TOP | wx.LEFT, 10)
+
+            self.showSnapshotCodingKey = wx.CheckBox(self, -1, _('Show Snapshot Coding Key'))
+            self.showSnapshotCodingKey.SetValue(TransanaGlobal.configData.reportSnapshotCodingKey)
+            panelReportSizer.Add(self.showSnapshotCodingKey, 0, wx.TOP | wx.LEFT, 10)
+
+        prompt = _("Show Item Keywords")
+        self.showKeywords = wx.CheckBox(self, -1, prompt)
+        self.showKeywords.SetValue(TransanaGlobal.configData.reportKeywords)
+        panelReportSizer.Add(self.showKeywords, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showComments = wx.CheckBox(self, -1, _("Show Comments"))
+        self.showComments.SetValue(TransanaGlobal.configData.reportComments)
+        panelReportSizer.Add(self.showComments, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showCollectionNotes = wx.CheckBox(self, -1, _("Show Collection Notes"))
+        self.showCollectionNotes.SetValue(TransanaGlobal.configData.reportCollectionNotes)
+        panelReportSizer.Add(self.showCollectionNotes, 0, wx.TOP | wx.LEFT, 10)
+
+        if TransanaConstants.proVersion:
+            self.showQuoteNotes = wx.CheckBox(self, -1, _("Show Quote Notes"))
+            self.showQuoteNotes.SetValue(TransanaGlobal.configData.reportQuoteNotes)
+            panelReportSizer.Add(self.showQuoteNotes, 0, wx.TOP | wx.LEFT, 10)
+
+        self.showClipNotes = wx.CheckBox(self, -1, _("Show Clip Notes"))
+        self.showClipNotes.SetValue(TransanaGlobal.configData.reportClipNotes)
+        panelReportSizer.Add(self.showClipNotes, 0, wx.TOP | wx.LEFT, 10)
+
+        if TransanaConstants.proVersion:
+            self.showSnapshotNotes = wx.CheckBox(self, -1, _("Show Snapshot Notes"))
+            self.showSnapshotNotes.SetValue(TransanaGlobal.configData.reportSnapshotNotes)
+            panelReportSizer.Add(self.showSnapshotNotes, 0, wx.TOP | wx.LEFT, 10)
+
+        # Tell the Report Default Panel to lay out now and do AutoLayout
+        self.SetSizer(panelReportSizer)
+        self.SetAutoLayout(True)
+        self.Layout()
+
+
 class MessageServerPanel(wx.Panel):
     def __init__(self, parent, name):
-            # Add the Message Server Tab to the Notebook
-            wx.Panel.__init__(self, parent, -1, size=parent.GetSizeTuple(), name=name)
-            
-            # Define the main VERTICAL sizer for the Notebook Page
-            panelMsgSizer = wx.BoxSizer(wx.VERTICAL)
-            
-            # Add the Message Server Label to the Message Server Tab
-            lblMessageServer = wx.StaticText(self, -1, _("Transana-MU Message Server Host Name"), style=wx.ST_NO_AUTORESIZE)
-            # Add the label to the Panel Sizer
-            panelMsgSizer.Add(lblMessageServer, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
-            # Add a spacer
-            panelMsgSizer.Add((0, 3))
-            
-            # Add the Message Server TextCtrl to the Message Server Tab
-            self.messageServer = wx.TextCtrl(self, -1, TransanaGlobal.configData.messageServer)
-            # Add the element to the Panel Sizer
-            panelMsgSizer.Add(self.messageServer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        # Add the Message Server Tab to the Notebook
+        wx.Panel.__init__(self, parent, -1, size=parent.GetSizeTuple(), name=name)
+        
+        # Define the main VERTICAL sizer for the Notebook Page
+        panelMsgSizer = wx.BoxSizer(wx.VERTICAL)
+        
+        # Add the Message Server Label to the Message Server Tab
+        lblMessageServer = wx.StaticText(self, -1, _("Transana-MU Message Server Host Name"), style=wx.ST_NO_AUTORESIZE)
+        # Add the label to the Panel Sizer
+        panelMsgSizer.Add(lblMessageServer, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        # Add a spacer
+        panelMsgSizer.Add((0, 3))
+        
+        # Add the Message Server TextCtrl to the Message Server Tab
+        self.messageServer = wx.TextCtrl(self, -1, TransanaGlobal.configData.messageServer)
+        # Add the element to the Panel Sizer
+        panelMsgSizer.Add(self.messageServer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-            # Add the Message Server Port Label to the Message Server Tab
-            lblMessageServerPort = wx.StaticText(self, -1, _("Port"), style=wx.ST_NO_AUTORESIZE)
-            # Add the label to the Panel Sizer
-            panelMsgSizer.Add(lblMessageServerPort, 0, wx.LEFT | wx.RIGHT, 10)
-            # Add a spacer
-            panelMsgSizer.Add((0, 3))
-            
-            # Add the Message Server Port TextCtrl to the Message Server Tab
-            self.messageServerPort = wx.TextCtrl(self, -1, str(TransanaGlobal.configData.messageServerPort))
-            # Add the element to the Panel Sizer
-            panelMsgSizer.Add(self.messageServerPort, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        # Add the Message Server Port Label to the Message Server Tab
+        lblMessageServerPort = wx.StaticText(self, -1, _("Port"), style=wx.ST_NO_AUTORESIZE)
+        # Add the label to the Panel Sizer
+        panelMsgSizer.Add(lblMessageServerPort, 0, wx.LEFT | wx.RIGHT, 10)
+        # Add a spacer
+        panelMsgSizer.Add((0, 3))
+        
+        # Add the Message Server Port TextCtrl to the Message Server Tab
+        self.messageServerPort = wx.TextCtrl(self, -1, str(TransanaGlobal.configData.messageServerPort))
+        # Add the element to the Panel Sizer
+        panelMsgSizer.Add(self.messageServerPort, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-            # Tell the Message Server Panel to lay out now and do AutoLayout
-            self.SetSizer(panelMsgSizer)
-            self.SetAutoLayout(True)
-            self.Layout()
+        # Tell the Message Server Panel to lay out now and do AutoLayout
+        self.SetSizer(panelMsgSizer)
+        self.SetAutoLayout(True)
+        self.Layout()

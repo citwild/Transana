@@ -48,7 +48,7 @@ import Document
 import Collection
 # import the Transana Clip Object definition
 import Clip
-# import teh Transana Quote Object definition
+# import the Transana Quote Object definition
 import Quote
 # import the Transana Miscellaneous Routines
 import Misc
@@ -75,6 +75,8 @@ if TransanaConstants.USESRTC:
     import TranscriptionUI_RTC as TranscriptionUI
 else:
     import TranscriptionUI
+# import Transana's Word Frequency Report
+import WordFrequencyReport
 # import Python's os module
 import os
 # import Python's platform module
@@ -87,6 +89,8 @@ import string
 import cPickle
 # import Python's pickle module
 import pickle
+# import Python's time module
+import time
 
 
 class ControlObject(object):
@@ -208,7 +212,7 @@ class ControlObject(object):
             # ... minimize/restore the Report
             self.ReportWindows[win].Iconize(iconize)
 
-    def LoadDocument(self, library_name, document_name, document_number):
+    def LoadDocument(self, library_name, document_name, document_number, textSearchItems=[]):
         """ When a Document is identified to trigger systemic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
         # Initialize a variable indicating if we found the requested document
@@ -259,6 +263,10 @@ class ControlObject(object):
             tmpDocument = Document.Document(document_number)
             # Load the Document into the Editor Interface (Transcripts and Documents act the same here!)
             self.TranscriptWindow.LoadTranscript(tmpDocument)
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
             # Set the new Current Object
             self.currentObj = tmpDocument
 
@@ -282,7 +290,7 @@ class ControlObject(object):
             # Enable the transcript menu item options
             self.MenuWindow.SetTranscriptOptions(True)
 
-    def LoadTranscript(self, library, episode, transcript):
+    def LoadTranscript(self, library, episode, transcript, textSearchItems=[]):
         """ When a Transcript is identified to trigger systemic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
         # First, let's see if there's already a video loaded in the system.  Iterate through all Notebook Pages.
@@ -300,6 +308,13 @@ class ControlObject(object):
             self.TranscriptWindow.AddNotebookPage(transcript)
             # Select the new page as the current page
             self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
+            
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # If the current Editor is a Transcript (not None, not a Document) ...
         elif isinstance(self.TranscriptWindow.GetCurrentObject(), Transcript.Transcript):
             # ... then we need to Clear all Windows of media information
@@ -309,6 +324,15 @@ class ControlObject(object):
                 self.TranscriptWindow.AddNotebookPage(transcript)
                 # Select the new page as the current page
                 self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
+                
+        # if Auto Arrange is OFF and we don't yet have a media window layout ...
+        elif (not TransanaGlobal.configData.autoArrange) and (self.VideoWindow.windowLayout is not None):
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # Because transcript names can be identical for different episodes in different Library, all parameters are mandatory.
         # They are:
         #   Library     -  the Library associated with the desired Transcript
@@ -348,6 +372,10 @@ class ControlObject(object):
                 self.VideoWindow.SetTitle(_("Media"))
             # Open Transcript in Transcript Window
             self.TranscriptWindow.LoadTranscript(transcriptObj) #flies off to transcriptionui.py
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
 
             self.currentObj = episodeObj
 
@@ -407,7 +435,7 @@ class ControlObject(object):
             # ... we have a Quote
             return 'Quote'
 
-    def LoadQuote(self, quote_number):
+    def LoadQuote(self, quote_number, textSearchItems=[]):
         """ When a Quote is identified to trigger systemic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
         # Initialize a variable indicating if we found the requested Quote
@@ -446,6 +474,10 @@ class ControlObject(object):
                 
             # Load the Quote into the Editor Interface (Transcripts, Documents, and Quotes act the same here!)
             self.TranscriptWindow.LoadTranscript(tmpQuote)
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item
+                self.TranscriptWindow.SetSearchItem(textSearchItems)
 
 ##            # Remove any tabs in the Data Window beyond the Database Tab
 ##            self.DataWindow.DeleteTabs()
@@ -478,14 +510,14 @@ class ControlObject(object):
             selData = None
 
         # If no items are selected or the item selected is NOT a Search Collection or Search Clip ...
-        if (selData == None) or not (selData.nodetype in ['SearchCollectionNode', 'SearchClipNode']):
+        if (selData == None) or not (selData.nodetype in ['SearchCollectionNode', 'SearchQuoteNode']):
             # Let's make sure this clip is displayed in the Database Tree
             nodeList = (_('Collections'),) + self.currentObj.GetNodeData()
             if isinstance(self.currentObj, Quote.Quote):
                 # Now point the DBTree (the notebook's parent window's DBTab's tree) to the loaded Quote
                 self.DataWindow.DBTab.tree.select_Node(nodeList, 'QuoteNode')
 
-    def LoadClipByNumber(self, clipNum):
+    def LoadClipByNumber(self, clipNum, textSearchItems=[]):
         """ When a Clip is identified to trigger systematic loading of all related information,
             this method should be called so that all Transana Objects are set appropriately. """
 
@@ -507,6 +539,13 @@ class ControlObject(object):
             self.TranscriptWindow.AddNotebookPage(_("No Document Loaded"))
             # Select the new page as the current page
             self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
+
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # If the current Editor is a Transcript (not None, not a Document) ...
         elif isinstance(self.TranscriptWindow.GetCurrentObject(), Transcript.Transcript):
             # ... then we need to Clear all Windows of media information
@@ -516,7 +555,15 @@ class ControlObject(object):
                 self.TranscriptWindow.AddNotebookPage(clipObj.id)
                 # Select the new page as the current page
                 self.TranscriptWindow.nb.SetSelection(self.TranscriptWindow.nb.GetPageCount() - 1)
-        
+
+        # if Auto Arrange is OFF and we don't yet have a media window layout ...
+        elif (not TransanaGlobal.configData.autoArrange) and (self.VideoWindow.windowLayout is not None):
+            # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+            # We need to capture the position and size of that window HERE, before the window is cleared,
+            # in a place where this will only be called once.  This addresses when the user has turned
+            # off Auto Arrange prior to loading a media file!
+            self.VideoWindow.CapturePositionAndSize()
+
         # Set the current object to the loaded Clip
         self.currentObj = clipObj
         # Load the Collection that contains the loaded Clip
@@ -559,31 +606,11 @@ class ControlObject(object):
             if (self.currentObj == None) and (clipObj != None):
                 self.currentObj = clipObj
 
-##            # Remove any tabs in the Data Window beyond the Database Tab.  (This was moved down to late in the
-##            # process due to problems on the Mac documented in the DataWindow object.)
-##            self.DataWindow.DeleteTabs()
-##            # Add the Keyword Tab to the DataWindow
-##            self.DataWindow.AddKeywordsTab(collectionObj=collectionObj, clipObj=clipObj)
-##
-##            # Get the current selection(s) from the Database Tree
-##            selItems = self.DataWindow.DBTab.tree.GetSelections()
-##            # If there are one or more items selected ...
-##            if len(selItems) >= 1:
-##                # ... get the item data from the first selection
-##                selData = self.DataWindow.DBTab.tree.GetPyData(selItems[0])
-##            # If NO items are selected ...
-##            else:
-##                # ... then there's no item data to get
-##                selData = None
-##
-##            # If no items are selected or the item selected is NOT a Search Collection or Search Clip ...
-##            if (selData == None) or not (selData.nodetype in ['SearchCollectionNode', 'SearchClipNode']):
-##                # Let's make sure this clip is displayed in the Database Tree
-##                nodeList = (_('Collections'),) + self.currentObj.GetNodeData()
-##                if isinstance(self.currentObj, Clip.Clip):
-##                    # Now point the DBTree (the notebook's parent window's DBTab's tree) to the loaded Clip
-##                    self.DataWindow.DBTab.tree.select_Node(nodeList, 'ClipNode')
-
+            # If we have Text Search Items ...
+            if len(textSearchItems) > 0:
+                # ... set the Search Item.  Calling immediately and calling with wx.CallAfter DO NOT WORK.
+                # This Search needs to occur AFTER media file placement by the LoadClip process.
+                wx.CallLater(1000, self.TranscriptWindow.SetSearchItem, textSearchItems)
             # Enable the transcript menu item options
             self.MenuWindow.SetTranscriptOptions(True)
 
@@ -1223,6 +1250,38 @@ class ControlObject(object):
             # Remove this from the Menu Window's Window's menu
             self.MenuWindow.DeleteWindowMenuItem(reportName, reportNumber)
 
+    def SignalWordFrequencyReports(self, reportNumber=-1, doNotCall=False):
+        """ Signal Word Frequency Reports that they need to repopulate their contents next time they
+            refresh due to changes in the Synonyms List.  This could be called by ANY Word Frequency
+            Report, and the change must be reflected in ALL Word Frequency Reports.
+            
+            if reportNumber is passed in, that report may be skipped.
+            if doNotCall is True, we are receiving this FROM the Message Server, so should not
+              signal the MessageServer to have other MU instances update! """
+        # For each registred Report ...
+        for reportNum in self.ReportWindows.keys():
+            # ... if the report is a Word Frequency Report ...
+            if isinstance(self.ReportWindows[reportNum], WordFrequencyReport.WordFrequencyReport):
+                # ... and the report has not been explicitly excluded ...
+                if reportNum != reportNumber:
+                    # if the report is not in the process of repopulating itself ...
+                    if not self.ReportWindows[reportNum].isUpdating:
+                        # ... then we clear the itemDataMap as the signal that the report needs to
+                        # repopulate.
+                        self.ReportWindows[reportNum].needsUpdate = True
+
+        # If we're in the multiuser version and have not been told not to call the Message Server ...
+        if not TransanaConstants.singleUserVersion and not doNotCall:
+            # ... and if a Chat Windows HAS been defined ...
+            if TransanaGlobal.chatWindow != None:
+
+                if DEBUG:
+                    print 'Message to send = "WFR"'
+
+                # ... signal the Message Server to have other copies of Transana update the
+                #     Word Frequency Report
+                TransanaGlobal.chatWindow.SendMessage("WFR ")
+
     def OpenAdditionalDocument(self, documentNum, libraryID='', isDocument=True):
         """ Open an additional document without replacing the current one """
 
@@ -1389,7 +1448,12 @@ class ControlObject(object):
             If clearAllTabs is True, we close all Documents and Quotes too! """
         # Let's stop the media from playing
         self.VideoWindow.Stop()
-        
+
+        # If Auto-Arrange is OFF, we lose the Video Window size when we clear the Media Window.
+        # We need to capture the position and size of that window HERE, before the window is cleared,
+        # in a place where this will only be called once.
+        self.VideoWindow.CapturePositionAndSize()
+
         # If we're clearing ALL tabs ...
         if clearAllTabs:
             # ... we want a list of all Notebook Page Numbers in descending order
@@ -1581,6 +1645,8 @@ class ControlObject(object):
         hasMods = event.AltDown() or event.ControlDown() or event.CmdDown() or event.ShiftDown()
         # Note whether there is something loaded in the main interface
         loaded = (self.currentObj != None)
+        # Note whether the current object has madia attached.  Some key commands require media!
+        hasMedia = isinstance(self.currentObj, Episode.Episode) or isinstance(self.currentObj, Clip.Clip)
         
         # F1 = Focus on Menu Window
         if (c == wx.WXK_F1) and not hasMods:
@@ -1666,7 +1732,7 @@ class ControlObject(object):
                 self.TranscriptWindow.dlg.editor.save_transcript()
 
         # Ctrl-A is Rewind 10 seconds
-        elif (c == ord('A')) and event.ControlDown() and loaded:
+        elif (c == ord('A')) and event.ControlDown() and loaded and hasMedia:
             # Get the current video position
             vpos = self.GetVideoPosition()
             # Rewind 10 seconds
@@ -1677,7 +1743,7 @@ class ControlObject(object):
             self.Play(False)
 
         # Ctrl-D is Stop / Start without Rewind
-        elif (c == ord('D')) and event.ControlDown() and loaded:
+        elif (c == ord('D')) and event.ControlDown() and loaded and hasMedia:
             if not self.IsPlaying():
                 # Explicitly tell Transana to play to the end of the Episode/Clip
                 self.SetVideoEndPoint(-1)
@@ -1685,7 +1751,7 @@ class ControlObject(object):
             self.PlayPause(False)
 
         # Ctrl-F is Fast Forward 10 seconds
-        elif (c == ord('F')) and event.ControlDown() and loaded:
+        elif (c == ord('F')) and event.ControlDown() and loaded and hasMedia:
             # Get the current video position
             vpos = self.GetVideoPosition()
             # Fast Forward 10 seconds
@@ -1696,7 +1762,7 @@ class ControlObject(object):
             self.Play(False)
 
         # Ctrl-P is Play Previous Time-Coded Segment
-        elif (c == ord("P")) and event.ControlDown() and loaded:
+        elif (c == ord("P")) and event.ControlDown() and loaded and hasMedia:
             # Get the value for the previous time code
             start_timecode = self.TranscriptWindow.dlg.editor.PrevTimeCode()
             # If there WAS a Previous Segment ....
@@ -1709,7 +1775,7 @@ class ControlObject(object):
                 self.Play(0)
 
         # Ctrl-N is Play Next Time-Coded Segment
-        elif (c == ord("N")) and event.ControlDown() and loaded:
+        elif (c == ord("N")) and event.ControlDown() and loaded and hasMedia:
             # Get the value for the next time code
             start_timecode = self.TranscriptWindow.dlg.editor.NextTimeCode()
             # If there WAS a Next Segment ...
@@ -1722,7 +1788,7 @@ class ControlObject(object):
                 self.Play(0)
 
         # Ctrl-S is Stop / Start with Rewind
-        elif (c == ord('S')) and event.ControlDown() and loaded:
+        elif (c == ord('S')) and event.ControlDown() and loaded and hasMedia:
             if not self.IsPlaying():
                 # Explicitly tell Transana to play to the end of the Episode/Clip
                 self.SetVideoEndPoint(-1)
@@ -1731,15 +1797,37 @@ class ControlObject(object):
 
         # Ctrl-T inserts a Time Code
         elif (c == ord('T')) and event.ControlDown() and loaded:
-            self.TranscriptWindow.dlg.editor.insert_timecode()
+            # If we are in a Media file Object ...
+            if hasMedia:
+                # ... add a Time Code
+                self.TranscriptWindow.dlg.editor.insert_timecode()
+            # If we are NOT in a Media file Object AND are in EDIT mode ...
+            elif not self.TranscriptWindow.dlg.editor.get_read_only():
+                # Get the current Date / Time information from the system
+                (year, month, day, hour, minute, second, weekday, yearday, dst) = time.localtime()
+                # Are we in the morning?
+                ampm = _('am')
+                # Let's use 12-hour time.  If it's afternoon ...
+                if hour > 12:
+                    # ... decrement the hour value and signal that it's afternoon
+                    hour -= 12
+                    ampm = _('pm')
+                # Add the Date / Time stamp to the Note Text
+                if TransanaConstants.singleUserVersion:
+                    # TODO:  Localize this!
+                    self.TranscriptWindow.dlg.editor.WriteText("%s/%s/%s  %s:%02d:%02d %s\n" % (month, day, year, hour, minute, second, ampm))
+                else:
+                    # If multi-user, include the username!
+                    # TODO:  Localize this!
+                    self.TranscriptWindow.dlg.editor.WriteText("%s/%s/%s  %s:%02d:%02d %s - %s\n" % (month, day, year, hour, minute, second, ampm, TransanaGlobal.userName))
 
         # Ctrl-. is increases playback speed, if possible
-        elif (c == ord('.')) and event.ControlDown() and loaded:
+        elif (c == ord('.')) and event.ControlDown() and loaded and hasMedia:
             # Ctrl-period increases playback speed by 10% of normal speed
             self.ChangePlaybackSpeed('faster')
 
         # Ctrl-, is decreases playback speed, if possible
-        elif (c == ord(',')) and event.ControlDown() and loaded:
+        elif (c == ord(',')) and event.ControlDown() and loaded and hasMedia:
             # Ctrl-comma decreases playback speed by 10% of normal speed
             self.ChangePlaybackSpeed('slower')
 
@@ -2427,12 +2515,14 @@ class ControlObject(object):
         # If there's no current selection ...
         if startPos == endPos:
             # ... get the text between the nearest time codes.
-            (st, end, text) = self.TranscriptWindow.dlg.editor.GetTextBetweenTimeCodes(startTime, endTime)
+            (st, end, text, plainText) = self.TranscriptWindow.dlg.editor.GetTextBetweenTimeCodes(startTime, endTime)
         else:
             if TransanaConstants.USESRTC:
                 text = self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+                plainText = self.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
             else:
                 text = self.TranscriptWindow.dlg.editor.GetRTFBuffer(select_only=1)
+                plainText = ''
         # We also need to know the number of the original Transcript Record
         if self.TranscriptWindow.dlg.editor.TranscriptObj.clip_num == 0:
             # If we have an Episode Transcript, we need the Transcript Number
@@ -2441,7 +2531,7 @@ class ControlObject(object):
             # If we have a Clip Transcript, we need the original Transcript Number, not the Clip Transcript Number.
             # We can get that from the ControlObject's "currentObj", which in this case will be the Clip!
             originalTranscriptNum = self.currentObj.transcripts[self.activeTranscript].source_transcript
-        return (originalTranscriptNum, startTime, endTime, text)
+        return (originalTranscriptNum, startTime, endTime, text, plainText)
 
     def AddQuoteToOpenDocument(self, tmpQuote):
         """ When a Quote is added, we need to make sure the Document, if open, is informed about it!! """
@@ -2595,12 +2685,14 @@ class ControlObject(object):
             self.TranscriptWindow.dlg.editor.SetSelection(startChar, endChar)
             # Get the selected text in XML format
             text = self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+            plainText = self.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
             # Restore the original cursor position
             self.TranscriptWindow.dlg.editor.SetCurrentPos(currentPos)
         # If there is a selection ...
         else:
             # ... get the selected text in XML format
             text = self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+            plainText = self.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
         # Initialize originalDocumentNum
         originalDocumentNum = 0
         # We also need to know the number of the original Document Record
@@ -2614,7 +2706,7 @@ class ControlObject(object):
             # but it's the best we can do!)
             startChar += self.TranscriptWindow.GetCurrentObject().start_char
             endChar += self.TranscriptWindow.GetCurrentObject().start_char
-        return (originalDocumentNum, startChar, endChar, text)
+        return (originalDocumentNum, startChar, endChar, text, plainText)
 
     def GetMultipleTranscriptSelectionInfo(self):
         """ Returns information about the current selection(s) in the transcript editor(s) """
@@ -2649,8 +2741,10 @@ class ControlObject(object):
                 #text = trWindow.editor.GetRTFBuffer(select_only=1)
                 if TransanaConstants.USESRTC:
                     text = trWindow.editor.GetFormattedSelection('XML', selectionOnly=True)
+                    plainText = trWindow.editor.GetPlainTextSelection(selectionOnly=True)
                 else:
                     text = trWindow.editor.GetRTFBuffer(select_only=1)
+                    plainText = ''
             # We also need to know the number of the original Transcript Record.  If we have an Episode ....
             if trWindow.editor.TranscriptObj.clip_num == 0:
                 # ... we need the Transcript Number, which we can get from the Transcript Window's editor's Transcript Object
@@ -2662,7 +2756,7 @@ class ControlObject(object):
                 # We have to pull the source_transcript value from the correct transcript number!
                 originalTranscriptNum = trWindow.editor.TranscriptObj.source_transcript
             # Now we can place this transcript's results into the Results list
-            results.append((originalTranscriptNum, startTime, endTime, text))
+            results.append((originalTranscriptNum, startTime, endTime, text, plainText))
         return results
 
     def GetDatabaseTreeTabObjectNodeType(self):
@@ -3464,6 +3558,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          -1,
                                                                          self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML'),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempObj.keyword_list)
                 else:
                     # Start up the Propagate "Clip" Changes tool
@@ -3472,6 +3567,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          -1,
                                                                          self.TranscriptWindow.dlg.editor.GetRTFBuffer(),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempQuote.keyword_list)
 
             # If we are working with a Clip Transcript ...
@@ -3487,6 +3583,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          transcriptWindowNumber,
                                                                          self.TranscriptWindow.dlg.editor.GetFormattedSelection('XML'),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempClip.keyword_list)
                 else:
                     # Start up the Propagate Clip Changes tool
@@ -3495,6 +3592,7 @@ class ControlObject(object):
                                                                          self.currentObj,
                                                                          transcriptWindowNumber,
                                                                          self.TranscriptWindow.dlg.editor.GetRTFBuffer(),
+                                                                         self.TranscriptWindow.dlg.editor.GetPlainTextSelection(),
                                                                          newKeywordList=tempClip.keyword_list)
 
         # If the user chooses NOT to save the Transcript changes ...
@@ -3830,9 +3928,10 @@ class ControlObject(object):
             # Since this is by definition transcript-less, we won't have a transcript.  However, we use this
             # to signal that we are intentionally leaving the transcript blank.
             text = u'<(transcript-less clip)>'
+            plainText = ''
 
             # We now have enough information to populate a ClipDragDropData object to pass to the Clip Creation method.
-            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, text, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
+            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
 
             # let's convert that object into a portable string using cPickle. (cPickle is faster than Pickle.)
             pdata = cPickle.dumps(clipData, 1)
@@ -3880,7 +3979,7 @@ class ControlObject(object):
             if not transcriptless:
                 # Get the Transcript Selection information from the ControlObject, since we can't communicate with the
                 # TranscriptEditor directly.
-                (transcriptNum, startTime, endTime, text) = self.GetTranscriptSelectionInfo()
+                (transcriptNum, startTime, endTime, text, plainText) = self.GetTranscriptSelectionInfo()
                 # Initialize the Episode Number to 0
                 episodeNum = 0
                 # If our source is an Episode ...
@@ -3926,9 +4025,10 @@ class ControlObject(object):
                 startTime = self.GetVideoStartPoint()
                 endTime = self.GetVideoEndPoint()
                 text = u'<(transcript-less clip)>'
+                plainText = ''
 
             # We now have enough information to populate a ClipDragDropData object to pass to the Clip Creation method.
-            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
+            clipData = DragAndDropObjects.ClipDragDropData(transcriptNum, episodeNum, startTime, endTime, text, plainText, videoCheckboxData=self.GetVideoCheckboxDataForClips(startTime))
 
             # Let's assemble the keyword list
             kwList = []
@@ -3961,7 +4061,7 @@ class ControlObject(object):
         if (len(dbTreeSelections) > 0) and (dbTreeSelections[0][3] == 'KeywordNode'):
             try:
                 # Get the Document Selection information from the ControlObject.
-                (documentNum, startChar, endChar, text) = self.GetDocumentSelectionInfo()
+                (documentNum, startChar, endChar, text, plainText) = self.GetDocumentSelectionInfo()
             except:
                 if DEBUG or True:
                     print sys.exc_info()[0]
@@ -3997,7 +4097,7 @@ class ControlObject(object):
                 kwList.append((nodeParent, nodeName))
 
             # We now have enough information to populate a QuoteDragDropData object to pass to the Quote Creation method.
-            quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text)
+            quoteData = DragAndDropObjects.QuoteDragDropData(documentNum, sourceDocumentNum, startChar, endChar, text, plainText)
             # Pass the accumulated data to the CreateQuickQuote method, which is in the DragAndDropObjects module
             # because drag and drop is an alternate way to create a Quick Quote.
             DragAndDropObjects.CreateQuickQuote(quoteData, kwList[0][0], kwList[0][1], self.DataWindow.DBTab.tree, extraKeywords=kwList[1:])

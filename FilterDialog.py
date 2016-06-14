@@ -2135,9 +2135,11 @@ class FilterDialog(wx.Dialog):
                         # a Document Analytic Data Export (reportType 20),
                         # update Quote Data (FilterDataType 20)
                         if self.reportType in [12, 17, 18, 19, 20]:
-                            # Pickle the Document Data
-                            quotes = cPickle.dumps(self.GetQuotes())
-                            self.SaveFilterData(self.reportType, reportScope, configName, 20, quotes)
+                            # If there IS a Quotes List ...
+                            if self.quoteFilter:
+                                # Pickle the Document Data
+                                quotes = cPickle.dumps(self.GetQuotes())
+                                self.SaveFilterData(self.reportType, reportScope, configName, 20, quotes)
 
                         # If we have a Collection Report (reportType 12), or
                         # a Collection Clip Data Export (reportType 4) AND reportScope != 0
@@ -2202,7 +2204,10 @@ class FilterDialog(wx.Dialog):
                         # a Document Report (reportType 19), 
                         # insert Show Quote Text (Filter Data Type 116)
                         if self.reportType in [12, 19]:
-                            self.SaveFilterData(self.reportType, reportScope, configName, 116, self.showQuoteText.IsChecked())
+                            # If there IS a Quotes List ...
+                            if self.quoteFilter:
+                                # ... save the QuoteText check
+                                self.SaveFilterData(self.reportType, reportScope, configName, 116, self.showQuoteText.IsChecked())
 
                         # We need a debugging message if the save is requested for an unknown reportType
                         if self.reportType not in [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20]:

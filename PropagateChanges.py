@@ -210,6 +210,7 @@ class PropagateObjectChanges(wx.Dialog):
                         self.parent.TranscriptWindow.dlg.editor.SetSelection(tempObj.start_char, tempObj.end_char)
                         # ... and get the NEW text matching the Quote's position values.
                         text = self.parent.TranscriptWindow.dlg.editor.GetFormattedSelection('XML', selectionOnly=True)
+                        plaintext = self.parent.TranscriptWindow.dlg.editor.GetPlainTextSelection(selectionOnly=True)
 
                         # Start Exception handling.
                         try:
@@ -231,6 +232,7 @@ class PropagateObjectChanges(wx.Dialog):
 #                                tempObj.lock_record()
                                 # substitute the new text for the old text
                                 tempObj.text = text
+                                tempObj.plaintext = plaintext
                                 # Save the Quote
                                 tempObj.db_save(use_transactions=False)
                                 # Finally, indicate success in the Report
@@ -285,7 +287,7 @@ class PropagateObjectChanges(wx.Dialog):
                             # Get the text from the Episode Transcript that matches the Clip TRANSCRIPT's start and stop times.  (NOT JUST THE CLIP'S!!)
                             # The return values include the Episode Transcript's time code boundaries, in case they've changed since the
                             # clip was created, as well as the NEW text.
-                            (start, end, text) = self.parent.TranscriptWindow.dlg.editor.GetTextBetweenTimeCodes(clipTranscript.clip_start, clipTranscript.clip_stop)
+                            (start, end, text, plainText) = self.parent.TranscriptWindow.dlg.editor.GetTextBetweenTimeCodes(clipTranscript.clip_start, clipTranscript.clip_stop)
                             # Check the start and end times to make sure neither has changed.  THEY MUST MATCH EXACTLY or we won't propagate to that clip.
                             # Also check that the Clip's originating Transcript Number matches the current Episode Transcripts's number, that is,
                             # that this clip was indeed taken from THIS transcript.  The one exception to this rule is if the clip has been orphaned,
@@ -311,14 +313,11 @@ class PropagateObjectChanges(wx.Dialog):
                                             acceptAll = True
                                     # If the user presses "Update" (OK) or has pressed "Update All" ...
                                     if acceptAll or (results == wx.ID_OK):
-                                        # Lock the Clip (will raise an exception of you can't)
-#                                        clipTranscript.lock_record()
                                         # substitute the new text for the old text
                                         clipTranscript.text = text
+                                        clipTranscript.plaintext = plainText
                                         # Save the Clip
                                         clipTranscript.db_save()
-                                        # unlock the clip
-#                                        clipTranscript.unlock_record()
                                         # Finally, indicate success in the Report
                                         self.memo.AppendText(_("Transcript updated for Clip"))
                                     # If the user indicates we should skip ONE clip ...
@@ -408,7 +407,7 @@ class PropagateObjectChanges(wx.Dialog):
 
 class PropagateClipChanges(wx.Dialog):
     """ This window displays the Propagate Quote and Clip Changes report form. """
-    def __init__(self, parent, objType, originalObj, sourceTranscriptIndex, newText, newObjID=None, newKeywordList=None):
+    def __init__(self, parent, objType, originalObj, sourceTranscriptIndex, newText, newPlainText, newObjID=None, newKeywordList=None):
         # If we are dealing with a Quote ...
         if objType == 'Quote':
             title = _("Quote Change Propagation")
@@ -638,6 +637,7 @@ class PropagateClipChanges(wx.Dialog):
                                 dataObj.id = newObjID
                                 # substitute the new transcript text for the old text
                                 dataObj.text = newText
+                                dataObj.plaintext = newPlainText
                                 # Clear the old keywords from the Quote
                                 dataObj.clear_keywords()
                                 # Iterate through all the keywords in the NEW keyword list
@@ -690,7 +690,11 @@ class PropagateClipChanges(wx.Dialog):
                                     # ... if the transcript's number is the one we're looking for (matches the SourceTranscript) ...
                                     if tr.number == obj[3]:
                                         # ... remember the INDEX for the Transcript, so we know which one to update.
-                                        trIndex = {dataObj.transcripts.index(tr) : newText}
+                                        # trIndex = {dataObj.transcripts.index(tr) : newText}
+                                        trIndex = {}
+                                        trIndex[dataObj.transcripts.index(tr)] = {}
+                                        trIndex[dataObj.transcripts.index(tr)]['tr'] = newText
+                                        trIndex[dataObj.transcripts.index(tr)]['pl'] = newPlainText
                                         break
                             # If we don't have a Transcript Index, we need to create a dictionary of transcripts!
                             else:
@@ -708,7 +712,9 @@ class PropagateClipChanges(wx.Dialog):
                                         # If both transcripts come from the same source transcript, we have a match.
                                         if dataObj.transcripts[x].source_transcript == newText[y].source_transcript:
                                             # We need to record the matches for processing.
-                                            trIndex[x] = newText[y].text
+                                            trIndex[x] = {}
+                                            trIndex[x]['tr'] = newText[y].text
+                                            trIndex[x]['pl'] = newText[y].plaintext
                                             # Once we've found the match, no need to keep looking within newText.
                                             break
 
@@ -719,11 +725,11 @@ class PropagateClipChanges(wx.Dialog):
                                     # See if we're looking at single transcript situations OR the first transcript in a list ...
                                     if (sourceTranscriptIndex > -1) or (key == 0):
                                         # ... create the Accept Clip Transcript Changes form WITH KEYWORDS ...
-                                        acceptClipChanges = AcceptObjectTranscriptChanges(self, 'Episode', obj[0], key, trIndex[key], newKeywordList, helpString="Propagate Clip Changes")
+                                        acceptClipChanges = AcceptObjectTranscriptChanges(self, 'Episode', obj[0], key, trIndex[key]['tr'], newKeywordList, helpString="Propagate Clip Changes")
                                     # If it's not a single or the first, ...
                                     else:
                                         # ... LEAVE THE KEYWORDS OFF!
-                                        acceptClipChanges = AcceptObjectTranscriptChanges(self, 'Episode', obj[0], key, trIndex[key], helpString="Propagate Clip Changes")
+                                        acceptClipChanges = AcceptObjectTranscriptChanges(self, 'Episode', obj[0], key, trIndex[key]['tr'], helpString="Propagate Clip Changes")
                                     # ... and display it, capturing the user feedback.
                                     results = acceptClipChanges.GetResults()
                                     # Close (and Destroy) the form
@@ -739,7 +745,8 @@ class PropagateClipChanges(wx.Dialog):
                                     # update the Clip ID
                                     dataObj.id = newObjID
                                     # substitute the new transcript text for the old text
-                                    dataObj.transcripts[key].text = trIndex[key]
+                                    dataObj.transcripts[key].text = trIndex[key]['tr']
+                                    dataObj.transcripts[key].plaintext = trIndex[key]['pl']
                                     if (sourceTranscriptIndex > -1) or (key == 0):
                                         # Clear the old keywords from the clip
                                         dataObj.clear_keywords()
@@ -785,8 +792,8 @@ class PropagateClipChanges(wx.Dialog):
                                     # ... we should STOP processing Clips!  So stop iterating!
                                     break
                                 
-                                # unlock the clip, regardless of how it is processed
-                                dataObj.unlock_record()
+                            # unlock the clip, regardless of how it is processed
+                            dataObj.unlock_record()
                                 
                     # Initialize the Chat Message
                     msg = ""

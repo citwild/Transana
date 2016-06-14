@@ -57,10 +57,11 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
 
     def __init__(self, parent):
         """Initialize the Media Window object"""
+        # We need to track the positon and size of the Video Window for when Auto-Arrange is OFF
+        self.windowLayout = None
         # Initialize a Dialog Box
         wx.Dialog.__init__(self, parent, -1, _("Media"), pos=self.__pos(), size=self.__size(),
                            style = wx.RESIZE_BORDER | wx.CAPTION )
-        # We need to adjust the screen position on the Mac.  I don't know why.
         # Bind the Size event
         self.Bind(wx.EVT_SIZE, self.OnSize)
         # Bind the Right Click event
@@ -860,6 +861,18 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         # Return the result
         return IsLoading
 
+    def CapturePositionAndSize(self):
+        """ Capture the Position and Size of the Media Window to allow restoring the window after
+            the media player is destroyed and recreated when Auto Arrange is disabled """
+        # Remember the position and size of the media window
+        self.windowLayout = (self.GetPosition(), self.GetSize())
+
+    def RestorePositionAndSize(self):
+        """ Restore the Position and Size of the Media Window when Auto Arrange is disabled """
+        # This sets the Video Window to the last saved position and size
+        self.SetDimensions(self.windowLayout[0][0], self.windowLayout[0][1],
+                           self.windowLayout[1][0], self.windowLayout[1][1])
+
     def OnSize(self, event):
         """ Process Size Change event and notify the ControlObject """
 
@@ -882,8 +895,9 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         for mp in self.mediaPlayers:
             # ... adjust to the current Window size
             mp.OnSize(None)
-        # Call update to try to resolve the Mac display problem
+        # Call update and to try to resolve display problem
         self.Update()
+        self.Refresh()
 
         if DEBUG:
             print "VideoWindow.OnSize(2):", self.GetRect(), self.GetDimensions(), TransanaGlobal.resizingAll
@@ -966,6 +980,9 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
             self.SetDimensions(screenSize[0] + screenSize[2] - sizeX - xAdjust, pos[1], sizeX + 16, sizeY + headerHeight)
             # Call update to try to resolve the Mac display problem
             self.Update()
+        # If Auto-Arrange is OFF, we need to restore the size of the video window.
+        else:
+            self.RestorePositionAndSize()
 
     def OnRightUp(self, event):
         """ Right Mouse Button Up event handler """

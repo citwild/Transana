@@ -526,7 +526,6 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
 
         # Now create the Frame for the Menu Bar
         wx.Frame.__init__(self, parent, -1, title, style=winstyle,
-#        wx.MDIParentFrame.__init__(self, parent, -1, title, style=winstyle,
                     size=(self.width, self.height), pos=(self.left, self.top))
 
         # Set "Window Variant" to small only for Mac to use small icons
@@ -996,10 +995,18 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         """ Implements File New menu command """
         # If a Control Object has been defined ...
         if self.ControlObject != None:
+            # If Auto Arrange is OFF ...
+            if not TransanaGlobal.configData.autoArrange:
+                # ... note the Media Window position and size
+                self.ControlObject.VideoWindow.CapturePositionAndSize()
             # set the active Document to 0 so multiple Document will be cleared
             self.ControlObject.activeTranscript = 0
             # ... it should know how to clear all the Windows!
             self.ControlObject.ClearAllWindows(clearAllTabs=True)
+            # If Auto Arrange is OFF ...
+            if not TransanaGlobal.configData.autoArrange:
+                # ... restore the Media Window position and size
+                self.ControlObject.VideoWindow.RestorePositionAndSize()
             # Close all Snapshot Windows
             self.ControlObject.CloseAllImages()
             # ... and close all the reports, which ClearAllWindows doesn't do
@@ -1399,6 +1406,22 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                     TransanaGlobal.chatWindow.SendMessage("I ")
         # Close the Import Database dialog
         temp.Close()
+
+        # See if there are any records that need Plain Text extraction
+        plainTextCount = DBInterface.CountItemsWithoutPlainText()
+        # If there are ...
+        if plainTextCount > 0:
+            # ... import the Plain Text extractor
+            import PlainTextUpdate
+            # Create the Plain Text Extractor dialog
+            tmpDlg = PlainTextUpdate.PlainTextUpdate(None, plainTextCount)
+            # Show the Dialog
+            tmpDlg.Show()
+            # Start the Conversion
+            tmpDlg.OnConvert()
+            # Close the Dialog and clean up
+            tmpDlg.Close()
+            tmpDlg.Destroy()
 
     def OnExportDatabase(self, event):
         """ Export Database """
@@ -1857,6 +1880,8 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             self.videoWindowLayout = (self.ControlObject.VideoWindow.GetPosition(), self.ControlObject.VideoWindow.GetSize())
             self.transcriptWindowLayout = (self.ControlObject.TranscriptWindow.dlg.GetPosition(), self.ControlObject.TranscriptWindow.dlg.GetSize())
             self.dataWindowLayout = (self.ControlObject.DataWindow.GetPosition(), self.ControlObject.DataWindow.GetSize())
+            # The Video Window also tracks position and size changes when Auto-Arrange is OFF, so initialize the tracker for that.
+            self.ControlObject.VideoWindow.CapturePositionAndSize()
 
     def OnOptionsLongTranscriptEdit(self, event):
         """ Handler for Options > Long Document Editing """

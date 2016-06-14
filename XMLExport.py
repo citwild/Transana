@@ -229,13 +229,14 @@ class XMLExport(Dialogs.GenForm):
             # Version 1.7 -- Database Structure changed for Still Image Snapshots for Transana 2.60 release
             # Version 1.8 -- Character Encoding Rules changed completely!!
             # Version 2.0 -- Transana 3.0, Documents and Quotes added
+            # Version 2.1 -- Synonyms Table added
             if ENCODE_PROPERLY:
-                f.write('    2.0\n')
+                f.write('    2.1\n')
             else:
                 f.write('    1.7\n')
             f.write('  </TransanaXMLVersion>\n')
 
-            progress.Update(5, _('Writing Library Records'))
+            progress.Update(self.CalcPercent(1), _('Writing Library Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT SeriesNum, SeriesID, SeriesComment, SeriesOwner, DefaultKeywordGroup FROM Series2'
@@ -248,7 +249,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </SeriesFile>\n')
                 dbCursor.close()
 
-            progress.Update(11, _('Writing Document Records  (This will seem slow because of the size of the Document Records.)'))
+            progress.Update(self.CalcPercent(2), _('Writing Document Records  (This will seem slow because of the size of the Document Records.)'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT DocumentNum, DocumentID, LibraryNum, Author, Comment, ImportedFile, ImportDate, DocumentLength, XMLText FROM Documents2'
@@ -261,7 +262,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </DocumentFile>\n')
                 dbCursor.close()
 
-            progress.Update(17, _('Writing Episode Records'))
+            progress.Update(self.CalcPercent(3), _('Writing Episode Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT EpisodeNum, EpisodeID, SeriesNum, TapingDate, MediaFile, EpLength, EpComment FROM Episodes2'
@@ -274,7 +275,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </EpisodeFile>\n')
                 dbCursor.close()
 
-            progress.Update(23, _('Writing Core Data Records'))
+            progress.Update(self.CalcPercent(4), _('Writing Core Data Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = """SELECT CoreDataNum, Identifier, Title, Creator, Subject, Description, Publisher,
@@ -289,7 +290,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </CoreDataFile>\n')
                 dbCursor.close()
 
-            progress.Update(28, _('Writing Collection Records'))
+            progress.Update(self.CalcPercent(5), _('Writing Collection Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT CollectNum, CollectID, ParentCollectNum, CollectComment, CollectOwner, DefaultKeywordGroup FROM Collections2'
@@ -302,7 +303,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </CollectionFile>\n')
                 dbCursor.close()
 
-            progress.Update(34, _('Writing Quote Records'))
+            progress.Update(self.CalcPercent(6), _('Writing Quote Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT QuoteNum, QuoteID, CollectNum, SourceDocumentNum, SortOrder, Comment, XMLText FROM Quotes2'
@@ -315,7 +316,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </QuoteFile>\n')
                 dbCursor.close()
 
-            progress.Update(39, _('Writing Quote Position Records'))
+            progress.Update(self.CalcPercent(7), _('Writing Quote Position Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT QuoteNum, DocumentNum, StartChar, EndChar FROM QuotePositions2'
@@ -328,7 +329,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </QuotePositionFile>\n')
                 dbCursor.close()
 
-            progress.Update(45, _('Writing Clip Records'))
+            progress.Update(self.CalcPercent(8), _('Writing Clip Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT ClipNum, ClipID, CollectNum, EpisodeNum, MediaFile, ClipStart, ClipStop, ClipOffset, Audio, '
@@ -342,7 +343,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </ClipFile>\n')
                 dbCursor.close()
 
-            progress.Update(50, _('Writing Additional Media File Records'))
+            progress.Update(self.CalcPercent(9), _('Writing Additional Media File Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT AddVidNum, EpisodeNum, ClipNum, MediaFile, VidLength, Offset, Audio FROM AdditionalVids2'
@@ -355,7 +356,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </AdditionalVidsFile>\n')
                 dbCursor.close()
 
-            progress.Update(56, _('Writing Transcript Records  (This will seem slow because of the size of the Transcript Records.)'))
+            progress.Update(self.CalcPercent(10), _('Writing Transcript Records  (This will seem slow because of the size of the Transcript Records.)'))
             if db != None:
                 dbCursor = db.cursor()
                 dbCursor2 = db.cursor()
@@ -380,7 +381,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </TranscriptFile>\n')
                 dbCursor.close()
 
-            progress.Update(62, _('Writing Snapshot Records'))
+            progress.Update(self.CalcPercent(11), _('Writing Snapshot Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT SnapshotNum, SnapshotID, CollectNum, ImageFile, ImageScale, ImageCoordsX, ImageCoordsY, '
@@ -395,7 +396,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </SnapshotFile>\n')
                 dbCursor.close()
 
-            progress.Update(68, _('Writing Keyword Records'))
+            progress.Update(self.CalcPercent(12), _('Writing Keyword Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT KeywordGroup, Keyword, Definition, LineColorName, LineColorDef, DrawMode, LineWidth, LineStyle FROM Keywords2'
@@ -408,7 +409,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </KeywordFile>\n')
                 dbCursor.close()
 
-            progress.Update(73, _('Writing Clip Keyword Records'))
+            progress.Update(self.CalcPercent(13), _('Writing Clip Keyword Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT EpisodeNum, DocumentNum, ClipNum, QuoteNum, SnapshotNum, KeywordGroup, Keyword, Example FROM ClipKeywords2'
@@ -421,7 +422,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </ClipKeywordFile>\n')
                 dbCursor.close()
 
-            progress.Update(79, _('Writing Snapshot Keywords Records'))
+            progress.Update(self.CalcPercent(14), _('Writing Snapshot Keywords Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT SnapshotNum, KeywordGroup, Keyword, x1, y1, x2, y2, visible FROM SnapshotKeywords2'
@@ -434,7 +435,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </SnapshotKeywordFile>\n')
                 dbCursor.close()
 
-            progress.Update(84, _('Writing Snapshot Coding Style Records'))
+            progress.Update(self.CalcPercent(15), _('Writing Snapshot Coding Style Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT SnapshotNum, KeywordGroup, Keyword, DrawMode, LineColorName, LineColorDef, LineWidth, LineStyle '
@@ -448,7 +449,7 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </SnapshotKeywordStyleFile>\n')
                 dbCursor.close()
 
-            progress.Update(90, _('Writing Note Records'))
+            progress.Update(self.CalcPercent(16), _('Writing Note Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT NoteNum, NoteID, SeriesNum, EpisodeNum, CollectNum, ClipNum, SnapshotNum, DocumentNum, '
@@ -462,7 +463,20 @@ class XMLExport(Dialogs.GenForm):
                     f.write('  </NoteFile>\n')
                 dbCursor.close()
 
-            progress.Update(95, _('Writing Filter Records'))
+            progress.Update(self.CalcPercent(17), _('Writing Synonym Records'))
+            if db != None:
+                dbCursor = db.cursor()
+                SQLText = 'SELECT SynonymGroup, Synonym FROM Synonyms2'
+                dbCursor.execute(SQLText)
+                data = dbCursor.fetchall()
+                if len(data) > 0:
+                    f.write('  <SynonymFile>\n')
+                    for filterRec in data:
+                        self.WriteSynonymRec(f, filterRec)
+                    f.write('  </SynonymFile>\n')
+                dbCursor.close()
+
+            progress.Update(self.CalcPercent(18), _('Writing Filter Records'))
             if db != None:
                 dbCursor = db.cursor()
                 SQLText = 'SELECT ReportType, ReportScope, ConfigName, FilterDataType, FilterData FROM Filters2'
@@ -504,6 +518,11 @@ class XMLExport(Dialogs.GenForm):
         f.close()
         progress.Update(100)
         progress.Destroy()
+
+    def CalcPercent(self, num):
+        """ Calculate the Percent value to be displayed in the Progress Bar """
+        numCategories = 19.0
+        return int(round(100.0 / numCategories * num))
 
     def WriteXMLDTD(self, f):
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -650,6 +669,13 @@ class XMLExport(Dialogs.GenForm):
         f.write('  <!ELEMENT NoteText (#PCDATA)>\n')
         f.write('\n')
         f.write('  <!ELEMENT Note (#PCDATA|Num|ID|SeriesNum|EpisodeNum|CollectNum|ClipNum|TranscriptNum|NoteTaker|NoteText)*>\n')
+        f.write('\n')
+        f.write('  <!ELEMENT SynonymFile (SynonymRec)*>\n')
+        f.write('\n')
+        f.write('  <!ELEMENT SynonymGroup (#PCDATA)>\n')
+        f.write('  <!ELEMENT Synonym (#PCDATA)>\n')
+        f.write('\n')
+        f.write('  <!ELEMENT SynonymRec (#PCDATA|SynonymGroup|Synonym)*>\n')
         f.write('\n')
         f.write('  <!ELEMENT FilterFile (Filter)*>\n')
         f.write('\n')
@@ -1707,6 +1733,18 @@ class XMLExport(Dialogs.GenForm):
                 f.write('%s\n' % _('(No Note Text found.)').encode(EXPORT_ENCODING))
             f.write('      </NoteText>\n')
         f.write('    </Note>\n')
+
+    def WriteSynonymRec(self, f, synonymRec):
+        (SynonymGroup, Synonym) = synonymRec
+
+        f.write('    <SynonymRec>\n')
+        f.write('      <SynonymGroup>\n')
+        f.write('        %s\n' % SynonymGroup.encode(EXPORT_ENCODING))
+        f.write('      </SynonymGroup>\n')
+        f.write('      <Synonym>\n')
+        f.write('        %s\n' % Synonym.encode(EXPORT_ENCODING))
+        f.write('      </Synonym>\n')
+        f.write('    </SynonymRec>\n')
 
     def WriteFilterRec(self, f, filterRec):
         (ReportType, ReportScope, ConfigName, FilterDataType, FilterData) = filterRec

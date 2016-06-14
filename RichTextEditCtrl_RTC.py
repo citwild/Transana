@@ -168,6 +168,9 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         self.txtOriginalAttr.SetFontStyle(wx.FONTSTYLE_NORMAL)
         self.txtOriginalAttr.SetFontUnderlined(False)
 
+        # Set the initial Style before Time Codes
+        self.StyleBeforeTimeCode = self.txtOriginalAttr
+
         # Define the style for Time Codes
         self.txtTimeCodeAttr = richtext.RichTextAttr()
         self.txtTimeCodeAttr.SetTextColour(wx.Colour(255,0,0))
@@ -250,34 +253,6 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         """ Report Modified Status, implemented for wxSTC compatibility """
         return self.IsModified()
 
-##    def PutEditedSelectionInClipboard(self):
-##        """ Put the TEXT for the current selection into the Clipboard """
-##        tempTxt = self.GetStringSelection()
-##        # Initialize an empty string for the modified data
-##        newSt = ''
-##        # Created a TextDataObject to hold the text data from the clipboard
-##        tempDataObject = wx.TextDataObject()
-##        # Track whether we're skipping characters or not.  Start out NOT skipping
-##        skipChars = False
-##        # Now let's iterate through the characters in the text
-##        for ch in tempTxt:
-##            # Detect the time code character
-##            if ch == TransanaConstants.TIMECODE_CHAR:
-##                # If Time Code, start skipping characters
-##                skipChars = True
-##            # if we're skipping characters and we hit the ">" end of time code data symbol ...
-##            elif (ch == '>') and skipChars:
-##                # ... we can stop skipping characters.
-##                skipChars = False
-##            # If we're not skipping characters ...
-##            elif not skipChars:
-##                # ... add the character to the new string.
-##                newSt += ch
-##        # Save the new string in the Text Data Object
-##        tempDataObject.SetText(newSt)
-##        # Place the Text Data Object in the Clipboard
-##        wx.TheClipboard.SetData(tempDataObject)
-##
     def GetFormattedSelection(self, format, selectionOnly=False, stripTimeCodes=False):
         """ Return a string with the formatted contents of the RichText control, or just the
             current selection if specified.  The format parameter can either be 'XML' or 'RTF'. """
@@ -406,6 +381,24 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
 
         # Return the buffer's XML string
         return tmpBuffer
+
+    def GetPlainTextSelection(self, selectionOnly = False):
+        """ Get the plain text version of the contents of the control, or of just the current selection.
+            This selection needs to be stripped of time codes. """
+        if selectionOnly:
+            plaintext = self.GetStringSelection()
+        else:
+            plaintext = self.GetValue()
+
+        # Strip Time Codes
+        regex = "%s<[\d]*>" % TransanaConstants.TIMECODE_CHAR
+        reg = re.compile(regex)
+        pos = 0
+        for x in reg.findall(plaintext):
+            pos = plaintext.find(x, pos, len(plaintext))
+            plaintext = plaintext[ : pos] + plaintext[pos + len(x) : ]
+
+        return plaintext
 
     def OnUndo(self, event):
         self.Undo()
@@ -858,7 +851,8 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         else:
             formattingFont = False
         # If we are formatting ANY paragraph characteristic ...
-        if parAlign or parLeftIndent or parRightIndent or parTabs or parLineSpacing or parSpacingBefore or parSpacingAfter:
+        if parAlign or (parLeftIndent is not None) or (parRightIndent is not None) or parTabs or \
+           (parLineSpacing is not None) or (parSpacingBefore is not None) or (parSpacingAfter is not None):
             # ... note that we are doing paragraph formatting
             formattingParagraph = True
         # If we're NOT doing paragraph formatting ...
@@ -1065,11 +1059,7 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
             self.SetTxtStyle(fontBold = setting)
 
         try:
-
-            print "RichTextEditCtrl_RTC.SetBold():", self.parent.toolbar.GetToolState(self.parent.parent.parent.parent.CMD_BOLD_ID), setting
-        
             self.parent.toolbar.ToggleTool(self.parent.parent.parent.parent.CMD_BOLD_ID, setting)
-
         except:
             print sys.exc_info()[0]
             print sys.exc_info()[1]
@@ -1379,11 +1369,11 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
             # ... don't edit this!
             return
         # Get the current Style
-        tmpStyle = self.GetDefaultStyle()
+        self.StyleBeforeTimeCode = self.GetDefaultStyle()
         # Check to see if tmpStyle is GOOD.
-        if not tmpStyle.GetFont().IsOk():
+        if not self.StyleBeforeTimeCode.GetFont().IsOk():
             # If not, use the current font
-            tmpStyle = self.txtAttr
+            self.StyleBeforeTimeCode = self.txtAttr
         # ... batch the undo
         self.BeginBatchUndo('InsertTimeCode')
         # Set the Style to TimeCode Style
@@ -1395,7 +1385,7 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         # Insert the hidden time code data
         self.WriteText('<%d> ' % timecode)
         # Return the Style to whatever it was before
-        self.SetDefaultStyle(tmpStyle)
+        self.SetDefaultStyle(self.StyleBeforeTimeCode)
         # End the Undo batch
         self.EndBatchUndo()
         # Let's ALWAYS leave the program focus in the Transcript after adding a time code.
@@ -2041,9 +2031,28 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
             # ... update the style to the style at the new position
             self.txtAttr = self.GetStyleAt(ip)
 
-##        print "RichTextEditCtrl.OnKeyUp()", ip
+##        print "RichTextEditCtrl.OnKeyUp()", ip, self.GetLength()
 ##        self.PrintTextAttr("RichTextEditCtrl.OnKeyUp()", self.txtAttr)
 ##        print
+
+        # NOTE:  This code shouldn't have to exist.  It's too late here!!
+        #
+        #If we are typing but detect that we are not DISPLAYING characters correctly ...
+        if self.CompareFormatting(self.txtAttr, self.txtHiddenAttr, fullCompare=False):
+
+##            print "***  HIDDEN STYLE ***", self.GetCharAt(ip - 3), self.GetCharAt(ip - 2), self.GetCharAt(ip - 1), ip, self.GetLastPosition(), '         ',
+
+            # ... if there is a character before the current insertion point ...
+            if (ip > 2) and (self.GetCharAt(ip - 2) != 62):
+                # ... apply the Style from Before Time Codes to that character so it will NOT be hidden
+                self.SetStyle((ip - 1, ip), self.StyleBeforeTimeCode)
+                # Now set the current default style to the Style Before Time Codes.
+                self.SetDefaultStyle(self.StyleBeforeTimeCode)
+
+##                print "RESET"
+##            else:
+##                print
+
 
     def OnLeftDown(self, event):
         """ Handles the Left Mouse Down event """
