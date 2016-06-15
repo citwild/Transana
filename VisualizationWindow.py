@@ -1072,6 +1072,10 @@ class VisualizationWindow(wx.Dialog):
             # Remember the new visualization zoom and filter information
             self.SaveVisualizationInfo((type(self.VisualizationObject), self.VisualizationObject.number))
 
+            # Clear the Start and End points of the Visualization Selection
+            self.startPoint = 0
+            self.endPoint = 0
+
     def OnZoomOut(self, event):
         """ Zoom out on the Waveform Diagram """
         if len(self.zoomInfo) > 1:
@@ -1093,6 +1097,11 @@ class VisualizationWindow(wx.Dialog):
             self.endPoint = self.ControlObject.VideoStartPoint + self.ControlObject.GetMediaLength()
             # Remember the new visualization zoom and filter information
             self.SaveVisualizationInfo((type(self.VisualizationObject), self.VisualizationObject.number))
+
+            # Clear the Start and End points of the Visualization Selection
+            self.startPoint = 0
+            self.endPoint = 0
+
 
     def OnZoom100(self, event):
         """ Zoom all the way out on the Waveform Diagram """
@@ -1119,9 +1128,13 @@ class VisualizationWindow(wx.Dialog):
 
     def OnCreateClip(self, event):
         """ Create a Transcript-less Clip """
-        # If there's no selection (endPoint could be 0 or -1!) ...
-        if self.endPoint <= 0:
-            # then we can't make a clip
+        # If there's no selection (endPoint could be 0 or -1!) or the selection is less that 1 second in length ...
+        if (self.endPoint <= 0) or (self.endPoint - self.startPoint < 1000):
+            # then we can't make a clip.  Show an error message.
+            prompt = unicode(_("Transcript-less Clips must be at least one second long."), 'utf8')
+            errordlg = Dialogs.ErrorDialog(self, prompt)
+            errordlg.ShowModal()
+            errordlg.Destroy()
             return
 
         # Create a Transcript-less Clip.  (This routine can handle both Standard and Quick Clips, depending on
