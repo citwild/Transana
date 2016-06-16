@@ -2516,6 +2516,8 @@ def ProcessPasteDrop(treeCtrl, sourceData, destNode, action, confirmations=True)
                   errordlg.ShowModal()
                   errordlg.Destroy()
               
+            # Sort items
+            treeCtrl.SortChildren(destNode)
         # See if the Keyword visualization needs to be updated.
         treeCtrl.parent.ControlObject.UpdateKeywordVisualization()
         # Even if this computer doesn't need to update the keyword visualization others, might need to.
@@ -2814,6 +2816,8 @@ def ProcessPasteDrop(treeCtrl, sourceData, destNode, action, confirmations=True)
                 # We need to update the Clip Keyword Visualization when adding a keyword to a clip
                 if TransanaGlobal.chatWindow != None:
                     TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % ('Clip', tempClip.number, tempClip.episode_num))
+            # Sort items
+            treeCtrl.SortChildren(destNode)
 
     # Drop a Snapshot on a Collection (Copy or Move a Snapshot)
     elif (sourceData.nodetype == 'SnapshotNode' and destNodeData.nodetype == 'CollectionNode'):
@@ -3069,6 +3073,8 @@ def ProcessPasteDrop(treeCtrl, sourceData, destNode, action, confirmations=True)
                         if TransanaGlobal.chatWindow != None:
                             TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % ('None', 0, 0))
 
+                # Sort the Database Tree's Collection Node
+                treeCtrl.SortChildren(destNode)
             except TransanaExceptions.SaveError:
                 # We have locked this record.  We better unlock it.
                 tempKeyword.unlock_record()
@@ -4260,6 +4266,9 @@ def ProcessPasteDrop(treeCtrl, sourceData, destNode, action, confirmations=True)
             # Select the Destination Collection as the tree's Selected Item
             treeCtrl.UnselectAll()
             treeCtrl.SelectItem(destNode)
+            
+            # Sort the node
+            treeCtrl.SortChildren(destNode)
 
     # Drop a SearchQuote on a SearchCollection (Copy or Move a SearchQuote)
     elif (sourceData.nodetype == 'SearchQuoteNode' and destNodeData.nodetype == 'SearchCollectionNode'):

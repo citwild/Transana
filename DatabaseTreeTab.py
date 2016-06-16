@@ -136,6 +136,11 @@ class DatabaseTreeTab(wx.Panel):
                         if TransanaGlobal.chatWindow != None:
                             TransanaGlobal.chatWindow.SendMessage("AS %s" % nodeData[-1])
 
+                    # Note the original Tree Selection
+                    sel = self.tree.GetSelections()[0]
+                    # Sort the Transcript Node
+                    self.tree.SortChildren(sel)
+
                     # If we do all this, we don't need to continue any more.
                     contin = False
                 # If the user pressed Cancel ...
@@ -9152,6 +9157,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                         print 'Message to send = "AKG %s"' % nodeData[-1]
                     if TransanaGlobal.chatWindow != None:
                         TransanaGlobal.chatWindow.SendMessage("AKG %s" % nodeData[-1])
+
+                # Note the original Tree Selection
+                sel = self.GetSelections()[0]
+                # Sort the Keyword Groups Node
+                self.SortChildren(sel)
 
                 self.updateKWGroupsData()
 
