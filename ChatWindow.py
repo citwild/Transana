@@ -822,6 +822,10 @@ class ChatWindow(wx.Frame):
                         if messageHeader == 'AS':
                             tempLibrary = Library.Library(message)
                             self.ControlObject.DataWindow.DBTab.tree.add_Node('LibraryNode', (_('Libraries'), message), tempLibrary.number, None, expandNode=False, avoidRecursiveYields = True)
+                            # Sort the list of libraries
+                            nodelist = (_('Libraries'),)
+                            node = self.ControlObject.DataWindow.DBTab.tree.select_Node(nodelist, 'LibraryRootNode', False)
+                            self.ControlObject.DataWindow.DBTab.tree.SortChildren(node)
                             
                         # Add Episode Message
                         elif messageHeader == 'AE':
@@ -838,6 +842,9 @@ class ChatWindow(wx.Frame):
                             # To save time here, we can skip loading the actual transcript text, which can take time once we start dealing with images!
                             tempTranscript = Transcript.Transcript(nodelist[-1], ep=tempEpisode.number, skipText=True)
                             self.ControlObject.DataWindow.DBTab.tree.add_Node('TranscriptNode', (_('Libraries'),) + nodelist, tempTranscript.number, tempEpisode.number, expandNode=False, avoidRecursiveYields = True)
+                            # Sort the list of transcripts
+                            node = self.ControlObject.DataWindow.DBTab.tree.select_Node((_('Libraries'),) + nodelist[:-1], 'EpisodeNode', False)
+                            self.ControlObject.DataWindow.DBTab.tree.SortChildren(node)
 
                         # Add Document Message
                         elif messageHeader == 'AD':
@@ -856,6 +863,11 @@ class ChatWindow(wx.Frame):
                                 parentNum = tempCollection.number
                             # avoidRecursiveYields added to try to prevent a problem on the Mac when converting Searches
                             self.ControlObject.DataWindow.DBTab.tree.add_Node('CollectionNode', (_('Collections'),) + nodelist, tempCollection.number, tempCollection.parent, expandNode=False, avoidRecursiveYields=True)
+
+                            # Sort the list of libraries
+                            nodelist = (_('Collections'),) + nodelist[:-1]
+                            node = self.ControlObject.DataWindow.DBTab.tree.select_Node(nodelist, 'CollectionsRootNode', False)
+                            self.ControlObject.DataWindow.DBTab.tree.SortChildren(node)
 
                         # Add Quote Message
                         elif messageHeader == 'AQ':
@@ -1103,6 +1115,9 @@ class ChatWindow(wx.Frame):
                             if self.ControlObject.NotesBrowserWindow != None:
                                 # ... add the Note to the Notes Browser
                                 self.ControlObject.NotesBrowserWindow.UpdateTreeCtrl('A', tempNote)
+                            # Sort the list of transcripts -- (We have to strip the "NOTE" out of the NodeType!!)
+                            node = self.ControlObject.DataWindow.DBTab.tree.select_Node(nodelist[:-1], nodeType[:-8] + nodeType[-4:], False)
+                            self.ControlObject.DataWindow.DBTab.tree.SortChildren(node)
 
                         # Add Keyword Group Message
                         elif messageHeader == 'AKG':
