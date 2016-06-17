@@ -3235,8 +3235,13 @@ class ControlObject(object):
                         if DEBUG:
                             print "Visualization:", wleft, wtop, wwidth, wheight
 
-                        if adjustX < wleft - 1:
-                            wleft += adjustX
+                        # Things don't line up right on Windows 10 without this adjustment
+                        if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):
+                            if adjustX < wleft - 9:
+                                wleft += adjustX
+                        else:
+                            if adjustX < wleft - 1:
+                                wleft += adjustX
 
                         visualDims = [wleft + winAdjusts[0], wtop + winAdjusts[1], X - wleft + winAdjusts[2], YUpper - wtop - 1 + winAdjusts[3]]
                         if sender == 'Transcript':
