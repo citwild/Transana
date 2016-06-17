@@ -962,6 +962,9 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
                 screenSize = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
                 # We need to adjust by 16 pixels (Used to be 23!)
                 xAdjust = 16
+                # Things don't line up right on Windows 10 without this adjustment
+                if (platform.system() == 'Windows') and (platform.win32_ver()[0] in ['10']):
+                    xAdjust += 8
             # now check width against the screen size.  Allow no more than 2/3 of the screen to be take up by video.
             if sizeX > int(screenSize[2] * 0.66):
                 # Adjust Height proportionally (first, so we can calculate the proportion!)
