@@ -474,7 +474,7 @@ class ChatWindow(wx.Frame):
                 # Destroy the Text Entry Dialog.
                 dlg.Destroy()
 
-            self.socketObj.send('C %s %s %s %s %s ||| ' % (userName, host, db, ssl, VERSION))
+            bufSize = self.socketObj.send('C %s %s %s %s %s ||| ' % (userName, host, db, ssl, VERSION))
 
             # Add this user to the SSL Status Dictionary
             if ssl:
@@ -505,12 +505,12 @@ class ChatWindow(wx.Frame):
         #
         # I know I shouldn't HAVE to do this, but at least for now, I do.
         #
-##        if 'wxMac' in wx.PlatformInfo:
-##            if DEBUG:
-##                self.processMessageQueueTime = datetime.datetime.now()
-##            self.processMessageQueueTimer = wx.Timer()
-##            self.processMessageQueueTimer.Bind(wx.EVT_TIMER, self.OnProcessMessageQueue)
-##            self.processMessageQueueTimer.Start(500)
+        if 'wxMac' in wx.PlatformInfo:
+            if DEBUG:
+                self.processMessageQueueTime = datetime.datetime.now()
+            self.processMessageQueueTimer = wx.Timer()
+            self.processMessageQueueTimer.Bind(wx.EVT_TIMER, self.OnProcessMessageQueue)
+            self.processMessageQueueTimer.Start(500)
 
         # Create a Timer to check for Message Server validation.
         # Initialize to unvalidated state
@@ -522,12 +522,12 @@ class ChatWindow(wx.Frame):
         # 10 seconds should be sufficient for the connection to the message server to be established and confirmed
         self.validationTimer.Start(10000)
 
-##    def OnProcessMessageQueue(self, event):
-##        
-##        if DEBUG:
-##            print "ChatWIndow.ProcessMessageQueue():", datetime.datetime.now() - self.processMessageQueueTime
-##        
-##        wx.YieldIfNeeded()
+    def OnProcessMessageQueue(self, event):
+        
+        if DEBUG:
+            print "ChatWIndow.ProcessMessageQueue():", datetime.datetime.now() - self.processMessageQueueTime
+        
+        wx.YieldIfNeeded()
 
     def SendMessage(self, message):
         """ Send a message through the chatWindow's socket """
@@ -537,7 +537,7 @@ class ChatWindow(wx.Frame):
             msg = '%s ||| ' % message
             # If we're using Unicode, we need to encode the messages passed to the socket.
             if 'unicode' in wx.PlatformInfo:
-                self.socketObj.send(msg.encode('utf8'))
+                bufSize = self.socketObj.send(msg.encode('utf8'))
             else:
                 self.socketObj.send(msg)
             # This *should* allow messages to be sent totally independently.
