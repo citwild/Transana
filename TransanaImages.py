@@ -583,6 +583,14 @@ ReadOnly16 = PyEmbeddedImage(
     "QmCC")
 
 #----------------------------------------------------------------------
+Refresh = PyEmbeddedImage(
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAALNJ"
+    "REFUOI2Nk1ESgyAMRHfDvcp1Oh6I6XXovRQ/bJwQA2W/HOMuLyGSkjDS6703ff5+EqNvGAVY"
+    "o1UtAKUPklUzAOQNaEdf7whmyLZmScIWRooOuFvwaJEslYaJmvM2738kUXOEadWOvVnKWq53"
+    "zBtCw2yIVgSuAKWo5VeQ5+L4kFoAoSTaFiiJkdlT6VXe17iytqp27O2xB36YsxnYWrdIPuRf"
+    "G4D7FyiJOsQV84NgBdnrBPg/biutHtvHAAAAAElFTkSuQmCC")
+
+#----------------------------------------------------------------------
 Save16 = PyEmbeddedImage(
     "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAASJJ"
     "REFUOI2tkjFKxEAUhr+VFG8KYQZ2IVMsmDLgKQQbj2ArnsDKQ3gDb+ARhDTba+eW2S4pxAxs"
