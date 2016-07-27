@@ -36,6 +36,8 @@ import Dialogs
 import TransanaConstants
 # import Transana's Global Variables
 import TransanaGlobal
+# import Transana Images
+import TransanaImages
 
 class UsernameandPassword(wx.Dialog):
     """ Username, Password, Database Server, and Database Name Dialog """
@@ -455,6 +457,11 @@ class UsernameandPassword(wx.Dialog):
             # Define the "Delete Database" Button
             btnDeleteDatabase = wx.Button(self, -1, _("Delete Database"))
             self.Bind(wx.EVT_BUTTON, self.OnDeleteDatabase, btnDeleteDatabase)
+            # Define the "Refresh Database List" button
+            bmp = TransanaGlobal.GetImage(TransanaImages.Refresh)
+            btnRefresh = wx.BitmapButton(self, -1, bmp)
+            btnRefresh.SetToolTip(wx.ToolTip(_('Refresh Database List')))
+            self.Bind(wx.EVT_BUTTON, self.OnRefresh, btnRefresh)
 
         # Define the "OK" button
         btnOK = wx.Button(self, wx.ID_OK, _("OK"))
@@ -471,6 +478,7 @@ class UsernameandPassword(wx.Dialog):
         if not TransanaConstants.demoVersion:
             # Add the Delete Database button to the lower left corner
             buttonSizer.Add(btnDeleteDatabase, 3, wx.ALIGN_LEFT | wx.ALIGN_BOTTOM | wx.LEFT | wx.BOTTOM, 10)
+            buttonSizer.Add(btnRefresh, 1, wx.ALIGN_LEFT | wx.ALIGN_BOTTOM | wx.LEFT | wx.BOTTOM, 10)
         # Lets have some space between this button and  the others.
         buttonSizer.Add((30, 1), 1, wx.EXPAND)
         # Add the OK button to the lower right corner
@@ -912,6 +920,71 @@ class UsernameandPassword(wx.Dialog):
                 dlg = Dialogs.ErrorDialog(None, errormsg)
                 dlg.ShowModal()
                 dlg.Destroy()
+
+    def OnRefresh(self, event):
+        """ Refresh the list of databases that can be loaded upon request """
+        # If we're in a single-user version of Transana ...
+        if TransanaConstants.singleUserVersion:
+            # Use localhost as the single-user Server Name for Configuration purposes
+            serverName = 'localhost'
+            # ... get a list of files from the current directory
+            fileList = os.listdir(TransanaGlobal.configData.databaseDir)
+            # Sort the file list
+            fileList.sort()
+            # Initialize a list of database names
+            choices = []
+            # Iterate through the list of file names
+            for db in fileList:
+                # If the list ends with the '.db' file extension ...
+                if db[-3:].lower() == '.db':
+                    # ... add it to the list of databases to choose from
+                    choices.append(db[:-3].encode('utf8'))
+
+        # If we're in the Multiuser version of Transana ...
+        else:
+            # Get the Server name
+            serverName = self.chDBServer.GetValue()
+            # ... pass the database connection information and get the list of databases back
+            choices = DBInterface.GetDBNamesMU(self.txtUsername.GetValue(),
+                                               self.txtPassword.GetValue(),
+                                               serverName,
+                                               self.txtPort.GetValue(),
+                                               self.sslCheck.IsChecked(),
+                                               self.sslClientCert.GetValue(),
+                                               self.sslClientKey.GetValue())
+            # If this function returns None, the database connection could not be established.
+            if choices == None:
+                errormsg = unicode(_('You were unable to connect to the database.\nPlease check your connection and SSL information.'), 'utf8')
+                errordlg = Dialogs.ErrorDialog(self, errormsg)
+                errordlg.ShowModal()
+                errordlg.Destroy()
+            # If this function returns an empty list, we connected to the database but the user doesn't have permission on any databases.
+            elif choices == []:
+                errormsg = unicode(_('You were able to connect to the database, but no databases were listed.\nPlease check with your system administrator.'), 'utf8')
+                errordlg = Dialogs.ErrorDialog(self, errormsg)
+                errordlg.ShowModal()
+                errordlg.Destroy()
+
+        # Clear the list of Databases
+        self.chDBName.Clear()
+        # If there is data in the list of Database Names ...
+        if (choices != None) and (len(choices) > 0):
+            # ... iterate through the list of databases for the host ...
+            for db in choices:
+                # ... and put the databases in the Database Combo Box
+                self.chDBName.Append(db)
+            # Now update the list of databases in the Configuration Data.
+            self.Databases[serverName]['dbList'] = choices
+        # If there are no database names to list, show an empty list
+        else:
+            self.chDBName.Append('')
+        # If the current database name is in the list ...
+        if self.chDBName.FindString(TransanaGlobal.configData.database) != wx.NOT_FOUND:
+            # ... set the value to the default value provided by the Configuration Data
+            self.chDBName.SetStringSelection(TransanaGlobal.configData.database)
+        else:
+            # Select the first entry in the list
+            self.chDBName.SetSelection(0)
 
 
 if __name__ == '__main__':

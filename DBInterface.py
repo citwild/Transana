@@ -2367,6 +2367,58 @@ def get_db(dbToOpen=None, usePrompt=True):
     # Return the database reference
     return _dbref
 
+def GetDBNamesMU(username, password, server, port, useSSL, SSLClient, SSLKey):
+    """ Get all Transana database names on the specified server for which the User has permission """
+    # Start with a blank list
+    dbList = []
+    # Start exception handling, to catch database connection errors
+    try:
+        # If we want an SSL Connection ...
+        if useSSL:
+            # ... create the correct data structure for MySQLdb's SSL parameter
+            sslData = {'cert': SSLClient, 'key': SSLKey}
+            # Use MySQLdb to establish the SSL and Unicode connection to the database server
+            dbconn = MySQLdb.connect(host=server, user=username, passwd=password, port=int(port), use_unicode=True, ssl=sslData)
+        # If we're NOT requesting an SSL Connection ...
+        else:
+            # ... use MySQLdb to establish the Unicode connection to the database server without SSL
+            dbconn = MySQLdb.connect(host=server, user=username, passwd=password, port=int(port), use_unicode=True)
+    # If MySQLdb throws an exception ...
+    except MySQLdb.OperationalError, ex:
+        if DEBUG:
+            print "DBInterface.GetDBNamesMU():  ", sys.exc_info()[1]
+            errormsg = unicode(_('Database Connection Error:\n%s'), 'utf8') % sys.exc_info()[1]
+            errordlg = Dialogs.ErrorDialog(None, errormsg)
+            errordlg.ShowModal()
+            errordlg.Destroy()
+        # Return NONE to indicate a Connection Error instead of the absense of databases!
+        dbList = None
+        # ... signal that the connection failed.  MySQLdb messages aren't very helpful!
+        dbconn = None
+
+    # If a connection was established ...
+    if dbconn:
+        # This query shows all databases on a server.  if using this, also use the limiting "if" statement just below!
+        # query = "SHOW DATABASES"
+        # This query returns only databases with defined Transana database tables.  It will miss empty databases.
+        # "ConfigInfo" must be capitalized for servers that do not force lower case!
+        query = " SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'ConfigInfo' ORDER BY table_schema "
+        # Create a Database Cursor
+        dbCursor = dbconn.cursor()
+        # Execute the Query
+        dbCursor.execute(query)
+        # Iterate through the Results Set
+        for dbRec in dbCursor.fetchall():
+            # If using the "SHOW DATABASES" query above, we need to manually exclude certain system databases
+            # if dbRec[0] not in ['information_schema', 'mysql', 'performance_schema', 'test']:
+            # Add each database name to the Database List
+            dbList.append(dbRec[0])
+        # Close the cursor and database connection
+        dbCursor.close()
+        dbconn.close()
+    # Return the list of database names
+    return dbList
+
 def close_db():
     """ This method flushes all database tables (saving data to disk) and closes the Database Connection. """
     # obtain the Database
