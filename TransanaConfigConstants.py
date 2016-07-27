@@ -1,4 +1,4 @@
-# Copyright (C) 2003 - 2016 The Board of Regents of the University of Wisconsin System 
+# Copyright (C) 2002-2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -30,7 +30,7 @@ singleUserVersion = False
 # Different Python versions require different database engines!
 if sys.version[:5] == '2.6.6':
     DBInstalled = 'MySQLdb-server'
-elif sys.version[:6].strip() in ['2.7.7 ', '2.7.8', '2.7.9', '2.7.10']:
+elif sys.version[:3].strip() in ['2.7']:
 #    DBInstalled = 'PyMySQL'
     DBInstalled = 'MySQLdb-server'
 

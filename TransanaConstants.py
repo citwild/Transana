@@ -1,4 +1,4 @@
-# Copyright (C) 2003 - 2016 The Board of Regents of the University of Wisconsin System
+# Copyright (C) 2002-2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -53,9 +53,9 @@ if workshopVersion:
     expirationdate = TransanaConfigConstants.xpdt
 
 # Program Version Number
-versionNumber = '3.02'
+versionNumber = '3.03a2'
 # Build Number
-buildNumber = '302'
+buildNumber = '303a2'
 # Modify for Multi-user if appropriate
 if not singleUserVersion:
     versionNumber = versionNumber + '-MU'
