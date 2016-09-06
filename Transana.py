@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -17,7 +17,7 @@
 """This file implements the Transana class, which is the main Transana application
 definition."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 
 """
@@ -50,7 +50,21 @@ __author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
 
 
 import sys                          # import Python's sys module
-import wx                           # import wxPython's wxWindows implementation
+try:
+    import wx                           # import wxPython's wxWindows implementation
+except ImportError, e:
+    print
+    print
+    print '   **********************************************************'
+    print '   *                                                        *'
+    print '   *      Error importing wxPython.                         *'
+    if sys.platform == 'darwin':
+        print '   *      Try "python2.7-32 transana.py" instead.           *'
+    print '   *                                                        *'
+    print '   **********************************************************'
+    print
+    print
+    exit
 import os
 import gettext                      # localization module
 if __name__ == '__main__':
@@ -211,7 +225,7 @@ class Transana(wx.App):
         # Determine the size of the version text
         (verWidth, verHeight) = memoryDC.GetTextExtent(versionLbl % TransanaConstants.versionNumber)
         # Add the Version Number text to the Memory DC (and therefore the bitmap)
-        memoryDC.DrawText(versionLbl % TransanaConstants.versionNumber, 370 - verWidth, 156)
+        memoryDC.DrawText(versionLbl % TransanaConstants.versionNumber, 358 - verWidth, 148)
         # Clear the bitmap from the Memory DC, thus freeing it to be displayed!
         memoryDC.SelectObject(wx.EmptyBitmap(10, 10))
         # If the Splash Screen Graphic exists, display the Splash Screen for 4 seconds.

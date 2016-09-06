@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +16,7 @@
 
 """This file handles the Transana Menu Window and all associated logic.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case, Rajas Sambhare'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case, Rajas Sambhare'
 
 DEBUG = False
 if DEBUG:
@@ -662,7 +662,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         wx.EVT_MENU(self, MenuSetup.MENU_HELP_TUTORIAL, self.OnHelpTutorial)
         # Define handler for Help > Transcript Notation
         wx.EVT_MENU(self, MenuSetup.MENU_HELP_NOTATION, self.OnHelpNotation)
-        # Define handler for Help > www.transana.org
+        # Define handler for Help > www.transana.com
         wx.EVT_MENU(self, MenuSetup.MENU_HELP_WEBSITE, self.OnHelpWebsite)
         # Define handler for Help > Fund Transana
         # wx.EVT_MENU(self, MenuSetup.MENU_HELP_FUND, self.OnHelpFund)
@@ -2189,14 +2189,9 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         About.AboutBox()
 
     def OnHelpWebsite(self, evt):
-        """ Handler for Help > www.transana.org menu command """
+        """ Handler for Help > www.transana.com menu command """
         # Open the user's browser and display the web site
-        webbrowser.open('http://www.transana.org/', new=True)
-
-##    def OnHelpFund(self, evt):
-##        """ Handler for Help > Fund Transana menu command """
-##        # Open the user's browser and display the funding page
-##        webbrowser.open('http://www.transana.org/about/funding.htm', new=True)
+        webbrowser.open('https://www.transana.com/', new=True)
 
     def ChangeLanguages(self):
         """ Reset all Menu Labels to reflect a change in selected Language """
@@ -2325,7 +2320,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         self.menuBar.helpmenu.SetLabel(MenuSetup.MENU_HELP_TUTORIAL, _("&Tutorial"))
         self.menuBar.helpmenu.SetLabel(MenuSetup.MENU_HELP_NOTATION, _("Transcript &Notation"))
         self.menuBar.helpmenu.SetLabel(MenuSetup.MENU_HELP_ABOUT, _("&About"))
-        self.menuBar.helpmenu.SetLabel(MenuSetup.MENU_HELP_WEBSITE, _("&www.transana.org"))
+        self.menuBar.helpmenu.SetLabel(MenuSetup.MENU_HELP_WEBSITE, _("&www.transana.com"))
         # self.menuBar.helpmenu.SetLabel(MenuSetup.MENU_HELP_FUND, _("&Fund Transana"))
 
         wx.App_SetMacHelpMenuTitleName(_("&Help"))

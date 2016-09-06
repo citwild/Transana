@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +16,7 @@
 
 """This module implements the Document class as part of the Data Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:
@@ -329,11 +329,9 @@ class Document(DataObject.DataObject):
             # Get a database cursor
             c = DBInterface.get_db().cursor()
 
-
             # If we're using transactions, start the transaction
             if use_transactions:
                 c.execute('BEGIN')
-
 
             # If we're in Unicode mode, ...
             if 'unicode' in wx.PlatformInfo:
@@ -370,6 +368,9 @@ class Document(DataObject.DataObject):
                 plaintext = self.plaintext
 
             if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
+                # If we're using transactions, start the transaction
+                if use_transactions:
+                    c.execute('ROLLBACK')
                 raise SaveError, _("This document is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
 
             fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "PlainText", "LastSaveTime")
@@ -383,6 +384,9 @@ class Document(DataObject.DataObject):
                         prompt = unicode(_('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
                     else:
                         prompt = _('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
                     raise SaveError, prompt % self.id
                 # Duplicate Document ID with an Episode ID within a Library are not allowed.
                 if DBInterface.record_match_count("Episodes2", ("EpisodeID", "SeriesNum"), (id, self.library_num)) > 0:
@@ -391,6 +395,9 @@ class Document(DataObject.DataObject):
                         prompt = unicode(_('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
                     else:
                         prompt = _('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
                     raise SaveError, prompt % self.id
 
                 # Add the ImportDate information
@@ -429,6 +436,9 @@ class Document(DataObject.DataObject):
                         prompt = unicode(_('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
                     else:
                         prompt = _('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
                     raise SaveError, prompt % self.id
                 # Duplicate Document ID with Episode ID within a Library are not allowed.
                 if DBInterface.record_match_count("Episodes2", ("EpisodeID", "SeriesNum"),
@@ -438,6 +448,9 @@ class Document(DataObject.DataObject):
                         prompt = unicode(_('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
                     else:
                         prompt = _('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
                     raise SaveError, prompt % self.id
                 
                 # OK to update the episode record
@@ -541,6 +554,9 @@ class Document(DataObject.DataObject):
                     self.lastsavetime = recs[0][2]
                 # If we don't have a single record ...
                 else:
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
                     # ... raise an exception
                     raise RecordNotFoundError, (self.id, len(recs))
 
@@ -570,6 +586,9 @@ class Document(DataObject.DataObject):
                     self.lastsavetime = recs[0][0]
                 # If we don't have a single record ...
                 else:
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
                     # ... raise an exception
                     raise RecordNotFoundError, (self.id, len(recs))
                 # Close the temporary database cursor

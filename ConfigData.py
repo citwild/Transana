@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +16,7 @@
 
 """This module contains Transana's Configuration Information."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Rajas Sambhare'
+__author__ = 'David Woods <dwoods@transana.com>, Rajas Sambhare'
 
 DEBUG = False
 if DEBUG:
@@ -268,7 +268,7 @@ class ConfigData(object):
                 # This cannot not currently be changed without editing the Registry.
                 # 0 is default, uses QuickTime Player for *.mp4 files
                 # 1 uses Windows Media Player for *.mp4 files
-                self.mp4MediaPlayer = config.ReadInt('/3.0/mp4MediaPlayer', 0)
+                self.mp4MediaPlayer = config.ReadInt('/3.0/mp4MediaPlayer', 1)
 
         # If no version 2.0 Config File exists, ...
         else:

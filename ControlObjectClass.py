@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -21,7 +21,7 @@ and Data) should communicate only with the Control Object, not with
 each other.
 """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Rajas Sambhare'
+__author__ = 'David Woods <dwoods@transana.com>, Rajas Sambhare'
 
 DEBUG = False
 if DEBUG:
@@ -877,7 +877,8 @@ class ControlObject(object):
                         # If there's more than one Splitter Pane open ...
                         if len(self.TranscriptWindow.nb.GetPage(page).GetChildren()) > 1:
                             # Clear the Splitter Pane
-                            self.ClearAllWindows()
+                            self.ClearAllWindows(clearAllPanes=True)
+                            break
                             # ... we can just delete the Splitter Pane
                             # REDUNDANT!  pane.parent.DeletePanel(pane.panelNum)
                         # Otherwise, if there's more than one Notebook Page open ...

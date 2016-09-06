@@ -16,7 +16,7 @@
 
 """This module contains Transana's configuration constants."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import Python's sys module
 import sys
@@ -31,8 +31,11 @@ singleUserVersion = False
 if sys.version[:5] == '2.6.6':
     DBInstalled = 'MySQLdb-server'
 elif sys.version[:3].strip() in ['2.7']:
-#    DBInstalled = 'PyMySQL'
-    DBInstalled = 'MySQLdb-server'
+    # MySQLdb doesn't work with py2app on OS X, so we should use PyMySQL on the Mac.
+    if sys.platform == 'darwin':
+        DBInstalled = 'PyMySQL'
+    else:
+        DBInstalled = 'MySQLdb-server'
 
 ##    print "TransanaConfigConstants.py"
 ##    print "Python", sys.version[:5]

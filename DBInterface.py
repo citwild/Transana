@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -17,7 +17,7 @@
 """This module contains functions for encapsulating access to the database
 for Transana."""
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>, Nathaniel Case, Rajas Sambhare'
+__author__ = 'David K. Woods <dwoods@transana.com>, Nathaniel Case, Rajas Sambhare'
 
 DEBUG = False
 if DEBUG:
@@ -1949,8 +1949,12 @@ def get_db(dbToOpen=None, usePrompt=True):
                                 if DEBUG:
                                     print sslData
                                 
-                                # Use MySQLdb to establish the SSL and Unicode connection to the database server
-                                _dbref = MySQLdb.connect(host=dbServer, user=userName, passwd=password, port=int(port), use_unicode=True, ssl=sslData)
+                                if TransanaConstants.DBInstalled in ['MySQLdb-server']:
+                                    # Use MySQLdb to establish the SSL and Unicode connection to the database server
+                                    _dbref = MySQLdb.connect(host=dbServer, user=userName, passwd=password, port=int(port), use_unicode=True, ssl=sslData)
+                                elif TransanaConstants.DBInstalled in ['PyMySQL']:
+                                    # Use MySQLdb to establish the SSL and Unicode connection to the database server
+                                    _dbref = MySQLdb.connect(host=dbServer, user=userName, passwd=password, port=int(port), use_unicode=True, ssl=sslData, charset='utf8')
 
                                 if DEBUG:
                                     print "Connected 1"
@@ -1958,7 +1962,12 @@ def get_db(dbToOpen=None, usePrompt=True):
                             # If we're NOT requesting an SSL Connection ...
                             else:
                                 # ... use MySQLdb to establish the Unicode connection to the database server without SSL
-                                _dbref = MySQLdb.connect(host=dbServer, user=userName, passwd=password, port=int(port), use_unicode=True)
+                                if TransanaConstants.DBInstalled in ['MySQLdb-server']:
+                                    # Use MySQLdb to establish the SSL and Unicode connection to the database server
+                                    _dbref = MySQLdb.connect(host=dbServer, user=userName, passwd=password, port=int(port), use_unicode=True)
+                                elif TransanaConstants.DBInstalled in ['PyMySQL']:
+                                    # Use MySQLdb to establish the SSL and Unicode connection to the database server
+                                    _dbref = MySQLdb.connect(host=dbServer, user=userName, passwd=password, port=int(port), use_unicode=True, charset='utf8')
 
                                 if DEBUG:
                                     print "Connected 2"
@@ -2224,144 +2233,161 @@ def get_db(dbToOpen=None, usePrompt=True):
 
                         TransanaGlobal.configData.database = databaseName
 
-                except MySQLdb.OperationalError:
+                # MySQLdb and PyMySQL handle exceptions differently.  This code tries to handle exceptions correctly for
+                # either connection tool        
+
+                except Exception as e:
+
                     if DEBUG:
-                        print "DBInterface.get_db():  Unknown Database!"
 
-                    # Skip the Database Creation message if we're in Demonstation Mode
-                    if (dbToOpen == None) and not TransanaConstants.demoVersion:
-                        # If the Database Name was not found, prompt the user to see if they want to create a new Database.
-                        # First, create the Prompt Dialog
-                        # NOTE:  This does not use Dialogs.ErrorDialog because it requires a Yes/No reponse
-                        if 'unicode' in wx.PlatformInfo:
-                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                            prompt = unicode(_('Database "%s" does not exist.  Would you like to create it?\n(If you do not have rights to create a database, see your system administrator.)'), 'utf8')
-                        else:
-                            prompt = _('Database "%s" does not exist.  Would you like to create it?\n(If you do not have rights to create a database, see your system administrator.)')
-                        dlg = Dialogs.QuestionDialog(None, prompt % databaseName)
-                        # Display the Dialog
-                        result = dlg.LocalShowModal()
-                        # Clean up after the Dialog
-                        dlg.Destroy()
-                    else:
-                        result = wx.ID_YES
-                    # If the user wants to create a new Database ...
-                    if result == wx.ID_YES:
-                        try:
+                        print "DBInterface.get_db():  Exception:", TransanaGlobal.configData.language, TransanaGlobal.encoding
+                        print TransanaConstants.DBInstalled, type(e)
+
+                        print sys.exc_info()[0], sys.exc_info()[1]
+                        import traceback
+                        traceback.print_exc(file=sys.stdout)
+
+                    if isinstance(e, MySQLdb.OperationalError) or \
+                       (TransanaConstants.DBInstalled in ['PyMySQL'] and isinstance(e, MySQLdb.InternalError)):
+
+                        if DEBUG:
+                            print "DBInterface.get_db():  Unknown Database!"
+
+                        # Skip the Database Creation message if we're in Demonstation Mode
+                        if (dbToOpen == None) and not TransanaConstants.demoVersion:
+                            # If the Database Name was not found, prompt the user to see if they want to create a new Database.
+                            # First, create the Prompt Dialog
+                            # NOTE:  This does not use Dialogs.ErrorDialog because it requires a Yes/No reponse
                             if 'unicode' in wx.PlatformInfo:
-                                tempDatabaseName = databaseName.encode(TransanaGlobal.encoding)
+                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                                prompt = unicode(_('Database "%s" does not exist.  Would you like to create it?\n(If you do not have rights to create a database, see your system administrator.)'), 'utf8')
                             else:
-                                tempDatabaseName = databaseName
-
-                            # If MySQL is version 4.1 or greater, we can use explicit Character Sets including UTF8
-                            if TransanaGlobal.DBVersion >= u'4.1':
-                                query = 'CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s' % (tempDatabaseName, TransanaGlobal.encoding)
-                            else:
-                                query = 'CREATE DATABASE IF NOT EXISTS %s' % tempDatabaseName
-
-                            # ... create the Database ...
-                            dbCursor.execute(query)
-                            # ... specify that the new database should be used ...
-                            dbCursor.execute('USE %s' % tempDatabaseName)
-                            TransanaGlobal.configData.database = databaseName
-                            TransanaGlobal.configData.SaveConfiguration()
-                            # Close the Database Cursor
-                            dbCursor.close()
-                        # If the Create fails ...
-                        except:
-                            if DEBUG:
-                                print sys.exc_info()[0], sys.exc_info()[1]
-                                import traceback
-                                traceback.print_exc(file=sys.stdout)
-
-                            # ... the user probably lacks CREATE parmission in the Database Rights structure.
-                            # Create an error message Dialog
-                            dlg = Dialogs.ErrorDialog(None, _('Database Creation Error.\nYou specified an illegal database name, or do not have rights to create a database.\nTry again with a simple database name (with no punctuation or spaces), or see your system administrator.'))
-                            # Display the Error Message.
-                            dlg.ShowModal()
-                            # Clean up the Error Message
+                                prompt = _('Database "%s" does not exist.  Would you like to create it?\n(If you do not have rights to create a database, see your system administrator.)')
+                            dlg = Dialogs.QuestionDialog(None, prompt % databaseName)
+                            # Display the Dialog
+                            result = dlg.LocalShowModal()
+                            # Clean up after the Dialog
                             dlg.Destroy()
+                        else:
+                            result = wx.ID_YES
+                        # If the user wants to create a new Database ...
+                        if result == wx.ID_YES:
+                            try:
+                                if 'unicode' in wx.PlatformInfo:
+                                    tempDatabaseName = databaseName.encode(TransanaGlobal.encoding)
+                                else:
+                                    tempDatabaseName = databaseName
+
+                                # If MySQL is version 4.1 or greater, we can use explicit Character Sets including UTF8
+                                if TransanaGlobal.DBVersion >= u'4.1':
+                                    query = 'CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s' % (tempDatabaseName, TransanaGlobal.encoding)
+                                else:
+                                    query = 'CREATE DATABASE IF NOT EXISTS %s' % tempDatabaseName
+
+                                # ... create the Database ...
+                                dbCursor.execute(query)
+                                # ... specify that the new database should be used ...
+                                dbCursor.execute('USE %s' % tempDatabaseName)
+                                TransanaGlobal.configData.database = databaseName
+                                TransanaGlobal.configData.SaveConfiguration()
+                                # Close the Database Cursor
+                                dbCursor.close()
+                            # If the Create fails ...
+                            except:
+                                if DEBUG:
+                                    print sys.exc_info()[0], sys.exc_info()[1]
+                                    import traceback
+                                    traceback.print_exc(file=sys.stdout)
+
+                                # ... the user probably lacks CREATE parmission in the Database Rights structure.
+                                # Create an error message Dialog
+                                dlg = Dialogs.ErrorDialog(None, _('Database Creation Error.\nYou specified an illegal database name, or do not have rights to create a database.\nTry again with a simple database name (with no punctuation or spaces), or see your system administrator.'))
+                                # Display the Error Message.
+                                dlg.ShowModal()
+                                # Clean up the Error Message
+                                dlg.Destroy()
+                                # Close the Database Cursor
+                                dbCursor.close()
+                                # Close the Database Connection
+                                _dbref.close()
+                                _dbref = None
+                        else:
                             # Close the Database Cursor
                             dbCursor.close()
                             # Close the Database Connection
                             _dbref.close()
                             _dbref = None
-                    else:
+
+                    elif isinstance(e, UnicodeEncodeError):
+
+                        if DEBUG:
+
+                            print "DBInterface.get_db():  Exception:", TransanaGlobal.configData.language, TransanaGlobal.encoding
+
+                            print sys.exc_info()[0], sys.exc_info()[1]
+                            import traceback
+                            traceback.print_exc(file=sys.stdout)
+
+                        # ... The only time I've seen an error here has to do with encoding failures.
+                        # Create an error message Dialog
+                        dlg = Dialogs.ErrorDialog(None, _("Unicode Error opening the database.\nIs it possible your current language setting doesn't match the database's language?\nPlease open a different database, change your language setting, then try this database again."))
+                        # Display the Error Message.
+                        dlg.ShowModal()
+                        # Clean up the Error Message
+                        dlg.Destroy()
+
                         # Close the Database Cursor
                         dbCursor.close()
                         # Close the Database Connection
                         _dbref.close()
                         _dbref = None
 
-                except UnicodeEncodeError, e:
+                    elif (TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server'] and isinstance(e, _mysql_exceptions.ProgrammingError, e)):
 
-                    if DEBUG:
+                        if DEBUG:
 
-                        print "DBInterface.get_db():  Exception:", TransanaGlobal.configData.language, TransanaGlobal.encoding
+                            print "DBInterface.get_db():  Exception:", TransanaGlobal.configData.language, TransanaGlobal.encoding
 
-                        print sys.exc_info()[0], sys.exc_info()[1]
-                        import traceback
-                        traceback.print_exc(file=sys.stdout)
+                            print sys.exc_info()[0], sys.exc_info()[1]
+                            import traceback
+                            traceback.print_exc(file=sys.stdout)
 
-                    # ... The only time I've seen an error here has to do with encoding failures.
-                    # Create an error message Dialog
-                    dlg = Dialogs.ErrorDialog(None, _("Unicode Error opening the database.\nIs it possible your current language setting doesn't match the database's language?\nPlease open a different database, change your language setting, then try this database again."))
-                    # Display the Error Message.
-                    dlg.ShowModal()
-                    # Clean up the Error Message
-                    dlg.Destroy()
+                        # ... The only time I've seen an error here has to do with encoding failures.
+                        # Create an error message Dialog
+                        dlg = Dialogs.ErrorDialog(None, _("MySQL Error opening the database.\nTry again with a simple database name (with no punctuation or spaces.)\nAlso try entering a database name in English."))
+                        # Display the Error Message.
+                        dlg.ShowModal()
+                        # Clean up the Error Message
+                        dlg.Destroy()
 
-                    # Close the Database Cursor
-                    dbCursor.close()
-                    # Close the Database Connection
-                    _dbref.close()
-                    _dbref = None
+                        # Close the Database Cursor
+                        dbCursor.close()
+                        # Close the Database Connection
+                        _dbref.close()
+                        _dbref = None
 
-                except _mysql_exceptions.ProgrammingError, e:
+                    # If the Database Connection fails, an exception is raised.
+                    else:
 
-                    if DEBUG:
+                        if DEBUG:
 
-                        print "DBInterface.get_db():  Exception:", TransanaGlobal.configData.language, TransanaGlobal.encoding
+                            print "DBInterface.get_db():  Exception 2"
 
-                        print sys.exc_info()[0], sys.exc_info()[1]
-                        import traceback
-                        traceback.print_exc(file=sys.stdout)
+                            print sys.exc_info()[0], sys.exc_info()[1]
+                            import traceback
+                            traceback.print_exc(file=sys.stdout)
 
-                    # ... The only time I've seen an error here has to do with encoding failures.
-                    # Create an error message Dialog
-                    dlg = Dialogs.ErrorDialog(None, _("MySQL Error opening the database.\nTry again with a simple database name (with no punctuation or spaces.)\nAlso try entering a database name in English."))
-                    # Display the Error Message.
-                    dlg.ShowModal()
-                    # Clean up the Error Message
-                    dlg.Destroy()
+                        errormsg = '%s' % sys.exc_info()[1]
+                        errordlg = Dialogs.ErrorDialog(None, errormsg)
+                        errordlg.ShowModal()
+                        errordlg.Destroy()
 
-                    # Close the Database Cursor
-                    dbCursor.close()
-                    # Close the Database Connection
-                    _dbref.close()
-                    _dbref = None
+                        # Close the Database Cursor
+                        dbCursor.close()
+                        # Close the Database Connection
+                        _dbref.close()
+                        _dbref = None
 
-                # If the Database Connection fails, an exception is raised.
-                except:
-
-                    if DEBUG:
-
-                        print "DBInterface.get_db():  Exception 2"
-
-                        print sys.exc_info()[0], sys.exc_info()[1]
-                        import traceback
-                        traceback.print_exc(file=sys.stdout)
-
-                    errormsg = '%s' % sys.exc_info()[1]
-                    errordlg = Dialogs.ErrorDialog(None, errormsg)
-                    errordlg.ShowModal()
-                    errordlg.Destroy()
-
-                    # Close the Database Cursor
-                    dbCursor.close()
-                    # Close the Database Connection
-                    _dbref.close()
-                    _dbref = None
             else:
                 TransanaExceptions.ProgrammingError('Database Undefined in DBInterface.get_db()')
     # Return the database reference
@@ -3926,7 +3952,8 @@ def list_of_snapshot_detail_keywords(** kwargs):
     
     count = len(kwargs)
     i = 1
-    query = "SELECT SnapshotNum, KeywordGroup, Keyword, x1, y1, x2, y2, visible FROM SnapshotKeywords2\n"
+##    query = "SELECT SnapshotNum, KeywordGroup, Keyword, x1, y1, x2, y2, visible FROM SnapshotKeywords2\n"
+    query = "SELECT SnapshotNum, KeywordGroup, Keyword FROM SnapshotKeywords2\n"
     for obj in kwargs:
         query = query + "   WHERE %sNum = %%s" % (obj)
         if i != count:      # not last item

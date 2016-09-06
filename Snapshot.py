@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +16,7 @@
 
 """ This module implements the Snapshot class as part of the Data Objects. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx
@@ -138,14 +138,19 @@ class Snapshot(DataObject.DataObject):
     def __eq__(self, other):
         """ Object Equality function """
 
-#        print "Snapshot.__eq__():", len(self.__dict__.keys()), len(other.__dict__.keys())
-#        for key in self.__dict__.keys():
-#            print key, self.__dict__[key] == other.__dict__[key]
-#        print
-
         if other == None:
             return False
         else:
+
+##            print "Snapshot.__eq__():", len(self.__dict__.keys()), len(other.__dict__.keys()), self.__dict__ == other.__dict__
+##            for key in self.__dict__.keys():
+##                print key, self.__dict__[key] == other.__dict__[key],
+##                if self.__dict__[key] != other.__dict__[key]:
+##                    print self.__dict__[key], other.__dict__[key]
+##                else:
+##                    print
+##            print
+
             return self.__dict__ == other.__dict__
 
 # Public methods
@@ -402,7 +407,7 @@ class Snapshot(DataObject.DataObject):
 
         values = (id, self.collection_num, \
                       tempImageFilename, \
-                      self.image_scale, self.image_coords[0], self.image_coords[1], \
+                      float(self.image_scale), float(self.image_coords[0]), float(self.image_coords[1]), \
                       self.image_size[0], self.image_size[1], \
                       self.episode_num, self.transcript_num, self.episode_start, self.episode_duration, \
                       comment, \
@@ -464,6 +469,12 @@ class Snapshot(DataObject.DataObject):
         # Adjust the query for sqlite if needed
         query = DBInterface.FixQuery(query)
         c = DBInterface.get_db().cursor()
+
+##        print "Snapshot.db_save(1):"
+##        for x in values:
+##            print x, type(x)
+##        print
+        
         if use_transactions:
             c.execute('BEGIN')
         # Execute the query that puts the data in the database
@@ -585,12 +596,18 @@ class Snapshot(DataObject.DataObject):
                         keyword = self.codingObjects[x]['keyword'].encode(TransanaGlobal.encoding)
                     # Assemble the data values for the Insert query
                     values = (self.number, keywordGroup, keyword,
-                              self.codingObjects[x]['x1'], self.codingObjects[x]['y1'], self.codingObjects[x]['x2'], self.codingObjects[x]['y2'])
+                              int(self.codingObjects[x]['x1']), int(self.codingObjects[x]['y1']), int(self.codingObjects[x]['x2']), int(self.codingObjects[x]['y2']))
                     # Encode the Visible property as '0' or '1' for the database
                     if self.codingObjects[x]['visible']:
                         values += ('1',)
                     else:
                         values += ('0',)
+
+##                    print "Snapshot.db_save(2):"
+##                    for x in values:
+##                        print x, type(x)
+##                    print
+        
                     # Insert the data into the database
                     c.execute(query, values)
                 # If the keyword isn't in the list of existing keywords, some other user must have changed it.  Inform the user.
@@ -861,7 +878,7 @@ class Snapshot(DataObject.DataObject):
             # ... just return the Collection's Node String.
             return tempCollection.GetNodeString()
     
-# Private methods    
+    # Private methods    
 
     def _load_row(self, r):
         self.number = r['SnapshotNum']
@@ -1077,7 +1094,7 @@ class Snapshot(DataObject.DataObject):
     def _del_lastsavetime(self):
         self._lastsavetime = None
 
-# Public properties
+    # Public properties
     collection_num = property(_get_col_num, _set_col_num, _del_col_num,
                         """Collection number to which the clip belongs.""")
     image_filename = property(_get_fname, _set_fname, _del_fname,

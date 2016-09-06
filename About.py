@@ -1,5 +1,5 @@
 # -*- coding: cp1252 -*-
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -17,7 +17,7 @@
 
 """This file implements the About Dialog Box for the Transana application."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx
@@ -87,7 +87,7 @@ class AboutBox(wx.Dialog):
         mainSizer.Add(version, 0, wx.ALIGN_CENTER | wx.BOTTOM | wx.LEFT | wx.RIGHT, 12)
 
         # Create a label for the Program Copyright
-        str = _("Copyright 2002-2016\nThe Board of Regents of the University of Wisconsin System")
+        str = _("Copyright 2002-2016\nSpurgeon Woods LLC")
         copyright = wx.StaticText(self, -1, str, style=wx.ALIGN_CENTRE)
         # Apply the last specified font (from Program Version) to the copyright label
         font = self.GetFont()
@@ -96,13 +96,13 @@ class AboutBox(wx.Dialog):
         mainSizer.Add(copyright, 0, wx.ALIGN_CENTER | wx.BOTTOM | wx.LEFT | wx.RIGHT, 12)
 
         # Create a label for the Program Description, including GNU License information
-        self.description_str = _("Transana is written at the \nWisconsin Center for Education Research, \nUniversity of Wisconsin, Madison, and is released with \nno warranty under the GNU General Public License (GPL).  \nFor more information, see http://www.gnu.org.")
+        self.description_str = _("Transana is written by David K. Woods, Ph.D.\nOther contributors include:  Chris Fassnacht, Jonathan Beavers, \nNate Case, Mark Kim, Rajas Sambhare and David Mandelin")
         self.description = wx.StaticText(self, -1, self.description_str, style=wx.ALIGN_CENTRE)
         # Add the description to the main sizer
         mainSizer.Add(self.description, 0, wx.ALIGN_CENTER | wx.BOTTOM | wx.LEFT | wx.RIGHT, 12)
 
         # Create a label for the Program Authoring Credits
-        self.credits_str = _("Transana was originally conceived and written by Chris Fassnacht.\nCurrent development is being directed by David K. Woods, Ph.D.\nOther contributors include:  Jonathan Beavers, Nate Case, Mark Kim, \nRajas Sambhare and David Mandelin")
+        self.credits_str = _("Transana is a product of Spurgeon Woods LLC.\nIt is released with no warranty \nunder the GNU General Public License (GPL).  \nFor more information, see http://www.gnu.org.")
         self.credits_str += ".\n" + _("Methodology consultants: Paul Dempster, Chris Thorn,\nand Nicolas Sheon.")
         self.credits = wx.StaticText(self, -1, self.credits_str, style=wx.ALIGN_CENTRE)
         # Add the credits to the main sizer
@@ -154,12 +154,11 @@ class AboutBox(wx.Dialog):
         # Add the FFmpeg Credits to the main sizer
         mainSizer.Add(self.ffmpeg, 0, wx.ALIGN_CENTER | wx.BOTTOM | wx.LEFT | wx.RIGHT, 12)
 
-        if ('wxMac' in wx.PlatformInfo) and \
-           (('alpha' in TransanaConstants.versionNumber.lower()) or ('beta' in TransanaConstants.versionNumber.lower())):
-            self.tmpInput = wx.TextCtrl(self, -1, "DELETE ME!", size=(1, 1))
-            mainSizer.Add(self.tmpInput, 0, wx.ALIGN_CENTER | wx.BOTTOM | wx.LEFT | wx.RIGHT, 12)
-            self.tmpInput.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
-            self.tmpInput.SetFocus()
+##        if ('wxMac' in wx.PlatformInfo): # and \
+##           #(('alpha' in TransanaConstants.versionNumber.lower()) or ('beta' in TransanaConstants.versionNumber.lower())):
+##            self.tmpInput = wx.TextCtrl(self, -1, "DELETE ME!", pos=(0, 0), size=(1, 1))
+##            self.tmpInput.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
+##            self.tmpInput.SetFocus()
 
         # Create an OK button
         btnOK = wx.Button(self, wx.ID_OK, _("OK"))

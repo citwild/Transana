@@ -1,5 +1,5 @@
 # -*- coding: cp1252 -*-
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -18,7 +18,7 @@
 """ This dialog implements the Transana Media Conversion Dialog class.
     It requires the Transana-specific FFMpeg build for the platform being used. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:
@@ -225,11 +225,6 @@ class MediaConvert(wx.Dialog):
         lblVideoSize = wx.StaticText(self, -1, _("Size:"))
         box3.Add(lblVideoSize, 0, wx.RIGHT, 10)
 
-#        This does not work!!!!
-#        if TransanaGlobal.configData.LayoutDirection == wx.Layout_RightToLeft:
-#            style = wx.ALIGN_RIGHT
-#        else:
-#            style = 0
         # Add the Video Size choice box, initially empty
         self.videoSize = wx.Choice(self, -1, choices=[])   # , style=style
         # Fix problems with Right-To-Left languages
@@ -958,6 +953,10 @@ class MediaConvert(wx.Dialog):
             else:
                 # Report this to the user.
                 self.memo.AppendText(_('The selected media file cannot be processed or converted.'))
+
+            # The Information text doesn't show on the Mac without this!!
+            self.memo.SetFocus()
+            self.memo.Update()
                 
     def OnConvert(self, event):
         """ Convert Button Press Event """
@@ -1265,8 +1264,14 @@ class MediaConvert(wx.Dialog):
 
             # Create the prompt for the progress dialog
             prompt = unicode(_("Converting %s\n to %s"), 'utf8') % (self.txtSrcFileName.GetValue(), self.txtDestFileName.GetValue())
+
+            if 'wxMac' in wx.PlatformInfo:
+                modality = True
+            else:
+                modality = False
+
             # Create the Progress Dialog, allowing MULTIPLE THREADS
-            progressDlg = WaveformProgress.WaveformProgress(self, prompt, self.clipStart, self.clipDuration, showModally=False)
+            progressDlg = WaveformProgress.WaveformProgress(self, prompt, self.clipStart, self.clipDuration, showModally=modality)
 
             # If there are NO currently-running conversions ...
             if self.runningConversions == {}:
@@ -1280,6 +1285,8 @@ class MediaConvert(wx.Dialog):
             progressDlg.indexNum = indexNum
             # Have the Progress Dialog remember the name of the file being converted
             progressDlg.originalFilename = originalFilename
+            progressDlg.srcFilename = self.txtSrcFileName.GetValue()
+            progressDlg.destFilename = self.txtDestFileName.GetValue()
             # Add the Progress Dialog to the dictionary that holds the running conversions
             self.runningConversions[indexNum] = progressDlg
             # If there is exactly ONE running conversion ...
@@ -1298,7 +1305,7 @@ class MediaConvert(wx.Dialog):
             self.btnClose.Enable(False)
 
             # If the number of CPU Cores is known ...
-            if self.cpu_count > 0:
+            if (not 'wxMac' in wx.PlatformInfo) and (self.cpu_count > 0):
                 # ... Add the number of cores to the message text
                 if len(self.runningConversions) == 1:
                     msg = unicode(_('%d Conversion Running on %d computer cores'), 'utf8') % \
@@ -1340,6 +1347,10 @@ class MediaConvert(wx.Dialog):
             # Initiate the Conversion with the appropriate file names
             progressDlg.Extract(inputFile, outputFile, mode='CustomConvert')
 
+            if 'wxMac' in wx.PlatformInfo:
+                
+                self.OnConvertComplete(progressDlg)
+
             
             # Get the Error Log that may have been created
 #            errorLog = progressDlg.GetErrorMessages()
@@ -1351,6 +1362,7 @@ class MediaConvert(wx.Dialog):
 
         if DEBUG:
             print "MediaConvert.OnConvertComplete() called for", progressDlg.indexNum, progressDlg.originalFilename
+            print '  ', progressDlg.srcFilename, progressDlg.destFilename
 
         if True:    # False
             
@@ -1382,17 +1394,17 @@ class MediaConvert(wx.Dialog):
                 # If we're creating still images, have an Image #2, and DON'T have an Image #6, we can safely conclude that
                 # a single still image was desired but more than one was created.
                 if (self.ext == '.jpg') and \
-                   os.path.exists(self.txtDestFileName.GetValue() % 2) and \
-                   not os.path.exists(self.txtDestFileName.GetValue() % 6):
+                   os.path.exists(progressDlg.destFilename % 2) and \
+                   not os.path.exists(progressDlg.destFilename % 6):
                     # Delete images 2 through 5, which are extraneous
                     for img in range(2, 6):
-                        if os.path.exists(self.txtDestFileName.GetValue() % img):
+                        if os.path.exists(progressDlg.destFilename % img):
                             # delete the image
-                            os.remove(self.txtDestFileName.GetValue() % img)
+                            os.remove(progressDlg.destFilename % img)
                 # If we have a temporary file name because of the non-cp1252 file name issue on Windows ...
                 if self.tmpFileName != '':
                     # Determine the destination file name
-                    destFile = self.txtDestFileName.GetValue()
+                    destFile = progressDlg.destFilename
                     # If we are doing a SnapShot (i.e. if the file has a NUMBER part) ...
                     if '%06d' in destFile:
                         # ... then substitute 1 in the number part of the destination file name ...
@@ -1421,12 +1433,17 @@ class MediaConvert(wx.Dialog):
                     # If the user wants to update all references ...
                     if updateDlg.LocalShowModal() == wx.ID_YES:
                         # ... separate paths from file names for both source and destination
-                        (sourcePath, sourceFile) = os.path.split(self.txtSrcFileName.GetValue())
-                        (destPath, destFile) = os.path.split(self.txtDestFileName.GetValue())
+                        (sourcePath, sourceFile) = os.path.split(progressDlg.srcFilename)
+                        (destPath, destFile) = os.path.split(progressDlg.destFilename)
                         # If our file name is cp1252 compatible ...
                         if (self.tmpFileName == ''):
                             # ... then we need to process it like Database Data gets processed so the Queries will work!
                             sourceFile = DBInterface.ProcessDBDataForUTF8Encoding(sourceFile)
+
+                        if DEBUG:
+                            print "MediaConvert.OnConvertComplete():", sourceFile, destFile
+                            print
+                        
                         # Update the source file in the Database with the new File Path AND the new File Name
                         if not DBInterface.UpdateDBFilenames(self, destPath, [sourceFile], newName=destFile):
                             # Display an error message if the update failed

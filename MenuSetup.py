@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -17,7 +17,7 @@
 """This file implements the TransanaMenuBar class, which defines the contents
    of the main Transana Menus. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx
@@ -385,7 +385,7 @@ class MenuSetup(wx.MenuBar):
         self.helpmenu.Append(MENU_HELP_MANUAL, _("&Manual"))
         self.helpmenu.Append(MENU_HELP_TUTORIAL, _("&Tutorial"))
         self.helpmenu.Append(MENU_HELP_NOTATION, _("Transcript &Notation"))
-        self.helpmenu.Append(MENU_HELP_WEBSITE, _("&www.transana.org"))
+        self.helpmenu.Append(MENU_HELP_WEBSITE, _("&www.transana.com"))
         # self.helpmenu.Append(MENU_HELP_FUND, _("&Fund Transana"))
         self.helpmenu.Append(MENU_HELP_ABOUT, _("&About"))
         self.Append(self.helpmenu, _("&Help"))

@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -15,7 +15,7 @@
 
 """This module implements the DatabaseTreeTab class for the Data Display Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 DEBUG = False
 if DEBUG:
@@ -5930,7 +5930,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             # We can't edit properties for the currently-open Episode ...
             if isinstance(self.parent.ControlObject.currentObj, Episode.Episode) and (episode.number == self.parent.ControlObject.currentObj.number):
                 # ... so clear all the windows if that is detected.
-                self.parent.ControlObject.ClearAllWindows()
+                self.parent.ControlObject.ClearAllWindows(clearAllPanes=True)
             # Call the Episode Properties screen
             self.parent.edit_episode(episode)
 
@@ -11492,8 +11492,14 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     elif sel_item_data.nodetype == 'CollectionNode':
                         # If our current TranscriptWindow Page / Pane is a Transcript ...
                         if self.parent.ControlObject.GetCurrentItemType() == 'Transcript':
-                            # ... Change the eventID to match "Add Clip"
-                            event.SetId(self.cmd_id_start["CollectionNode"] + 4)
+                            # If Standard ...
+                            if not TransanaConstants.proVersion:
+                                # ... Change the eventID to match "Add Clip"
+                                event.SetId(self.cmd_id_start["CollectionNode"] + 3)
+                            # If pro, MU, or Lab ...
+                            else:
+                                # ... Change the eventID to match "Add Clip"
+                                event.SetId(self.cmd_id_start["CollectionNode"] + 4)
                             # Call the Collection Event Processor
                             self.OnCollectionCommand(event)
                         # If our current TranscriptWindow Page / Pane is a Document or Quote ...
