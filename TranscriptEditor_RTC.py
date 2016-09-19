@@ -300,7 +300,7 @@ class TranscriptEditor(RichTextEditCtrl):
             if TransanaConstants.partialTranscriptEdit:
                 self.save_transcript(continueEditing=False)
             else:
-                self.save_transcript()
+                self.save_transcript(use_transactions = False)
             self.TranscriptObj.unlock_record()
 
         # If we have an XML document, let's assume it's XML from Transana
