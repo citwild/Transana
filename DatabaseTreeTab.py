@@ -48,6 +48,7 @@ import NotesBrowser
 import KeywordObject as Keyword                      
 import KeywordPropertiesForm
 import ClipKeywordObject
+import SpreadsheetDataImport
 import BatchFileProcessor
 import ProcessSearch
 from TransanaExceptions import *
@@ -4349,7 +4350,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
              tmpMenu += (_("Add Document"), )
         tmpMenu += (_("Add Episode"),)
         if TransanaConstants.proVersion:
-            tmpMenu += (_("Batch Document Creation"),)
+            tmpMenu += (_("Import Spreadsheet Data"), _("Batch Document Creation"),)
         tmpMenu += (_("Batch Episode Creation"), _("Add Library Note"), _("Delete Library"), _("Library Report"),
                     _("Library Word Frequency Report"))
         if TransanaConstants.proVersion:
@@ -4597,14 +4598,14 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle menu selections for Library objects."""
         n = evt.GetId() - self.cmd_id_start["LibraryNode"]
         # If we're in the Standard version, we need to adjust the menu numbers
-        # for Add Document (1), Batch Document Creation (3), Library Keyword Sequence Map (9), Library Keyword Bar Graph (9),
-        # and Library Keyword Percentage Graph (10)
+        # for Add Document (1), Import Spreadsheet Data (3), Batch Document Creation (4), Library Keyword Sequence Map (10),
+        # Library Keyword Bar Graph (11), and Library Keyword Percentage Graph (12)
         if not TransanaConstants.proVersion:
             if (n >= 1):
                 n += 1
             if (n >= 3):
-                n += 1
-            if (n >= 9):
+                n += 2
+            if (n >= 10):
                 n += 3
 
         # Get the list of selected items
@@ -4831,7 +4832,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Load the newly created Transcript
                     self.parent.ControlObject.LoadTranscript(library_name, episode_name, transcript_name)  # Load everything via the ControlObject
 
-        elif n == 3:    # Batch Document Creation
+        elif n == 3:    # Import Spreadsheet Data
+            # Run the Spreadsheet Import wizard, passing it the tree control for updating 
+            spreadsheetDlg = SpreadsheetDataImport.SpreadsheetDataImport(self.parent, self)
+            # Destroy the wizard when we're done
+            spreadsheetDlg.Destroy()
+            
+        elif n == 4:    # Batch Document Creation
             # Load the Library
             library = Library.Library(selData.recNum)
             try:
@@ -4959,7 +4966,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             if libraryLocked:
                 library.unlock_record()
 
-        elif n == 4:    # Batch Episode Creation
+        elif n == 5:    # Batch Episode Creation
             # Load the Library
             library = Library.Library(selData.recNum)
             try:
@@ -5121,10 +5128,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
             if libraryLocked:
                 library.unlock_record()
 
-        elif n == 5:    # Add Note
+        elif n == 6:    # Add Note
             self.parent.add_note(libraryNum=selData.recNum)
             
-        elif n == 6:    # Delete
+        elif n == 7:    # Delete
             # To delete a Library, the Notes Browser MUST be closed!
             if (self.parent.ControlObject.NotesBrowserWindow != None) and TransanaConstants.singleUserVersion:
                 # ... make it visible, on top of other windows
@@ -5221,7 +5228,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             errordlg.ShowModal()
                             errordlg.Destroy()
                 
-        elif n == 7:    # Library Report
+        elif n == 8:    # Library Report
             # Call the Report Generator.  We pass the Library Name and want to show Keywords.
             ReportGenerator.ReportGenerator(controlObject = self.parent.ControlObject,
                                             title=unicode(_("Transana Library Report"), 'utf8'),
@@ -5231,23 +5238,23 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showDocImportDate=True,
                                             showKeywords=True)
 
-        elif n == 8:    # Library Word Frequency Report
+        elif n == 9:    # Library Word Frequency Report
             
             WordFrequencyReport.WordFrequencyReport(self.parent, self, sel)
 
-        elif n == 9:    # Library Map -- Sequence Mode
+        elif n == 10:    # Library Map -- Sequence Mode
             LibraryMap.LibraryMap(self, unicode(_("Library Keyword Sequence Map"), 'utf8'), selData.recNum, library_name, 1, controlObject = self.parent.ControlObject)
 
-        elif n == 10:    # Library Map -- Bar Graph Mode
+        elif n == 11:    # Library Map -- Bar Graph Mode
             LibraryMap.LibraryMap(self, unicode(_("Library Keyword Bar Graph"), 'utf8'), selData.recNum, library_name, 2, controlObject = self.parent.ControlObject)
             
-        elif n == 11:    # Library Map -- Percentage Mode
+        elif n == 12:    # Library Map -- Percentage Mode
             LibraryMap.LibraryMap(self, unicode(_("Library Keyword Percentage Graph"), 'utf8'), selData.recNum, library_name, 3, controlObject = self.parent.ControlObject)
 
-        elif n == 12:    # Analytic Data Export
+        elif n == 13:    # Analytic Data Export
             self.AnalyticDataExport(libraryNum = selData.recNum)
             
-        elif n == 13:    # Library Properties
+        elif n == 14:    # Library Properties
             library = Library.Library()
             # FIXME: Gracefully handle when we can't load the Library.
             # (yes, this can happen.  for example if another user changes

@@ -1,0 +1,45 @@
+<HTML>
+<HEAD>
+<TITLE>Import Spreadsheet Data</TITLE>
+</HEAD>
+
+<BODY>
+
+<H1>Import Spreadsheet Data</H1><HR>
+
+If you have spreadsheet or survey data, you may want to import Comma Separated Values or Tab Delimited Text Files into Transana for analysis.  <B>Import Spreadsheet Data</B> allows you to create a library of <A HREF="documentproperties.htm">Documents</A> based on the contents of a single data file in Comma Separated Values (*.csv) or Tab Delimited Text (*.txt) format. Transana provides a structured tool for such imports.<P>
+
+Such data is organized in a grid.  You will find that your headings, prompts, or questions fall along one axis and your participants fall along the other axis.  Such files can contain a variety of data types, including numeric, categorical, and text data.<P>
+
+These files are often in Microsoft Excel (*.xlsx, *.xls), Comma Separated Values (*.csv), and Tab Delimited Text (*.txt) formats.  If your data is in Excel format or that of other spreadsheet programs, you will need to load your data in your Spreadsheet program and convert it to Comma Separated Values format (*.csv) or Tab Delimited Text format (*.txt) for import into Transana.<P>
+
+To begin importing a Spreadsheet Data file, right-click the Library where Documents should be created and choose "Import Spreadsheet Data".  <P>
+
+<IMG SRC="images/SpreadsheetSelectFile.gif"><P>
+
+On the first page of the Spreadsheet Data import process, you select the file you wish to import.  Once you have selected a file, press the "Next >" button.<P>
+
+<IMG SRC="images/SpreadsheetOrientation.gif"><P>
+
+The next page shows the data in the first column of your data file and the data in the first row of your data file.  One of these two data lists should show the headings, prompts, or questions in your data file, while the other should show the participant data associated with the first heading, prompt, or question.  Use the checkboxes at the bottom of the form to let Transana know whether your headings, prompts, or questions appear in columns or rows in your data file.<P>   
+
+<IMG SRC="images/SpreadsheetOrganize.gif"><P>
+
+The third page in the import process defines how to organize the data during import.  There are three items to complete on this page:<P>
+
+At the top, you should identify a data item which uniquely identifies your participants.  Data from this item will be used to indicate which participant is associated with that participant's responses.  Researchers often use pseudonyms or ID numbers rather than using actual participants real names.  If there is no unique identifier field that you want to include in your imported data, you can request that Transana create a unique identifier for each of your partiicpants.<P>
+
+In the middle of the page, you will see a list of all of the headings, prompts, or questions in your data file.  You should select the data items you want to include in the Documents created during data import.  Click in the list to select a single item.  Use shift-Click to select a range of items after an initial selection.  Use Ctrl-click on Windows or Cmd-click on OS X to select or de-select individual items from this list.<P>
+
+Finally, you should indicate whether you want your data imported into Documents for Participants or Documents for individual headings, prompts, or questions.  If you select Participants, a Document will be created in your Library for each participant, using the unique identifier you selected above as the Document ID and including the prompt and response data for all items selected above.  If you select Questions, a Document will be created in your Library for each heading, prompt, or question in your data file as the Document ID and including the unique identifier you selected and that participant's response to that question.  All of the selected data is included in the Documents either way, but that data is organized in a fundamentally different way.<P>       
+
+<IMG SRC="images/SpreadsheetAutocode.gif"><P>
+
+If you choose to organize your data by Participants, you will see an additional page that allows you to select what data items you want to use for automatic coding of your Documents.   (Automatic coding is not possible when data is organized by questions.)  Note that Keywords will be created in the "Auto-code" Keyword Group and will be applied at the Document level so that they will be presented as default Keywords when you create Quotes from the Documents.  Transana imports the data ready to be coded.  It does not automatically create coded Quotes from that data.<P> 
+
+<A HREF="timecodes.htm"><IMG SRC="images/previouspage.gif"  ALT="previouspage"   BORDER=0></A>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<A HREF="batchitemcreation.htm"><IMG SRC="images/nextpage.gif"  ALT="nextpage"   BORDER=0></A><P>
+
+</BODY>
+</HTML>

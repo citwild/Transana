@@ -1959,9 +1959,9 @@ class ControlObject(object):
             # Make the Help call differently from Python and the stand-alone executable.
             if fn.lower() in ['transana.py', 'unit_test_form_check.py', 'unit_test_search.py']:
 
-                # This works for python 2.7.x
+                # This works for python 2.7.x on my main development machine for testing purposes
                 import subprocess
-                subprocess.Popen('"C:\\Program Files (x86)\\Python27-32\\python" "%s" %s' % (programName, helpContext))
+                subprocess.Popen('"D:\\Program Files\\Python27-32\\python" "%s" %s' % (programName, helpContext))
 
                 # This worked for Python 2.6.x                
 #                # for within Python, we call python, then the Help code and the context

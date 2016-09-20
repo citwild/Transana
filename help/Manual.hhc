@@ -121,6 +121,11 @@
            <param name="Local" value="TimeCodes.htm">
        </object>
   <li> <object type="text/sitemap">
+           <param name="Name" value="Import Spreadsheet Data Files">
+           <param name="ID" value=245>
+           <param name="Local" value="SpreadsheetDataImport.htm">
+       </object>
+  <li> <object type="text/sitemap">
            <param name="Name" value="Batch Item Creation">
            <param name="ID" value=250>
            <param name="Local" value="BatchItemCreation.htm">
