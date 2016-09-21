@@ -15,7 +15,7 @@
 
 """ This module implements the RichTextEditCtrl class, a Rich Text editor based on wxRichTextCtrl. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:
@@ -43,6 +43,10 @@ import TransanaExceptions
 import TransanaGlobal
 # import Transana's Dialogs for the ErrorDialog
 import Dialogs
+# Import Transana's Documeng object
+import Document
+# Import Transana's Episode object
+import Episode
 # import Transana's Menu Setup (to get ID_CUT and ID_COPY on Mac!)
 import MenuSetup
 # import Transana's Note object
@@ -2215,16 +2219,60 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
             (objType, objNum) = data.split('=')
 
             # NOTE:  We cannot support EPISODE links, as we require a Transcript Number!
-            
-            # If we have a CLIP link ...
-            if objType.lower() == 'quote':
+
+            # If we have a DOCUMENT link ...
+            if objType.lower() == 'document':
+                # If there's a defined Control Object ...
+                if self.parent.ControlObject != None:
+                    try:
+                        # ... load the Document object
+                        tmpDoc = Document.Document(int(objNum))
+                        # Now that we have the necessary information, load the Document into Transana's interface
+                        self.parent.ControlObject.LoadDocument(tmpDoc.library_id, tmpDoc.id, int(objNum))
+                    except TransanaExceptions.RecordNotFoundError, e:
+
+                        prompt = _("This hyperlink is no longer valid.  The Document it pointed to has been deleted.")
+                        errDlg = Dialogs.ErrorDialog(self, prompt)
+                        errDlg.ShowModal()
+                        errDlg.Destroy()
+
+                # ... if there's NO defined Control Object ...
+                else:
+                    # ... print an error message
+                    print "RichTextEditCtrl_RTC.OnURL():  ControlObject is None!!"
+
+            # If we have a TRANSCRIPT link ...
+            elif objType.lower() == 'transcript':
+                # If there's a defined Control Object ...
+                if self.parent.ControlObject != None:
+                    try:
+                        # ... load the Transcript record
+                        tmpTranscript = Transcript.Transcript(int(objNum))
+                        # Now we can get the Episode record
+                        tmpEpisode = Episode.Episode(tmpTranscript.episode_num)
+                        # And finally we have enough information to load the Transcript / Episode pair into the main interface
+                        self.parent.ControlObject.LoadTranscript(tmpEpisode.series_id, tmpEpisode.id, tmpTranscript.id)
+                    except TransanaExceptions.RecordNotFoundError, e:
+
+                        prompt = _("This hyperlink is no longer valid.  The Transcript it pointed to has been deleted.")
+                        errDlg = Dialogs.ErrorDialog(self, prompt)
+                        errDlg.ShowModal()
+                        errDlg.Destroy()
+
+                # ... if there's NO defined Control Object ...
+                else:
+                    # ... print an error message
+                    print "RichTextEditCtrl_RTC.OnURL():  ControlObject is None!!"
+
+            # If we have a QUOTE link ...
+            elif objType.lower() == 'quote':
                 if wx.GetKeyState(wx.WXK_CONTROL):
                     self.parent.ControlObject.LocateQuoteInDocument(int(objNum))
                 else:
                     # ... and if there's a defined Control Object ...
                     if self.parent.ControlObject != None:
                         try:
-                            # ... load the Clip
+                            # ... load the Quote
                             self.parent.ControlObject.LoadQuote(int(objNum))
                         except TransanaExceptions.RecordNotFoundError, e:
 
@@ -2336,7 +2384,7 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
                     print "RichTextEditCtrl_RTC.OnURL():  ControlObject is None!!"
 
             else:
-                print "RichTextEditCtrl_RTC.OnURL():  transana link, unknown subtype."
+                print "RichTextEditCtrl_RTC.OnURL():  transana link, unknown subtype.", linkType.lower(), objType.lower()
                 
         # If we have an HTTP link ...
         elif linkType.lower() == 'http':

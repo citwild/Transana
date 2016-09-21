@@ -18,7 +18,7 @@
 # This module combines functionality that used to be divided into Collection Summary Report and
 # Keyword Usage Report modules.
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 DEBUG = False
 
@@ -1093,7 +1093,7 @@ class ReportGenerator(wx.Object):
                     reportText.WriteText('%s: ' % majorLabel)
 
                     # If we're showing Hyperlinks to Clips/Snapshots ...
-                    if self.showHyperlink:
+                    if self.showHyperlink and objType.lower() != 'episode':
                         # Define a Hyperlink Style (Blue, underlined)
                         urlStyle = richtext.RichTextAttr()
                         urlStyle.SetFontFaceName('Courier New')
@@ -1110,8 +1110,9 @@ class ReportGenerator(wx.Object):
                     # End the paragraph
 #                    reportText.Newline()
 
-                    # If we're showing Hyperlinks to Clips/Snapshots ...
-                    if self.showHyperlink:
+                    # If we're showing Hyperlinks to Documents, Clips, or Snapshots, but NOT Episodes ...
+                    # (Episodes can't be hyperlinked directly.)
+                    if self.showHyperlink and objType.lower() != 'episode':
                         # End the Hyperlink
                         reportText.EndURL()
                         # Stop using the Hyperlink Style
@@ -1649,6 +1650,41 @@ class ReportGenerator(wx.Object):
                             tmpObj = Episode.Episode(groupNo)
                             fileName = tmpObj.media_filename
                             addFiles = tmpObj.additional_media_files
+                            # Get the Episode's Transcript records
+                            transcripts = DBInterface.list_transcripts(tmpObj.series_id, tmpObj.id)
+                            # For each transcript ...
+                            for tr in transcripts:
+                                # Turn bold on.
+                                reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0, parLineSpacing = 11)
+                                # Add the header to the report
+                                reportText.WriteText(_('Transcript:') + '  ')
+                                # Turn bold off.
+                                reportText.SetTxtStyle(fontBold = False)
+
+                                # If we're showing Hyperlinks ...
+                                if self.showHyperlink:
+                                    # Define a Hyperlink Style (Blue, underlined)
+                                    urlStyle = richtext.RichTextAttr()
+                                    urlStyle.SetFontFaceName('Courier New')
+                                    urlStyle.SetFontSize(12)
+                                    urlStyle.SetTextColour(wx.BLUE)
+                                    urlStyle.SetFontUnderlined(True)
+                                    # Apply the Hyperlink Style
+                                    reportText.BeginStyle(urlStyle)
+                                    # Insert the Hyperlink information, object type and object number
+                                    reportText.BeginURL("transana:%s=%d" % ('Transcript', tr[0]))
+
+                                # Add the data to the report, the transcript name in this case
+                                reportText.WriteText(_('%s\n') % tr[1])
+                            
+
+                                # If we're showing Hyperlinks ...
+                                if self.showHyperlink:
+                                    # End the Hyperlink
+                                    reportText.EndURL()
+                                    # Stop using the Hyperlink Style
+                                    reportText.EndStyle()
+
                         elif objType == 'Document':
                             tmpObj = Document.Document(groupNo)
                             fileName = tmpObj.imported_file
@@ -1656,7 +1692,7 @@ class ReportGenerator(wx.Object):
                         # If we're supposed to show the Media File Name ...
                         if self.showFile:
                             # Turn bold on.
-                            reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0)
+                            reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0, parLineSpacing = wx.TEXT_ATTR_LINE_SPACING_NORMAL)
                             # Add the header to the report
                             reportText.WriteText(_('File:'))
                             # Turn bold off.
@@ -1672,7 +1708,7 @@ class ReportGenerator(wx.Object):
                         # If we're supposed to show the Episode Time data ...
                         if self.showTime and (objType == 'Episode') and (tmpObj.tape_length > 0):
                             # Turn bold on.
-                            reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0)
+                            reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0, parLineSpacing = wx.TEXT_ATTR_LINE_SPACING_NORMAL)
                             # Add the header to the report
                             reportText.WriteText(_('Length:'))
                             # Turn bold off.
@@ -1685,7 +1721,7 @@ class ReportGenerator(wx.Object):
                         # If we're supposed to show the Document File Import Date data ...
                         if self.showDocImportDate and (objType == 'Document') and (tmpObj.import_date != None):
                             # Turn bold on.
-                            reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0)
+                            reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0, parLineSpacing = wx.TEXT_ATTR_LINE_SPACING_NORMAL)
                             # Add the header to the report
                             reportText.WriteText(_('Import Date:'))
                             # Turn bold off.
