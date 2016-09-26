@@ -179,7 +179,7 @@ class Transana(wx.App):
             if TransanaConstants.proVersion:
                 programTitle = _("Transana - Professional")
             else:
-                programTitle = _("Transana - Standard")
+                programTitle = _("Transana - Student")
         else:
             programTitle = _("Transana - Multiuser")
         # Ammend the program title for the Demo version if appropriate
@@ -218,7 +218,7 @@ class Transana(wx.App):
                 if TransanaConstants.proVersion:
                     versionLbl = _("Professional Version")
                 else:
-                    versionLbl = _("Standard Version")
+                    versionLbl = _("Student Version")
         else:
             versionLbl = _("Multi-user Version")
         versionLbl += " %s"

@@ -16,7 +16,7 @@
 
 """ This module implements the Search Interface. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx
@@ -437,7 +437,6 @@ class SearchDialog(wx.Dialog):
         panelKeywordsSizer.Add(self.btnAdd, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
         wx.EVT_BUTTON(self, self.btnAdd.GetId(), self.OnBtnClick)
 
-
         # Add Text Label
         keywordsText = wx.StaticText(panelKeywords, -1, _('Text:'))
         panelKeywordsSizer.Add(keywordsText, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
@@ -451,7 +450,6 @@ class SearchDialog(wx.Dialog):
         self.btnAddText = wx.Button(panelKeywords, -1, _('Add Text to Query'), size=wx.Size(240, 24))
         panelKeywordsSizer.Add(self.btnAddText, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
         wx.EVT_BUTTON(self, self.btnAddText.GetId(), self.OnBtnClick)
-
 
         # Add Search Query Label
         searchQueryText = wx.StaticText(panelKeywords, -1, _('Search Query:'))
@@ -822,7 +820,7 @@ class SearchDialog(wx.Dialog):
                 # Clear the Search Text box for the next entry
                 self.searchText.Clear()
 
-            # If we're not in Standard ...
+            # If we're not in Student ...
             if TransanaConstants.proVersion:
                 # We can't have Text Search AND Snapshots!!
                 # Remember what the Snapshot Value was
@@ -861,7 +859,7 @@ class SearchDialog(wx.Dialog):
                 self.btnRightParen.Enable(self.searchStack[-1][6])
                 # Restore the counter of open paren pairs
                 self.parensOpen = self.searchStack[-1][7]
-                # If we're not in the Standard Version ...
+                # If we're not in the Student Version ...
                 if TransanaConstants.proVersion:
                     # If there is NO Text Search specification and the Include Snapshot box is disabled ...
                     if (not 'Item Text contains "' in self.searchQuery.GetValue()) and (not self.includeSnapshots.IsEnabled()):
