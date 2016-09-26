@@ -2741,7 +2741,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             # Check to see if the Clip's parent collection is in the tree.  It should be there, but I did
             # have a testing database where one collection was missing, despite the presence of Clips and Notes.
             if mapDict['Libraries'].has_key(objParentNum):
-                # Exclude Documents in Transana Standard
+                # Exclude Documents in Transana Student
                 if TransanaConstants.proVersion or objType != 'Document':
                     # Find the correct Library node using the map dictionary
                     libitem = mapDict['Libraries'][objParentNum]
@@ -2919,7 +2919,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             else:
                 print "ABANDONED CLIP RECORD!" , clipNo, clipID.encode('utf8'), collNo
 
-        # If we're in a Pro version, not the Standard Version ...
+        # If we're in a Pro version, not the Student Version ...
         if TransanaConstants.proVersion:
             # Populate the tree with all Quote records
             for (quoteNum, quoteID, collNum, sourceDoc, sortOrder) in DBInterface.list_of_quotes():
@@ -4339,8 +4339,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
         # Library Root Menu
         # Default Double-click is expand, then Add Library.  (See OnItemActivated())
+        tmpMenu = (_("Add Library"),)
+        if TransanaConstants.proVersion:
+             tmpMenu += (_("Word Frequency Report"), )
         self.create_menu("LibraryRootNode",
-                         (_("Add Library"), _("Word Frequency Report")),
+                         tmpMenu,
                          self.OnLibraryRootCommand)
 
         # Library Menu
@@ -4351,10 +4354,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         tmpMenu += (_("Add Episode"),)
         if TransanaConstants.proVersion:
             tmpMenu += (_("Import Spreadsheet Data"), _("Batch Document Creation"),)
-        tmpMenu += (_("Batch Episode Creation"), _("Add Library Note"), _("Delete Library"), _("Library Report"),
-                    _("Library Word Frequency Report"))
+        tmpMenu += (_("Batch Episode Creation"), _("Add Library Note"), _("Delete Library"), _("Library Report"))
         if TransanaConstants.proVersion:
-            tmpMenu += (_("Library Keyword Sequence Map"), _("Library Keyword Bar Graph"), _("Library Keyword Percentage Graph"))
+            tmpMenu += (_("Library Word Frequency Report"), _("Library Keyword Sequence Map"), _("Library Keyword Bar Graph"),
+                        _("Library Keyword Percentage Graph"))
         tmpMenu += (_("Analytic Data Export"), _("Library Properties"))
         self.create_menu("LibraryNode",
                          tmpMenu,
@@ -4365,8 +4368,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         tmpMenu = (_("Cut"), _("Paste"), _("Open"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Open Additional Document"),)
-        tmpMenu += (_("Add Document Note"), _("Delete Document"), _("Document Report"), _("Document Word Frequency Report"),
-                    _("Document Keyword Map"), _("Analytic Data Export"), _("Document Properties"))
+        tmpMenu += (_("Add Document Note"), _("Delete Document"), _("Document Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Document Word Frequency Report"),)
+        tmpMenu += (_("Document Keyword Map"), _("Analytic Data Export"), _("Document Properties"))
         self.create_menu("DocumentNode",
                          tmpMenu,
                          self.OnDocumentCommand)
@@ -4377,8 +4382,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
                    _("Add Transcript"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Open Multiple Transcripts"),)
-        tmpMenu += (_("Add Episode Note"), _("Delete Episode"), _("Episode Report"), _("Episode Word Frequency Report"),
-                    _("Episode Keyword Map"), _("Analytic Data Export"), _("Episode Properties"))
+        tmpMenu += (_("Add Episode Note"), _("Delete Episode"), _("Episode Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Episode Word Frequency Report"),)
+        tmpMenu += (_("Episode Keyword Map"), _("Analytic Data Export"), _("Episode Properties"))
         self.create_menu("EpisodeNode",
                          tmpMenu,
                          self.OnEpisodeCommand)
@@ -4388,17 +4395,23 @@ class _DBTreeCtrl(wx.TreeCtrl):
         tmpMenu = (_("Paste"), _("Open"))
         if TransanaConstants.proVersion:
             tmpMenu += (_("Open Additional Transcript"),)
-        tmpMenu += (_("Add Transcript Note"), _("Delete Transcript"), _("Transcript Word Frequency Report"), _("Transcript Properties"))
+        tmpMenu += (_("Add Transcript Note"), _("Delete Transcript"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Transcript Word Frequency Report"),)
+        tmpMenu += (_("Transcript Properties"),)
         self.create_menu('TranscriptNode',
                          tmpMenu,
                          self.OnTranscriptCommand)
 
         # Collection Root Menu
         # Default Double-click is expand, then Add Collection.  (See OnItemActivated())
+        tmpMenu = (_("Paste"), _("Add Collection"), _("Collection Report"),)
+        if TransanaConstants.proVersion:
+            tmpMenu += ( _("Collection Word Frequency Report"),)
+        tmpMenu += (_('Analytic Data Export'),)
         self.create_menu('CollectionsRootNode',
-                       (_("Paste"), _("Add Collection"), _("Collection Report"), _("Collection Word Frequency Report"),
-                        _('Analytic Data Export')),
-                        self.OnCollRootCommand)
+                         tmpMenu,
+                         self.OnCollRootCommand)
 
         # Collection Menu
         # Default Double-click is expand, then Add Clip.  (See OnItemActivated())
@@ -4409,7 +4422,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         if TransanaConstants.proVersion:
             tmpMenu += (_("Add Multi-transcript Clip"), _("Add Snapshot"), _("Batch Snapshot Creation"))
         tmpMenu += (_("Add Nested Collection"), _("Add Collection Note"), _("Delete Collection"),
-                    _("Collection Report"), _("Collection Word Frequency Report"), _("Collection Keyword Map"), 
+                    _("Collection Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Collection Word Frequency Report"),)
+        tmpMenu += (_("Collection Keyword Map"), 
                     _("Analytic Data Export"), _("Play All Clips"), _("Collection Properties"))
         self.create_menu("CollectionNode",
                          tmpMenu,
@@ -4507,36 +4523,51 @@ class _DBTreeCtrl(wx.TreeCtrl):
         
         # The Search Library Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
+        tmpMenu = (_("Drop from Search Result"), _("Search Library Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Search Library Word Frequency Report"),)
         self.create_menu("SearchLibraryNode",
-                        (_("Drop from Search Result"), _("Search Library Report"), _("Search Library Word Frequency Report")), 
+                        tmpMenu, 
                         self.OnSearchLibraryCommand)
         
         # The Search Document Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
+        tmpMenu = (_("Open"), _("Drop from Search Result"), _("Document Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Search Document Word Frequency Report"),)
+        tmpMenu += (_("Document Keyword Map"),)
         self.create_menu("SearchDocumentNode",
-                        (_("Open"), _("Drop from Search Result"), _("Document Report"),
-                         _("Search Document Word Frequency Report"), _("Document Keyword Map")),
+                        tmpMenu,
                         self.OnSearchDocumentCommand)
         
         # The Search Episode Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
+        tmpMenu = (_("Drop from Search Result"), _("Episode Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Search Episode Word Frequency Report"),)
+        tmpMenu += (_("Episode Keyword Map"),)
         self.create_menu("SearchEpisodeNode",
-                        (_("Drop from Search Result"), _("Episode Report"), _("Search Episode Word Frequency Report"),
-                         _("Episode Keyword Map")),
+                        tmpMenu,
                         self.OnSearchEpisodeCommand)
         
         # The Search Transcript Node Menu
         # Default Double-click is Open.  (See OnItemActivated())
+        tmpMenu = (_("Open"), _("Drop from Search Result"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Search Transcript Word Frequency Report"),)
         self.create_menu("SearchTranscriptNode",
-                         (_("Open"), _("Drop from Search Result"), _("Search Transcript Word Frequency Report")),
+                         tmpMenu,
                          self.OnSearchTranscriptCommand)
         
         # The Search Collection Node Menu
         # Default Double-click is expand.  (See OnItemActivated())
+        tmpMenu = (_("Cut"), _("Copy"), _("Paste"),
+                         _("Drop from Search Result"), _("Search Collection Report"))
+        if TransanaConstants.proVersion:
+            tmpMenu += (_("Search Collection Word Frequency Report"),)
+        tmpMenu += (_("Play All Clips"), _("Rename"))
         self.create_menu("SearchCollectionNode",
-                        (_("Cut"), _("Copy"), _("Paste"),
-                         _("Drop from Search Result"), _("Search Collection Report"), _("Search Collection Word Frequency Report"),
-                         _("Play All Clips"), _("Rename")),
+                        tmpMenu,
                         self.OnSearchCollectionCommand)
         
         # The Search Quote Node Menu
@@ -4597,7 +4628,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnLibraryCommand(self, evt):
         """Handle menu selections for Library objects."""
         n = evt.GetId() - self.cmd_id_start["LibraryNode"]
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Add Document (1), Import Spreadsheet Data (3), Batch Document Creation (4), Library Keyword Sequence Map (10),
         # Library Keyword Bar Graph (11), and Library Keyword Percentage Graph (12)
         if not TransanaConstants.proVersion:
@@ -4605,8 +4636,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 n += 1
             if (n >= 3):
                 n += 2
-            if (n >= 10):
-                n += 3
+            if (n >= 9):
+                n += 4
 
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -5270,10 +5301,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle selections for Document menu."""
         n = evt.GetId() - self.cmd_id_start['DocumentNode']
 
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Open Additional Document (3)
-        if not TransanaConstants.proVersion and (n >= 3):
-            n += 1
+        if not TransanaConstants.proVersion:
+            if n >= 3:
+                n += 1
+            if n >= 7:
+                n += 1
 
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -5594,10 +5628,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnEpisodeCommand(self, evt):
         """Handle menu selections for Episode objects."""
         n = evt.GetId() - self.cmd_id_start["EpisodeNode"]
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Open Multiple Transcripts (3)
-        if not TransanaConstants.proVersion and (n >= 3):
-            n += 1
+        if not TransanaConstants.proVersion:
+            if n >= 3:
+                n += 1
+            if n >= 7:
+                n += 1
        
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -5947,10 +5984,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnTranscriptCommand(self, evt):
         """ Handle menuy selections for Transcript menu """
         n = evt.GetId() - self.cmd_id_start['TranscriptNode']
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Open Additional Transcript (2)
-        if not TransanaConstants.proVersion and (n >= 2):
-            n += 1
+        if not TransanaConstants.proVersion:
+            if n >= 2:
+                n += 1
+            if n >= 5:
+                n += 1
        
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -6136,6 +6176,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle selections for root Collection menu."""
         n = evt.GetId() - self.cmd_id_start['CollectionsRootNode']
 
+        if not TransanaConstants.proVersion:
+            if n >= 3:
+                n += 1
+
         if n == 0:    # Paste
             # Get the list of selected items
             selItems = self.GetSelections()
@@ -6223,12 +6267,15 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnCollectionCommand(self, evt):
         """Handle menu selections for Collection objects."""
         n = evt.GetId() - self.cmd_id_start['CollectionNode']
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Add Quote (3), Add Multi-transcript Clip (5), Add Snapshot (6), and Batch Snapshot Creation (7)
-        if not TransanaConstants.proVersion and (n >= 3):
-            n += 1
-        if not TransanaConstants.proVersion and (n >= 5):
-            n += 3
+        if not TransanaConstants.proVersion:
+            if n >= 3:
+                n += 1
+            if n >= 5:
+                n += 3
+            if n >= 12:
+                n += 1
         
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -7421,13 +7468,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnClipCommand(self, evt):
         """Handle selections for the Clip menu."""
         n = evt.GetId() - self.cmd_id_start['ClipNode']
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Add Quote (4) Add Multi-transcript Clip (6) and Add Snapshot (7)
         if not TransanaConstants.proVersion and (n >= 4):
             n += 1
         if not TransanaConstants.proVersion and (n >= 6):
             n += 2
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Export Clip Video (12) and Insert Clip Hyperlink (13)
         if not TransanaConstants.proVersion and (n >= 12):
             n += 2
@@ -9347,7 +9394,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnKwCommand(self, evt):
         """Handle selections for the Keyword menu."""
         n = evt.GetId() - self.cmd_id_start["KeywordNode"]
-        # If we're in the Standard version, we need to adjust the menu numbers
+        # If we're in the Student version, we need to adjust the menu numbers
         # for Add Quote (4) and Create Multi-transcript Quick Clip (6)
         if not TransanaConstants.proVersion and (n >= 4):
             n += 1
@@ -9849,6 +9896,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle menu selections for Search Library objects."""
         n = evt.GetId() - self.cmd_id_start["SearchLibraryNode"]
 
+        if not TransanaConstants.proVersion:
+            if n >= 2:
+                n += 1
+
         # Get the list of selected items
         selItems = self.GetSelections()
         # If there's only one selected item ...
@@ -9883,6 +9934,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnSearchDocumentCommand(self, evt):
         """Handle menu selections for Search Document objects."""
         n = evt.GetId() - self.cmd_id_start["SearchDocumentNode"]
+
+        if not TransanaConstants.proVersion:
+            if n >= 3:
+                n += 1
 
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -9947,6 +10002,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle menu selections for Search Episode objects."""
         n = evt.GetId() - self.cmd_id_start["SearchEpisodeNode"]
 
+        if not TransanaConstants.proVersion:
+            if n >= 2:
+                n += 1
+
         # Get the list of selected items
         selItems = self.GetSelections()
         # If there's only one selected item ...
@@ -10006,6 +10065,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """ Handle menuy selections for Search Transcript menu """
         n = evt.GetId() - self.cmd_id_start["SearchTranscriptNode"]
 
+        if not TransanaConstants.proVersion:
+            if n >= 2:
+                n += 1
+
         # Get the list of selected items
         selItems = self.GetSelections()
         # If there's only one selected item ...
@@ -10032,6 +10095,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnSearchCollectionCommand(self, evt):
         """Handle menu selections for Search Collection objects."""
         n = evt.GetId() - self.cmd_id_start["SearchCollectionNode"]
+
+        if not TransanaConstants.proVersion:
+            if n >= 5:
+                n += 1
 
         # Get the list of selected items
         selItems = self.GetSelections()
@@ -11495,11 +11562,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                         # Call the Collection Root Event Processor
                         self.OnCollRootCommand(event)
 
-                    # If the item is a Collection, Add a Standard Clip / Quote
+                    # If the item is a Collection, Add a Student Clip / Quote
                     elif sel_item_data.nodetype == 'CollectionNode':
                         # If our current TranscriptWindow Page / Pane is a Transcript ...
                         if self.parent.ControlObject.GetCurrentItemType() == 'Transcript':
-                            # If Standard ...
+                            # If Student ...
                             if not TransanaConstants.proVersion:
                                 # ... Change the eventID to match "Add Clip"
                                 event.SetId(self.cmd_id_start["CollectionNode"] + 3)

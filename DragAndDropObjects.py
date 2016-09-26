@@ -48,7 +48,7 @@
 
    CreateQuickClip(clipData, kwg, kw, dbTree): -- a method used to implement Open Coding via Quick Clips. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:
@@ -604,7 +604,7 @@ class DataTreeDropTarget(wx.PyDropTarget):
                                 if self.dropData.nodetype == 'LibraryNode':
                                     # Load the dropped-on Library
                                     tmpLibrary = Library.Library(self.dropData.recNum)
-                                    # If we're not in the Standard version ...
+                                    # If we're not in the Student version ...
                                     if TransanaConstants.proVersion:
                                         # Now get a list of all Documents in the Library and iterate through them
                                         for tempDocumentNum, tempDocumentID, tempLibraryNum in DBInterface.list_of_documents(tmpLibrary.number):
@@ -1509,7 +1509,7 @@ def DropKeyword(parent, sourceData, targetType, targetName, targetRecNum, target
         try:
             # Lock the Library Record, just to be on the safe side (Is this necessary??  I don't think so, but maybe that can confirm that all episodes are available.)
             tempLibrary.lock_record()
-            # If we're not in the Standard version ...
+            # If we're not in the Student version ...
             if TransanaConstants.proVersion:
                 # Now get a list of all Documents in the Library and iterate through them
                 for tempDocumentNum, tempDocumentID, tempLibraryNum in DBInterface.list_of_documents(tempLibrary.number):
@@ -2297,7 +2297,7 @@ def ProcessPasteDrop(treeCtrl, sourceData, destNode, action, confirmations=True)
                     # ... and remove the first entry 
                     collectionsToCopy = collectionsToCopy[1:]
 
-                    # If we're NOT in Standard ...
+                    # If we're NOT in Student ...
                     if TransanaConstants.proVersion:
                         # We need a list of all the quotes in the Source Collection
                         quoteList = DBInterface.list_of_quotes_by_collectionnum(sourceCollection.number)
