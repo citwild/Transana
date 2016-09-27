@@ -16,7 +16,7 @@
 
 """  This module implements the Note Properties form.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case>'
 
 import TransanaConstants
 import TransanaGlobal

@@ -302,7 +302,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         # Initialize an empty variable
         outofdateLanguage = ''
         # Set the default prompt, which might get changed
-        languageErrorPrompt = "Transana's %s translation is no longer up-to-date.\nMissing prompts will be displayed in English.\n\nIf you are willing to help with this translation,\nplease contact David Woods at dwoods@wcer.wisc.edu." % outofdateLanguage
+        languageErrorPrompt = "Transana's %s translation is no longer up-to-date.\nMissing prompts will be displayed in English.\n\nIf you are willing to help with this translation,\nplease contact David Woods at dwoods@transana.com." % outofdateLanguage
 
         # Start exception handling to deal with lost languages
         try:
@@ -431,7 +431,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             lang = wx.LANGUAGE_ENGLISH
             self.presLan_en.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
             # Change the Language Error Message
-            languageErrorPrompt = "Transana's %s translation is no longer up-to-date or available.\nAll prompts will be displayed in English.\n\nIf you are willing to update this translation,\nplease contact David Woods at dwoods@wcer.wisc.edu." % outofdateLanguage
+            languageErrorPrompt = "Transana's %s translation is no longer up-to-date or available.\nAll prompts will be displayed in English.\n\nIf you are willing to update this translation,\nplease contact David Woods at dwoods@transana.com." % outofdateLanguage
 
         # Due to a problem with wx.Locale on the Mac (It won't load anything but English), I'm disabling 
         # i18n functionality of the wxPython layer on the Mac.  This code accomplishes that.
@@ -473,10 +473,11 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         # NOTE:  "Fixed-Increment Time Code" works for version 2.42.  "&Media Conversion" works for 2.50.
         #        For 2.60, let's go with "Snapshot".  For 2.61, we'll use "SSL Client Key File"
         #        For 3.00, let's use "Libraries".
+        #        For 3.10, let;s use "Import Spreadsheet Data"
         # If you update this, also update the phrase
         # below in the OnOptionsLanguage method.)
         
-        if (outofdateLanguage != '') and ("Libraries" == _("Libraries")):
+        if (outofdateLanguage != '') and ("Import Spreadsheet Data" == _("Import Spreadsheet Data")):
             # If not, display an information message.
             dlg = Dialogs.InfoDialog(None, languageErrorPrompt)
             dlg.ShowModal()
@@ -1800,11 +1801,13 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             
             # NOTE:  "Fixed-Increment Time Code" works for version 2.42.  "&Media Conversion" works for version 2.50.
             #        For 2.60, let's go with "Snapshot".  For 2.61, we'll use "SSL Client Key File".
+            #        For 3.00, let's use "Libraries".
+            #        For 3.10, let's use "Import Spreadsheet Data"
             # If you update this, also update the phrase above in the __init__ method.)
             
-            if (outofdateLanguage != '') and ("Libraries" == _("Libraries")):
+            if (outofdateLanguage != '') and ("Import Spreadsheet Data" == _("Import Spreadsheet Data")):
                 # If not, display an information message.
-                prompt = "Transana's %s translation is no longer up-to-date.\nMissing prompts will be displayed in English.\n\nIf you are willing to help with this translation,\nplease contact David Woods at dwoods@wcer.wisc.edu." % outofdateLanguage
+                prompt = "Transana's %s translation is no longer up-to-date.\nMissing prompts will be displayed in English.\n\nIf you are willing to help with this translation,\nplease contact David Woods at dwoods@transana.com." % outofdateLanguage
                 dlg = Dialogs.InfoDialog(None, prompt)
                 dlg.ShowModal()
                 dlg.Destroy()

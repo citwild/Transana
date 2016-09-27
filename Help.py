@@ -16,7 +16,7 @@
 
 """This file handles the Transana Help System.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

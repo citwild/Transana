@@ -17,7 +17,7 @@
 """ This module implements the TranscriptionUI class as part of the Editors
 component. """
 
-__author__ = 'Nathaniel Case, David Woods <dwoods@wcer.wisc.edu>, Jonathan Beavers <jonathan.beavers@gmail.com>'
+__author__ = 'Nathaniel Case, David Woods <dwoods@transana.com>, Jonathan Beavers'
 
 DEBUG = False
 if DEBUG:

@@ -16,7 +16,7 @@
 
 """This module implements the LOCAL File Transfer progress dialog for the File Management window for Transana.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 # NOTE:  This module is based on code I wrote for the TapeWorm project  (http://tapeworm.spurgeonwoods.com).
 
 import wx  # import wxPython

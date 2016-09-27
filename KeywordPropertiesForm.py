@@ -16,7 +16,7 @@
 
 """This module implements the Keyword Properties Form."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 import DBInterface
 import Dialogs

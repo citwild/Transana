@@ -16,7 +16,7 @@
 
 """This module implements the CoreData class as part of the Data Objects."""
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 # Import Python's Internationalization Module
 import gettext

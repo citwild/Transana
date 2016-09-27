@@ -15,7 +15,7 @@
 
 """This module implements the Core Data Properties Form."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # Import Python's Internationalization Module
 import gettext

@@ -19,7 +19,7 @@ DEBUG = False
 if DEBUG:
     print "NotesBrowser.py DEBUG is ON!!"
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx

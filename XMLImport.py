@@ -16,7 +16,7 @@
 
 """This module implements the Data Import for Transana based on the Transana XML schema."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 # Patch sent by David Fraser to eliminate need for mx module
 
 DEBUG = False

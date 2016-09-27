@@ -16,7 +16,7 @@
 
 """This module implements the Clip class as part of the Data Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 DEBUG = False
 if DEBUG:

@@ -18,7 +18,7 @@
     Because of interface overlap, it also implements Batch Episode Creation
     and Batch Snapshot Creation! """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Jonathan Beavers <jonathan.beavers@gmail.com>'
+__author__ = 'David Woods <dwoods@transana.com>, Jonathan Beavers'
 
 # import wxPython
 import wx

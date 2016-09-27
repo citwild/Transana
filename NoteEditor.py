@@ -15,7 +15,7 @@
 
 """ This module implements the Note Editor.  It's used for editing plain text Notes """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David K. Woods <dwoods@transana.com>, Nathaniel Case'
 
 # import wxPython
 import wx

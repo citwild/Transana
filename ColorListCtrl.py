@@ -15,7 +15,7 @@
 
 """ This module implements a ColorListBox custom control for Transana. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx

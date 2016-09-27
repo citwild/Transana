@@ -17,7 +17,7 @@
 
 """ An XML - RFT export / import Parser for the wxPython RichTextCtrl """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 # Based on work by Donald N. Allingham and Gary Shao in 2000 and 2002 respectively
 # Thanks to Tim Morton for help with output optimization
 
@@ -44,7 +44,7 @@ if DEBUG:
 class PyRichTextRTFHandler(richtext.RichTextFileHandler):
     """ A RichTextFileHandler that can handle Rich Text Format files,
         at least to the extent that Transana needs Rich Text Format.
-        by David K. Woods (dwoods@wcer.wisc.edu) """
+        by David K. Woods (dwoods@transana.com) """
 
     def __init__(self, name='RTF', ext='rtf'):
         """ Initialize the RichTextRTF Handler.
@@ -184,7 +184,7 @@ class XMLToRTFHandler(xml.sax.handler.ContentHandler):
     """ An xml.sax handler designed to convert wxRichTextCtrl's internal XML format data into
         Rich Text Format data that can be saved to *.rtf files, at least to the extent that
         Transana (htp://www.transana.org) needs Rich Text Format features supported.
-        by David K. Woods (dwoods@wcer.wisc.edu) """
+        by David K. Woods (dwoods@transana.com) """
 
     def __init__(self, encoding='utf8'):
         """ Initialize the XMLToRTFHandler
@@ -970,7 +970,7 @@ class RTFTowxRichTextCtrlParser:
     """ An RTF Parser designed to convert Rich Text Format data from *.rtf files to
         wxRichTextCtrl's internal format, at least to the extent that
         Transana (htp://www.transana.org) needs Rich Text Format features supported.
-        by David K. Woods (dwoods@wcer.wisc.edu) """
+        by David K. Woods (dwoods@transana.com) """
     
     def __init__(self, txtCtrl, filename=None, buf=None, insertionPoint=None, encoding='utf8', displayProgress=True):
         """ Initialize the RTFToRichTextCtrlParser.

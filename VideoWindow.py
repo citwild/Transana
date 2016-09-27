@@ -17,7 +17,7 @@
 """ This module implements the MediaPlayer class for Transana.  It is primarily responsible
     for window layout and for communicating with component video_player objects. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

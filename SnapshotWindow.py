@@ -16,7 +16,7 @@
 
 """This module contains functions for manipulating and coding still images in Transana."""
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 DEBUG=False
 if DEBUG:

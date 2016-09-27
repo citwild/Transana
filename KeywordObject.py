@@ -23,7 +23,7 @@
 #        have (or at this time need) this field.  The following code is
 #        obviously heavily based on DataObject.   DKW
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 import wx
 from TransanaExceptions import *

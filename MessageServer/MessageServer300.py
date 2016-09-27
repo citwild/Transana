@@ -1,4 +1,4 @@
-# Copyright (C) 2003 - 2016 The Board of Regents of the University of Wisconsin System 
+# Copyright (C) 2003 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -32,7 +32,7 @@
 
 # Daemon code based on http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # Indicate whether DEBUG messages should be shown or not.
 DEBUG = False

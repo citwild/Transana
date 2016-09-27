@@ -33,7 +33,7 @@
 
        See the stand-alone code at the bottom of this file for a working example. (Help doesn't work in the example.)  """
 
-__author__ = "David K. Woods <dwoods@wcer.wisc.edu>"
+__author__ = "David K. Woods <dwoods@transana.com>"
 
 DEBUG = False
 if DEBUG:

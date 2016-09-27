@@ -16,7 +16,7 @@
 
 """This module implements the Note class as part of the Data Objects."""
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David K. Woods <dwoods@transana.com>, Nathaniel Case'
 
 # import wxPython
 import wx

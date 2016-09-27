@@ -17,7 +17,7 @@
 """This file implements the OptionsSettings class, which defines the
    main Options > Settings Dialog Box and values. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Rajas Sambhare'
+__author__ = 'David Woods <dwoods@transana.com>, Rajas Sambhare'
 
 # import wxPython
 import wx

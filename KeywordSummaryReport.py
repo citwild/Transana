@@ -16,7 +16,7 @@
 
 """This module implements the Keyword Summary Report. """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 # import the Python os module
 import os

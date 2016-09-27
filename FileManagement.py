@@ -20,7 +20,7 @@
    to an sFTP server or a Storage Resource Broker (SRB) and securely transfering files between the local file 
    system and the remote computer.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Rajas Sambhare <rasambhare@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Rajas Sambhare'
 
 import wx  # Import wxPython
 

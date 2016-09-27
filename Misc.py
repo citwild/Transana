@@ -17,7 +17,7 @@
 
 """This module implements miscellaneous convenience functions."""
 
-__author__ = 'Nathaniel Case, David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 # Patch sent by David Fraser to eliminate need for mx module
 
 #import mx.DateTime

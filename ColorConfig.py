@@ -16,7 +16,7 @@
 
 """ This dialog implements the Transana Color Configuration class.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx

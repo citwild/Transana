@@ -17,7 +17,7 @@
 """This file implements the FormatDialog class, which defines the
    Font and Paragraph formatting Dialog Box. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx

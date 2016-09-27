@@ -16,7 +16,7 @@
 
 """This module implements the Data Export for Transana based on the Transana XML schema."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Ronnie Steinmetz, Jonathan Beavers'
+__author__ = 'David Woods <dwoods@transana.com>, Ronnie Steinmetz, Jonathan Beavers'
 
 DEBUG = False
 DEBUG2 = False

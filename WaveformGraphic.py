@@ -15,7 +15,7 @@
 
 """This module reads a WAV file and creates a Waveform Graphics File """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

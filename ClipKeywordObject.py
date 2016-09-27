@@ -52,7 +52,7 @@ import TransanaGlobal
 # import wxPython only for unicode testing
 import wx
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 
 class ClipKeyword(object):

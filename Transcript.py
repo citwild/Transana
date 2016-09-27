@@ -16,7 +16,7 @@
 
 """This module implements the Transcript class as part of the Data Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case, Jonathan Beavers <jonathan.beavers@gmail.com>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case, Jonathan Beavers'
 
 DEBUG = False
 if DEBUG:

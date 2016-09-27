@@ -16,7 +16,7 @@
 
 """ This module implements the RichTextEditCtrl class, a Rich Text editor based on StyledTextCtrl. """
 
-__author__ = 'Nathaniel Case, David Woods <dwoods@wcer.wisc.edu>, Jonathan Beavers <jonathan.beavers@gmail.com>'
+__author__ = 'Nathaniel Case, David Woods <dwoods@transana.com>, Jonathan Beavers'
 
 DEBUG = False
 if DEBUG:

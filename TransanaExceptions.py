@@ -47,7 +47,7 @@ def ReportRecordLockedException(rtype, id, e):<BR>
     Handles the reporting of Record Lock Exceptions consistently.<BR><BR>
 """
 
-__author__ = 'Nathaniel Case <nacase@wisc.edu>, David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>, Nathaniel Case'
 
 import wx
 

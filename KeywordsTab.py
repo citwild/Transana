@@ -16,7 +16,7 @@
 
 """ This module implements the KeywordsTab class for the Data Window. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 DEBUG = False
 if DEBUG:

@@ -17,7 +17,7 @@
 """ This implements the Transana Font Formatting Panel class. The wxPython wxFontDialog 
     proved inadequate for my needs, especially on the Mac.  It is modeled after wxFontDialog.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # Enable (True) or Disable (False) debugging messages
 DEBUG = False

@@ -16,7 +16,7 @@
 """ This unit handles interaction with the wxMedia Control used in displaying video
     on the Windows and Mac platforms.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

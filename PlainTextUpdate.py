@@ -16,7 +16,7 @@
 
 """This file implements the Plain Text Update mechanism for Transana 3.1."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx

@@ -17,7 +17,7 @@
 
 """This module implements the Progress Dialog for Waveform Creation."""
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

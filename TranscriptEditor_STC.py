@@ -17,7 +17,7 @@
 """This module implements the TranscriptEditor class as part of the Editors
 component.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case, Jonathan Beavers <jonathan.beavers@gmail.com>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case, Jonathan Beavers'
 
 DEBUG = False
 if DEBUG:

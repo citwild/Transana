@@ -16,7 +16,7 @@
 
 """This module implements the Analytic Data Export function. """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 import wx
 # import Python's os module

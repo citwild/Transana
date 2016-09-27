@@ -17,7 +17,7 @@
 """ This dialog implements the Transana Font Dialog class. The wxPython wxFontDialog 
     proved inadequate for our needs, especially on the Mac.  It is modeled after wxFontDialog.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # Enable (True) or Disable (False) debugging messages
 DEBUG = False
