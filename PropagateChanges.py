@@ -16,7 +16,7 @@
 
 """ A Utility Program to deal with propagating Episode Transcript and Clip Change propagation. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

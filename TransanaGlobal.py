@@ -16,7 +16,7 @@
 
 """This module contains Transana's global variables."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 # Import wxPython
 import wx

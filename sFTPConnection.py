@@ -16,7 +16,7 @@
 
 """This module implements the logon screen used in connecting to an sFTP Server.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 import wx
 import TransanaGlobal
@@ -113,10 +113,10 @@ class sFTPConnection(wx.Dialog):
         # Load the Config Data.  wxConfig automatically uses the Registry on Windows and the appropriate file on Mac.
         # Program Name is Transana, Vendor Name is Verception to remain compatible with Transana 1.0.
         config = wx.Config('Transana', 'Verception')
-        self.sFTPServer         = config.Read('/2.0/sFTP/sFTPServer', 'ftp.wcer.wisc.edu')
+        self.sFTPServer         = config.Read('/2.0/sFTP/sFTPServer', '')
         self.sFTPPort           = config.Read('/2.0/sFTP/sFTPPort', '22')
         self.sFTPPublicKeyType  = config.Read('/2.0/sFTP/sFTPPublicKeyType', 'ssh-rsa')
-        self.sFTPPublicKey      = config.Read('/2.0/sFTP/sFTPPublicKey', 'AAAAB3NzaC1yc2EAAAABIwAAAQEAzi+1CH0qa4UwRgxf2J4cQE6HNJYSTYaDlionweNWmRBBXG5mu2L7bAXYx32QnRwukbZNJAF/APm80aLbQo/m6nn8Do5eSWDkel0J1GeXOFd/yfINrcNMN2UD2r7J0o6PMBtZVQq2logm1Ckbu2UDhW8HWDMKC1YsfU4y5HTd09qvduEGMCW7YsKECiqlBBX8/Pg0GuThi0h5IOuyufpCpTPaUxL0tBoIo7pRH2Dax5ivtAaxO+xWP8mMnOCLjzxHknD0z3h/bmr8QJ4o9vR8xjXab/Skrtmd1FSqei4cdWFYW8jDdbPMS14sOTj0pk58/8I7h838kQ7WkYwNcC4fEQ==')
+        self.sFTPPublicKey      = config.Read('/2.0/sFTP/sFTPPublicKey', '')
 
     def SaveConfiguration(self):
         """ Save Configuration Data to the Registry or a Config File. """

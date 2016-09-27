@@ -17,7 +17,7 @@
 """ This module implements the PlayAllClips class, which is a controller window that handles
     the "Play All Clips" in a Collection function. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

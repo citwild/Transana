@@ -18,7 +18,7 @@
    also be run as a stand-alone utility.  More specifically, this module presents a File Transfer Dialog
    and manages all the SRB Connection logic behind moving files between the SRB and a local computer.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 import wx  # import wxPython
 import os

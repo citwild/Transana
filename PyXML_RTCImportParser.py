@@ -22,7 +22,7 @@
 # contents as each transcript was added.  I tried a variety of things, including cut-and-paste of formatted
 # text, but that caused formatting problems for the rest of the report.  
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 

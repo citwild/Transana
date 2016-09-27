@@ -16,7 +16,7 @@
 
 """ This class implements a Print Preview and Printing mechanism, based on the wxPython Print Framework. """
 
-__author__ = "David K. Woods <dwoods@wcer.wisc.edu>"
+__author__ = "David K. Woods <dwoods@transana.com>"
 
 # This unit is designed to implement Print Preview and Print mechanisms for Transana's Reports.
 # It is designed to allow the user to define a set of font styles for the report and send a data structure

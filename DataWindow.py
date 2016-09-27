@@ -16,7 +16,7 @@
 
 """This module implements the DataWindow class for the Data Display Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 DEBUG = False
 if DEBUG:

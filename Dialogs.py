@@ -17,7 +17,7 @@
 """This module contains miscellaneous general-purpose dialog classes.  These
 are mostly intended to be sub-classed for specific uses."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 import wx
 from TransanaExceptions import *

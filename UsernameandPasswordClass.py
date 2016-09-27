@@ -18,7 +18,7 @@
     For multi-user Transana, this module requests UserName, Password, Database Server,
     and Database Name from the user. """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 # import wxPython
 import wx

@@ -16,7 +16,7 @@
 
 """ This module implements the Transcript Properties form. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 # import wxPython
 import wx

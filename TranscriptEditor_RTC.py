@@ -17,7 +17,7 @@
 """This module implements the TranscriptEditor class using the wxRichTextCtrl as part of the Transcript Editor
 component.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

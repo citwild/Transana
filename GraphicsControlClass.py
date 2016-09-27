@@ -54,7 +54,7 @@
       SetDimensions(x, y, width, height) Alters the dimensions of the Graphic Area, including resizing the underlying Bitmap if there is one.
     """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>, Rajas Sambhare'
+__author__ = 'David K. Woods <dwoods@transana.com>, Rajas Sambhare'
 
 # import wxPython
 import wx

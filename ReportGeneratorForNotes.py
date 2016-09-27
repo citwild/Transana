@@ -16,7 +16,7 @@
 
 """This module implements the Report Generator for NOTES Reports. """
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David K. Woods <dwoods@transana.com>'
 
 # import the Python String module
 import string

@@ -16,7 +16,7 @@
 
 """This module implements the Edit Keyword List dialog box."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 import Clip
 import ClipKeywordObject

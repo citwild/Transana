@@ -16,7 +16,7 @@
 
 """This module implements the Visualization class as part of the Visualization component."""
 
-__author__ = 'David K. Woods <dwoods@wcer.wisc.edu>, Nathaniel Case, Rajas Sambhare'
+__author__ = 'David K. Woods <dwoods@transana.com>, Nathaniel Case, Rajas Sambhare'
 
 DEBUG = False
 if DEBUG:

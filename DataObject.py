@@ -29,7 +29,7 @@ if DEBUG:
     get_note_nums()
 """
 
-__author__ = 'Nathaniel Case, David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'Nathaniel Case, David Woods <dwoods@transana.com>'
 
 import DBInterface
 import inspect

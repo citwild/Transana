@@ -17,7 +17,7 @@
 """ This class implements a Print Preview and Printing mechanism for RTF-based Transcripts within
     Transana and TEXT-based Notes, based on the wxPython Print Framework. """
 
-__author__ = "David K. Woods <dwoods@wcer.wisc.edu>, Nate Case"
+__author__ = "David K. Woods <dwoods@transana.com>, Nate Case"
 
 # This unit is designed to implement Print Preview and Print mechanisms for Transana's Transcript Printing and Note
 # printing.  It is designed to receive a Transcript object or Note text, depending on

@@ -14,9 +14,9 @@
 #along with this program; if not, write to the Free Software
 #Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-""" This module implements the Synonym Editor for teh Word Frequency Reports for Transana """
+""" This module implements the Synonym Editor for the Word Frequency Reports for Transana """
 
-__author__ = "David K. Woods <dwoods@wcer.wisc.edu>"
+__author__ = "David K. Woods <dwoods@transana.com>"
 
 # Import Python's os module
 import os

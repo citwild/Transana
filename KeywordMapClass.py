@@ -16,7 +16,7 @@
 
 """This module implements a map of keywords that have been applied to the selected Episode"""
 
-__author__ = "David K. Woods <dwoods@wcer.wisc.edu>"
+__author__ = "David K. Woods <dwoods@transana.com>"
 
 DEBUG = False
 if DEBUG:

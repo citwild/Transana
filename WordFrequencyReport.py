@@ -16,7 +16,7 @@
 
 """ This module implements the Word Frequency Reports for Transana """
 
-__author__ = "David K. Woods <dwoods@wcer.wisc.edu>"
+__author__ = "David K. Woods <dwoods@transana.com>"
 
 # import Python's os and sys modules
 import os, sys

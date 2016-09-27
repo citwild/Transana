@@ -16,7 +16,7 @@
 
 """ This module handles Search Requests and all related processing. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

@@ -17,7 +17,7 @@
 """This module implements the DatabaseTreeTab class for the Data Display
 Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Nathaniel Case <nacase@wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 import DBInterface
 import Dialogs

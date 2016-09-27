@@ -16,7 +16,7 @@
 
 """This file implements the Filtering Dialog Box for the Transana application."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Kathleen Liston'
+__author__ = 'David Woods <dwoods@transana.com>, Kathleen Liston'
 
 DEBUG = False
 if DEBUG:

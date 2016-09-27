@@ -16,7 +16,7 @@
 
 """  This module implements the Snapshot Properties form.  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 import Clip
 import Collection

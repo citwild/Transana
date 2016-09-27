@@ -16,7 +16,7 @@
 
 """ This dialog implements the Transana Format Tabs Panel class.   """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # Enable (True) or Disable (False) debugging messages
 DEBUG = False

@@ -16,7 +16,7 @@
 
 """This module implements the Quote class as part of the Data Objects."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

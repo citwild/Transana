@@ -16,7 +16,7 @@
 
 """This module implements the logon screen used in connecting to the Storage Resource Broker (SRB).  """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 import wx
 

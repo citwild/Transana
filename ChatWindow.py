@@ -17,7 +17,7 @@
 """ A Message Client that processes inter-instance chat communication between Transana-MU
     clients.  This client utility requires connection to a Transana Message Server. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:
@@ -448,15 +448,6 @@ class ChatWindow(wx.Frame):
             if DEBUG:
                 print 'C %s %s %s %s %s ||| ' % (userName, host, db, ssl, VERSION)
 
-
-            if ('wxGTK' in wx.PlatformInfo) and (host.lower() == 'localhost'):
-                host = 'walnut-v.ad.education.wisc.edu'
-
-                print
-                print '***************************************************************************'
-                print '*                      GTK Message Server Faked!                          *'
-                print '***************************************************************************'
-            
             # If we are running the Transana Client on the same computer as the MySQL server, we MUST refer to it as localhost.
             # In this circumstance, this copy of the Transana Client will not be recognized by the Transana Message Server
             # as being connected to the same database as other computers connecting to it.  To get around this, we need to

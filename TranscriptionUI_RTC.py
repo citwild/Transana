@@ -16,7 +16,7 @@
 
 """ This module implements the TranscriptionUI class for the Transcript Editor component of Transana. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 DEBUG = False
 if DEBUG:

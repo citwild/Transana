@@ -16,7 +16,7 @@
 
 """ This module implements the Episode Items and Selected Items tab class for the Data Window. """
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # Import wxPython
 import wx

@@ -16,7 +16,7 @@
 
 """This module implements a primitive RTF parser."""
 
-__author__ = 'Nathaniel Case, David K. Woods <dwoods@wcer.wisc.edu>, Jonathan Beavers <jonathan.beavers@gmail.com>'
+__author__ = 'David K. Woods <dwoods@transana.com>, Nathaniel Case, Jonathan Beavers'
 
 # Okay, poor form, but I have to have the Global Encoding here.
 # import Transana's Globals

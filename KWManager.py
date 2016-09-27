@@ -16,7 +16,7 @@
 
 """This module implements the Keyword Management interface."""
 
-__author__ = 'Nathaniel Case, David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 import wx                           # import wxPython
 import sys                          # import Python's sys module
