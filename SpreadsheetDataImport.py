@@ -23,6 +23,8 @@ import wx
 # Import wxPython's Wizard
 import wx.wizard as wiz
 
+# Import Transana's Dialogs
+import Dialogs
 # Import Transana's Document Object
 import Document
 # Import Transana's Keyword Object
@@ -42,6 +44,8 @@ import csv
 import datetime
 # Import Python's os module
 import os
+# Import Python's sys module
+import sys
 
 
 class EditBoxFileDropTarget(wx.FileDropTarget):
@@ -137,9 +141,33 @@ class GetFileNamePage(WizPage):
         # Create the Source File Browse button
         self.srcBrowse = wx.Button(self, -1, _("Browse"))
         self.srcBrowse.Bind(wx.EVT_BUTTON, self.OnBrowse)
-        box1.Add(self.srcBrowse, 0)
+        box1.Add(self.srcBrowse, 0, wx.LEFT, 10)
         # Add the Source Sizer to the Main Sizer
-        self.sizer.Add(box1, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.sizer.Add(box1, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
+
+        # Add Encoding label
+        lblEncoding = wx.StaticText(self, -1, _("File Encoding:"))
+        self.sizer.Add(lblEncoding, 0, wx.TOP | wx.LEFT | wx.RIGHT, 10)
+
+        # Add Encoding selection
+        choices = ["ascii", "big5", "big5hkscs", "cp037", "cp424", "cp437", "cp500", "cp720", "cp737", "cp775", "cp850", "cp852", "cp855", "cp856", "cp857",
+                   "cp858", "cp860", "cp861", "cp862", "cp863", "cp864", "cp865", "cp866", "cp869", "cp874", "cp875", "cp932", "cp949", "cp950", "cp1006",
+                   "cp1026", "cp1140", "cp1250", "cp1251", "cp1252", "cp1253", "cp1254", "cp1255", "cp1256", "cp1257", "cp1258", "euc_jp", "euc_jis_2004",
+                   "euc_jisx0213", "euc_kr", "gb2312", "gbk", "gb18030", "hz", "iso2022_jp", "iso2022_jp_1", "iso2022_jp_2", "iso2022_jp_2004", "iso2022_jp_3",
+                   "iso2022_jp_ext", "iso2022_kr", "latin_1", "iso8859_2", "iso8859_3", "iso8859_4", "iso8859_5", "iso8859_6", "iso8859_7", "iso8859_8",
+                   "iso8859_9", "iso8859_10", "iso8859_13", "iso8859_14", "iso8859_15", "iso8859_16", "johab", "koi8_r", "koi8_u", "mac_cyrillic",
+                   "mac_greek", "mac_iceland", "mac_latin2", "mac_roman", "mac_turkish", "ptcp154", "shift_jis", "shift_jis_2004", "shift_jisx0213",
+                   "utf_32", "utf_32_be", "utf_32_le", "utf_16", "utf_16_be", "utf_16_le", "utf_7", "utf_8", "utf_8_sig"]
+        self.txtSrcEncoding = wx.Choice(self, -1, choices = choices)
+        self.txtSrcEncoding.SetStringSelection('cp1252')
+        self.sizer.Add(self.txtSrcEncoding, 0, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 10)
+
+        self.sizer.Add((1, 24))
+        prompt = _("For more information on file formats and encoding, please see the Help page.")
+        info = wx.StaticText(self, -1, prompt)
+        font = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        info.SetFont(font)
+        self.sizer.Add(info, 0, wx.TOP | wx.LEFT | wx.RIGHT, 10)
 
     def IsComplete(self):
         """ IsComplete signals whether an EXISTING file has been selected """
@@ -394,6 +422,7 @@ class SpreadsheetDataImport(wiz.Wizard):
         self.AutoCodePage.SetPrev(self.ItemsToIncludePage)
 
         # Bind Wizard Events
+        self.Bind(wiz.EVT_WIZARD_PAGE_CHANGING, self.OnPageChanging)
         self.Bind(wiz.EVT_WIZARD_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(wiz.EVT_WIZARD_FINISHED, self.OnWizardFinished)
 
@@ -435,36 +464,71 @@ class SpreadsheetDataImport(wiz.Wizard):
         # Return the processed string
         return text
 
-    def OnPageChanged(self, event):
-        """ Process Wizard Page changes """
-        # If we move BACKWARDS to the File Name Page ...
+    def OnPageChanging(self, event):
+        """ Process Wizard Page changes, with VETO option """
         if event.GetPage() == self.FileNamePage:
-            # Reset the Questions and Codes
-            self.questions = []
-            self.all_codes = {}
-
-        # If we move to the Rows or Columns Page ...
-        elif event.GetPage() == self.RowsOrColumnsPage:
+            prompt = unicode(_('File:  %s'), 'utf8')
             # ... set the File Name to the file selected on the File Name Page
-            self.RowsOrColumnsPage.fileName.SetLabel(_('File:  %s') % self.FileNamePage.txtSrcFileName.GetValue())
+            self.RowsOrColumnsPage.fileName.SetLabel(prompt % self.FileNamePage.txtSrcFileName.GetValue())
             # If we're moving FORWARD ...
             if event.GetDirection():
                 # Initialize the File Data list
                 self.all_data = []
                 # Note the filename
                 filename = self.FileNamePage.txtSrcFileName.GetValue()
+                # Get the Character Encoding
+                encoding = self.FileNamePage.txtSrcEncoding.GetStringSelection()
                 # Open the file
                 with open(filename, 'r') as f:
-                    # Use the csv Sniffer to determine the dialect of the file
-                    dialect = csv.Sniffer().sniff(f.read(1024))
-                    # Reset the file to the beginning
-                    f.seek(0)
-                    # use the csv Reader to read the data file
-                    csvReader = csv.reader(f, dialect=dialect)
-                    # For each row of data read ...
-                    for row in csvReader:
-                        # ... add that row to the data list
-                        self.all_data.append(row)
+                    try:
+                        # Use the csv Sniffer to determine the dialect of the file
+                        dialect = csv.Sniffer().sniff(f.read(1024))
+                        # Reset the file to the beginning
+                        f.seek(0)
+                        # use the csv Reader to read the data file
+                        csvReader = csv.reader(f, dialect=dialect)
+                        # For each row of data read ...
+                        for row in csvReader:
+                            # ... create a list for the Unicode encoded data
+                            encRow = []
+                            # For each element in the row  ...
+                            for element in row:
+                                # ... decode the data (convert string to unicode) using the import encoding ...
+                                encRow.append(element.decode(encoding))
+                            # ... add that encoded row to the data list
+                            self.all_data.append(encRow)
+                    except UnicodeDecodeError:
+                        prompt = _("Unicode Error.  The encoding you selected does not match the data file you selected.")
+                        tmpDlg = Dialogs.ErrorDialog(self, prompt)
+                        tmpDlg.ShowModal()
+                        tmpDlg.Destroy()
+                        event.Veto()
+                        return
+                    except (csv.Error, IndexError, TypeError):
+                        self.all_data = []
+                        try:
+                            f.seek(0)
+                            data = f.read()
+                            data = data.decode(encoding)
+                            if data[-1] == '\n':
+                                data = data[:-1]
+                            rows = data.split('\n')
+                            for x in rows:
+                                row_data = []
+                                for y in x.split('\t'):
+                                    row_data.append(self.strip_quotes(y))
+                                self.all_data.append(row_data)
+                        except UnicodeDecodeError:
+                            prompt = _("Unicode Error.  The encoding you selected does not match the data file you selected.")
+                            tmpDlg = Dialogs.ErrorDialog(self, prompt)
+                            tmpDlg.ShowModal()
+                            tmpDlg.Destroy()
+                            event.Veto()
+                            return
+                    except:
+
+                        print sys.exc_info()[0]
+                        print sys.exc_info()[1]
 
                 # Place the first item in each row (that is, the first COLUMN of data) in the Column TextCtrl
                 self.RowsOrColumnsPage.txt1.Clear()
@@ -477,9 +541,8 @@ class SpreadsheetDataImport(wiz.Wizard):
                 # Disable the Column and Row TextCtrls
                 self.RowsOrColumnsPage.txt1.Enable(False)
                 self.RowsOrColumnsPage.txt2.Enable(False)
-
         # If we move to the Organize and Include Items page ...
-        elif event.GetPage() == self.ItemsToIncludePage:
+        elif event.GetPage() == self.RowsOrColumnsPage:
             # If we're moving FORWARD ...
             if event.GetDirection():
                 # Initialize the Questions list
@@ -490,7 +553,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                     for row in self.all_data:
                         # ... and selecting the row's first item
                         self.questions.append(self.strip_quotes(row[0]))
-                # Determine the Questoins if the user selected Rows ...
+                # Determine the Questions if the user selected Rows ...
                 else:
                     # ... by iterating through the first row of data
                     for col in self.all_data[0]:
@@ -502,13 +565,20 @@ class SpreadsheetDataImport(wiz.Wizard):
                 self.ItemsToIncludePage.identifier.SetSelection(0)
                 # Populate the list of Questions / Prompts
                 self.ItemsToIncludePage.questions.SetItems(self.questions)
-
         # If we move to the Auto-Code Page ...
-        elif event.GetPage() == self.AutoCodePage:
+        elif event.GetPage() == self.ItemsToIncludePage:
             # If we're moving FORWARD ...
             if event.GetDirection():
                 # ... set the Auto-Code options to match the Questions
                 self.AutoCodePage.autocode.SetItems(self.questions)
+
+    def OnPageChanged(self, event):
+        """ Process Wizard Page changes with no veto option """
+        # If we move BACKWARDS to the File Name Page ...
+        if event.GetPage() == self.FileNamePage:
+            # Reset the Questions and Codes
+            self.questions = []
+            self.all_codes = {}
 
         # Identify the Next button
         nextButton = self.FindWindowById(wx.ID_FORWARD)
@@ -529,6 +599,9 @@ class SpreadsheetDataImport(wiz.Wizard):
         # Initialize the Participant Counter to 1 (the first participant) rather than 0.
         participantCount = 1
 
+        # Get the Character Encoding
+        encoding = self.FileNamePage.txtSrcEncoding.GetStringSelection()
+
         # We need to move through the data differently if the source file is organized by Columns or by Rows.
         # We need to present data differently if we're organizing output data by Participant or by Question.
         # It might be possible to do this more efficiently, but I don't have time to abstract that right now.
@@ -545,13 +618,13 @@ class SpreadsheetDataImport(wiz.Wizard):
                 for x in range(1, len(self.all_data[0])):
 
                     # If the user requested automatic unique Participant IDs ...
-                    if id_col == -1:
+                    if (id_col == -1) or (self.all_data[id_col][x] == ''):
                         # ... create a unique Participant ID and increment the Participant Counter
-                        participantID = _('Participant %04d') % participantCount
+                        participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
                         participantCount += 1
                     # Otherwise, use the data the user requested
                     else:
-                        participantID = self.strip_quotes(self.all_data[id_col][x])
+                        participantID = self.all_data[id_col][x]  # self.strip_quotes(self.all_data[id_col][x].decode(encoding))
 
                     # Create Document by participantID
                     tmpDoc = Document.Document()
@@ -560,26 +633,45 @@ class SpreadsheetDataImport(wiz.Wizard):
                     tmpDoc.library_num = libraryNumber
                     tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
                     tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text and PlainText
-                    tmpDoc.text = 'txt\n'
+                    # Initialize Document Text with the initial XML for a Transana-XML document
+                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
+<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+"""
                     tmpDoc.plaintext = ''
 
                     # For each Question that should be included in the output ...
-                    for q in self.ItemsToIncludePage.questions.GetSelections():
-                        # ... populate the Document Text and Plain Text with Question and Response
-                        tmpDoc.text += '%s\n%s\n\n' % (self.strip_quotes(self.questions[q]), self.strip_quotes(self.all_data[q][x]))
-                        tmpDoc.plaintext += '%s\n%s\n\n' % (self.strip_quotes(self.questions[q]), self.strip_quotes(self.all_data[q][x]))
+                    for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
+                        # ... extract the question and answer ...
+                        question = self.strip_quotes(self.questions[q])
+                        answer = self.strip_quotes(self.all_data[q][x])
 
-                    # Remove trailing carriage returns
-                    tmpDoc.text = tmpDoc.text[:-2]
-                    tmpDoc.plaintext = tmpDoc.plaintext[:-2]
+                        # ... populate the Document Text and Plain Text with Question and Response
+                        # Start with a Paragraph declaration
+                        tmpDoc.text += """    <paragraph tabs="762">
+      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                        # Add the actual DATA
+                        tmpDoc.text += question.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
+                        # Close the Paragraph declaration
+                        tmpDoc.text += """</text>
+    </paragraph>
+"""
+                        tmpDoc.plaintext += question + '\t' + answer + '\n'
+
+                    # Complete the Transana-XML documeht specification
+                    tmpDoc.text += """  </paragraphlayout>
+</richtext>
+"""
+
+                    # Remove trailing carriage return
+                    tmpDoc.plaintext = tmpDoc.plaintext[:-1]
 
                     # For each selected Auto-Code category ...
                     for c in self.AutoCodePage.autocode.GetSelections():
                         # Define the Keyword Group
-                        kwg = _('Auto-code')
+                        kwg = unicode(_('Auto-code'), 'utf8')
                         # Define the Keyword
-                        kw = "%s : %s" % (self.strip_quotes(self.questions[c]), self.strip_quotes(self.all_data[c][x]))
+                        kw = unicode("%s : %s", 'utf8') % (self.strip_quotes(self.questions[c]), self.strip_quotes(self.all_data[c][x]))
                         # Replace Parentheses (illegal in Keywords) with Brackets
                         kw = kw.replace('(', '[')
                         kw = kw.replace(')', ']')
@@ -601,7 +693,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                                     keyword = KeywordObject.Keyword()
                                     keyword.keywordGroup = kwg
                                     keyword.keyword = kw
-                                    keyword.definition = _('Created during Spreadsheet Data Import for file "%s."') % self.FileNamePage.txtSrcFileName.GetValue()
+                                    keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
                                     # Try to save the Keyword
                                     keyword.db_save()
                                     # Add the new Keyword to the database tree
@@ -626,7 +718,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                                         keyword = KeywordObject.Keyword()
                                         keyword.keywordGroup = kwg
                                         keyword.keyword = kw
-                                        keyword.definition = _('Created during Spreadsheet Data Import for file "%s."') % self.FileNamePage.txtSrcFileName.GetValue()
+                                        keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
                                         # Try to save the Keyword
                                         keyword.db_save()
                                         # Add the new Keyword to the database tree
@@ -660,7 +752,7 @@ class SpreadsheetDataImport(wiz.Wizard):
             # ... and if we're organizing output by Question ...
             elif self.ItemsToIncludePage.organize.GetSelection() == 1:
                 # For each Question that should be included in the output ...
-                for q in self.ItemsToIncludePage.questions.GetSelections():
+                for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
                     # Note the Question
                     questionID = self.strip_quotes(self.all_data[q][0])
 
@@ -671,8 +763,11 @@ class SpreadsheetDataImport(wiz.Wizard):
                     tmpDoc.library_num = libraryNumber
                     tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
                     tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text and PlainText
-                    tmpDoc.text = 'txt\n'
+                    # Initialize Document Text with the initial XML for a Transana-XML document
+                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
+<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+"""
                     tmpDoc.plaintext = ''
 
                     # We have to re-initialize the Participant Counter for each Question
@@ -682,20 +777,34 @@ class SpreadsheetDataImport(wiz.Wizard):
                     for x in range(1, len(self.all_data[0])):
 
                         # If the user requested automatic unique Participant IDs ...
-                        if id_col == -1:
+                        if (id_col == -1) or (self.strip_quotes(self.all_data[id_col][x]) == ''):
                             # ... create a unique Participant ID and increment the Participant Counter
-                            participantID = _('Participant %04d') % participantCount
+                            participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
                             participantCount += 1
                         # Otherwise, use the data the user requested
                         else:
                             participantID = self.strip_quotes(self.all_data[id_col][x])
 
-                        # ... populate the Document Text and Plain Text with Participant ID and Response
-                        tmpDoc.text += '%s\n%s\n\n' % (participantID, self.strip_quotes(self.all_data[q][x]))
-                        tmpDoc.plaintext += '%s\n%s\n\n' % (participantID, self.strip_quotes(self.all_data[q][x]))
+                        # ... extract the question and answer ...
+                        answer = self.strip_quotes(self.all_data[q][x])
 
+                        # ... populate the Document Text and Plain Text with Question and Response
+                        # Start with a Paragraph declaration
+                        tmpDoc.text += """    <paragraph tabs="762">
+      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                        # Add the actual DATA
+                        tmpDoc.text += participantID.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
+                        # Close the Paragraph declaration
+                        tmpDoc.text += """</text>
+    </paragraph>
+"""
+                        tmpDoc.plaintext += participantID + '\t' + answer + '\n'
+
+                    # Complete the Transana-XML document specification
+                    tmpDoc.text += """  </paragraphlayout>
+</richtext>
+"""
                     # Remove trailing carriage returns
-                    tmpDoc.text = tmpDoc.text[:-2]
                     tmpDoc.plaintext = tmpDoc.plaintext[:-2]
 
                     # Try to save the new Document
@@ -727,11 +836,10 @@ class SpreadsheetDataImport(wiz.Wizard):
                 
                 # For each ROW ...
                 for x in range(1, len(self.all_data)):
-
                     # If the user requested automatic unique Participant IDs ...
-                    if id_col == -1:
+                    if (id_col == -1) or (self.strip_quotes(self.all_data[x][id_col]) == ''):
                         # ... create a unique Participant ID and increment the Participant Counter
-                        participantID = _('Participant %04d') % participantCount
+                        participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
                         participantCount += 1
                     # Otherwise, use the data the user requested
                     else:
@@ -744,26 +852,46 @@ class SpreadsheetDataImport(wiz.Wizard):
                     tmpDoc.library_num = libraryNumber
                     tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
                     tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text and PlainText
-                    tmpDoc.text = 'txt\n'
+                    # Initialize Document Text with the initial XML for a Transana-XML document
+                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
+<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+"""
                     tmpDoc.plaintext = ''
 
                     # For each Question that should be included in the output ...
-                    for q in self.ItemsToIncludePage.questions.GetSelections():
+                    for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
                         # ... populate the Document Text and Plain Text with Question and Response
-                        tmpDoc.text += '%s\n%s\n\n' % (self.strip_quotes(self.questions[q]), self.strip_quotes(self.all_data[x][q]))
-                        tmpDoc.plaintext += '%s\n%s\n\n' % (self.strip_quotes(self.questions[q]), self.strip_quotes(self.all_data[x][q]))
+                        # ... extract the question and answer ...
+                        question = self.strip_quotes(self.questions[q])
+                        answer = self.strip_quotes(self.all_data[x][q])
+
+                        # ... populate the Document Text and Plain Text with Question and Response
+                        # Start with a Paragraph declaration
+                        tmpDoc.text += """    <paragraph tabs="762">
+      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                        # Add the actual DATA
+                        tmpDoc.text += question.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
+                        # Close the Paragraph declaration
+                        tmpDoc.text += """</text>
+    </paragraph>
+"""
+                        tmpDoc.plaintext += question + '\t' + answer + '\n'
+
+                    # Complete the Transana-XML documeht specification
+                    tmpDoc.text += """  </paragraphlayout>
+</richtext>
+"""
 
                     # Remove trailing carriage returns
-                    tmpDoc.text = tmpDoc.text[:-2]
                     tmpDoc.plaintext = tmpDoc.plaintext[:-2]
 
                     # For each selected Auto-Code category ...
                     for c in self.AutoCodePage.autocode.GetSelections():
                         # Define the Keyword Group
-                        kwg = _('Auto-code')
+                        kwg = unicode(_('Auto-code'), 'utf8')
                         # Define the Keyword
-                        kw = "%s : %s" % (self.strip_quotes(self.questions[c]), self.strip_quotes(self.all_data[x][c]))
+                        kw = unicode("%s : %s", 'utf8') % (self.strip_quotes(self.questions[c]), self.strip_quotes(self.all_data[x][c]))
                         # Replace Parentheses (illegal in Keywords) with Brackets
                         kw = kw.replace('(', '[')
                         kw = kw.replace(')', ']')
@@ -785,7 +913,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                                     keyword = KeywordObject.Keyword()
                                     keyword.keywordGroup = kwg
                                     keyword.keyword = kw
-                                    keyword.definition = _('Created during Spreadsheet Data Import for file "%s."') % self.FileNamePage.txtSrcFileName.GetValue()
+                                    keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
                                     # Try to save the keyword
                                     keyword.db_save()
                                     # Add the new Keyword to the database tree
@@ -810,7 +938,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                                         keyword = KeywordObject.Keyword()
                                         keyword.keywordGroup = kwg
                                         keyword.keyword = kw
-                                        keyword.definition = _('Created during Spreadsheet Data Import for file "%s."') % self.FileNamePage.txtSrcFileName.GetValue()
+                                        keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
                                         # Try to save the Keyword
                                         keyword.db_save()
                                         # Add the new Keyword to the database tree
@@ -844,7 +972,7 @@ class SpreadsheetDataImport(wiz.Wizard):
             # ... and if we're organizing output by Question ...
             elif self.ItemsToIncludePage.organize.GetSelection() == 1:
                 # For each Question that should be included in the output ...
-                for q in self.ItemsToIncludePage.questions.GetSelections():
+                for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
                     # Note the Question
                     questionID = self.strip_quotes(self.all_data[0][q])
 
@@ -855,8 +983,11 @@ class SpreadsheetDataImport(wiz.Wizard):
                     tmpDoc.library_num = libraryNumber
                     tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
                     tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text and PlainText
-                    tmpDoc.text = 'txt\n'
+                    # Initialize Document Text with the initial XML for a Transana-XML document
+                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
+<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+"""
                     tmpDoc.plaintext = ''
                     # We have to re-initialize the Participant Counter with each Question
                     participantCount = 1
@@ -865,20 +996,34 @@ class SpreadsheetDataImport(wiz.Wizard):
                     for x in range(1, len(self.all_data)):
 
                         # If the user requested automatic unique Participant IDs ...
-                        if id_col == -1:
+                        if (id_col == -1) or (self.strip_quotes(self.all_data[x][id_col]) == ''):
                             # ... create a unique Participant ID and increment the Participant Counter
-                            participantID = _('Participant %04d') % participantCount
+                            participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
                             participantCount += 1
                         # Otherwise, use the data the user requested
                         else:
                             participantID = self.strip_quotes(self.all_data[x][id_col])
 
-                        # ... populate the Document Text and Plain Text with Participant ID and Response
-                        tmpDoc.text += '%s\n%s\n\n' % (participantID, self.strip_quotes(self.all_data[x][q]))
-                        tmpDoc.plaintext += '%s\n%s\n\n' % (participantID, self.strip_quotes(self.all_data[x][q]))
+                        # ... extract the question and answer ...
+                        answer = self.strip_quotes(self.all_data[x][q])
 
+                        # ... populate the Document Text and Plain Text with Question and Response
+                        # Start with a Paragraph declaration
+                        tmpDoc.text += """    <paragraph tabs="762">
+      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                        # Add the actual DATA
+                        tmpDoc.text += participantID.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
+                        # Close the Paragraph declaration
+                        tmpDoc.text += """</text>
+    </paragraph>
+"""
+                        tmpDoc.plaintext += participantID + '\t' + answer + '\n'
+
+                    # Complete the Transana-XML document specification
+                    tmpDoc.text += """  </paragraphlayout>
+</richtext>
+"""
                     # Remove trailing carriage returns
-                    tmpDoc.text = tmpDoc.text[:-2]
                     tmpDoc.plaintext = tmpDoc.plaintext[:-2]
 
                     # Try to save the new Document
@@ -915,4 +1060,4 @@ class SpreadsheetDataImport(wiz.Wizard):
         # If the Menu Window is defined ...
         if TransanaGlobal.menuWindow != None:
             # ... call it's Help() method for THIS control.
-            TransanaGlobal.menuWindow.ControlObject.Help('Import Spreadsheet Data')
+            TransanaGlobal.menuWindow.ControlObject.Help('Import Spreadsheet Data Files')
