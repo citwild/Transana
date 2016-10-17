@@ -13,7 +13,7 @@ If you have spreadsheet or survey data, you may want to import Comma Separated V
 
 Such data is organized in a grid.  You will find that your headings, prompts, or questions fall along one axis and your participants fall along the other axis.  Such files can contain a variety of data types, including numeric, categorical, and text data.<P>
 
-These files are often in Microsoft Excel (*.xlsx, *.xls), Comma Separated Values (*.csv), and Tab Delimited Text (*.txt) formats.  If your data is in Excel format or that of other spreadsheet programs, you will need to load your data in your Spreadsheet program and convert it to Comma Separated Values format (*.csv) or Tab Delimited Text format (*.txt) for import into Transana.<P>
+These files are often in Microsoft Excel (*.xlsx, *.xls), Comma Separated Values (*.csv), and Tab Delimited Text (*.txt) formats.  If your data is in Excel format or that of other spreadsheet programs, you will need to load your data in your Spreadsheet program and convert it to Comma Separated Values format (*.csv) or Tab Delimited Text format (*.txt) for import into Transana.  More information on exporting data from Excel and about file encoding is available at the bottom of this page.<P>
 
 To begin importing a Spreadsheet Data file, right-click the Library where Documents should be created and choose "Import Spreadsheet Data".  <P>
 
@@ -38,6 +38,22 @@ Finally, you should indicate whether you want your data imported into Documents 
 <IMG SRC="images/SpreadsheetAutocode.gif"><P>
 
 If you choose to organize your data by Participants, you will see an additional page that allows you to select what data items you want to use for automatic coding of your Documents.   (Automatic coding is not possible when data is organized by questions.)  Note that Keywords will be created in the "Auto-code" Keyword Group and will be applied at the Document level so that they will be presented as default Keywords when you create Quotes from the Documents.  Transana imports the data ready to be coded.  It does not automatically create coded Quotes from that data.<P> 
+
+<H2>Exporting Data from Excel</H2>
+
+Please note that this description is based on Excel 2010 for Windows.  It is meant as a description of what works for me at this time, and you may need to change certain details and specific settings to get it working correctly for you.<P>
+
+If you are working in English or a language based on the Latin alphabet, including many western-European languages, you can use Excel to export  a <B>Comma Separated Values (*.csv)</B> file.  Load your spreadsheet in Excel.  Choose File > Save As.  On the Save As form, change the "Save as Type" to "CSV (Comma delimited) (*.csv)" and enter a file name.  Press Save.  This will save a plain text file with comma separated values using "cp1252" encoding.  You will need to know that encoding value for importing the file into Transana.<P>
+
+If you are working on a language based on a non-Latin alphabet, such as Chinese, Japanese, Korean, Arabic, or Russian, Excel's CSV format will not support the characters in your language.  Instead, you need to save a <B>Tab Delimited Text</B> file using a Unicode encoding.  Load your spreadsheet in Excel.  Choose File > Save As.  On the Save As form, change the "Save as Type" to "Unicode Text (*.txt)" and enter a file name.  (Please note that this is different than the "Text (Tab delimited) (*.txt)" format option.)  Press Save.  This will save a Unicode text file with tab delimited values using "UTF-16" encoding.  You will need to know that encoding value for importing the file into Transana.<P>
+
+<H2>File Encodings</H2>
+
+The English alphabet, made up of 26 upper case characters and 26 lower case characters and not including accents, is known as the ASCII character set.  These 52 characters, along with numbers, punctuation symbols common to English, and a selection of special characters, are well known to computers and are handled the same way almost everywhere.<P>  
+
+If your data includes characters that are not used in English, such as accented characters or non-Latin letters, there are a variety of different systems for storing characters not included in the ASCII character set, such as accented characters and non-Latin characters.  Such systems for storing characters are known as <B>encodings</B>, and the general rule is that you need to know what file encoding was used to save a file in order to read and correctly interpret that file.  Unfortunately, there is no commonly-accepted standard for specifying what encoding was used within a plain text file.  You are just supposed to know what encoding was used.<P>
+
+If you are using Excel, please see the section on exporting data from Excel above.  If you are using a different program, you will need to export your data into a Comma Separated Values file or a Tab Delimited Text file.  You may be able to select an encoding when exporting a file.  (If so, UTF-8 is usually a good choice.)  If you are not able to specify what encoding to use, you will need to do a little research on the Internet to find out what encoding system your program uses by default.  Either way, you will need to know the file encoding used by the program that saves the file in order for Transana to read and correctly interpret that file.<P>    
 
 <A HREF="timecodes.htm"><IMG SRC="images/previouspage.gif"  ALT="previouspage"   BORDER=0></A>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

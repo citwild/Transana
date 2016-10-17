@@ -384,15 +384,15 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.optionsPanel.SetSizer(pnl2Sizer)
 
         # Minimum Word Frequency
-        txt1 = wx.StaticText(self.optionsPanel, -1, "Minimum Frequency:", style=wx.ALIGN_RIGHT)
+        txt1 = wx.StaticText(self.optionsPanel, -1, _("Minimum Frequency:"), style=wx.ALIGN_RIGHT)
         self.minFrequency = wx.TextCtrl(self.optionsPanel, -1, "1")
 
         # Minimum Word Length
-        txt2 = wx.StaticText(self.optionsPanel, -1, "Minimum Word Length:", style=wx.ALIGN_RIGHT)
+        txt2 = wx.StaticText(self.optionsPanel, -1, _("Minimum Word Length:"), style=wx.ALIGN_RIGHT)
         self.minLength = wx.TextCtrl(self.optionsPanel, -1, "1")
 
         # Clear Word Groupings
-        self.btnClearAll = wx.Button(self.optionsPanel, -1, "Clear all Word Grouping Data", style=wx.ALIGN_CENTER)
+        self.btnClearAll = wx.Button(self.optionsPanel, -1, _("Clear all Word Grouping Data"), style=wx.ALIGN_CENTER)
         self.btnClearAll.Bind(wx.EVT_BUTTON, self.OnClearAllWordGroupings)
 
         # Use the GridSizer to center our data entry fields both horizontally and vertically
