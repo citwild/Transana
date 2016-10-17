@@ -3798,7 +3798,7 @@ class ControlObject(object):
         # Initialise the clip end time to the beginning of the media file
         latestEndTime = 0
         # Iterate through the Transcript Selection Info gathered above
-        for (transcriptNum, startTime, endTime, text) in transcriptSelectionInfo:
+        for (transcriptNum, startTime, endTime, text, plaintext) in transcriptSelectionInfo:
             # If the transcript HAS a selection ...
             if text != "":
                 # Check to see if this transcript starts before our current earliest start time, but only if
