@@ -1301,7 +1301,7 @@ class KeywordMap(wx.Frame):
                            FROM Clips2 cl, ClipKeywords2 ck
                            WHERE cl.EpisodeNum = %s AND
                                  cl.ClipNum = ck.ClipNum
-                           GROUP BY ck.keywordgroup, ck.keyword
+                           GROUP BY ck.keywordgroup, ck.keyword, ClipStart
                            ORDER BY KeywordGroup, Keyword, ClipStart"""
             # Adjust the query for sqlite if needed
             SQLText = DBInterface.FixQuery(SQLText)
@@ -1320,7 +1320,7 @@ class KeywordMap(wx.Frame):
                                FROM Snapshots2 sn, ClipKeywords2 ck
                                WHERE sn.EpisodeNum = %s AND
                                      sn.SnapshotNum = ck.SnapshotNum
-                               GROUP BY ck.keywordgroup, ck.keyword
+                               GROUP BY ck.keywordgroup, ck.keyword, SnapshotTimeCode
                                ORDER BY KeywordGroup, Keyword, SnapshotTimeCode"""
                 # Adjust the query for sqlite if needed
                 SQLText = DBInterface.FixQuery(SQLText)
@@ -1338,7 +1338,7 @@ class KeywordMap(wx.Frame):
                                FROM Snapshots2 sn, SnapshotKeywords2 ck
                                WHERE sn.EpisodeNum = %s AND
                                      sn.SnapshotNum = ck.SnapshotNum
-                               GROUP BY ck.keywordgroup, ck.keyword
+                               GROUP BY ck.keywordgroup, ck.keyword, SnapshotTimeCode
                                ORDER BY KeywordGroup, Keyword, SnapshotTimeCode"""
                 # Adjust the query for sqlite if needed
                 SQLText = DBInterface.FixQuery(SQLText)
