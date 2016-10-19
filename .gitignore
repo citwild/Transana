@@ -95,7 +95,9 @@ build Intel - OLD/
 build PPC - OLD/
 Build_Mac_260/
 Cloud Service/
-locale/
+# ww: Need to track this, otherwise have to hack it out from
+# demo version.
+# locale/
 locale - OLD/
 SSL/
 TransanaDemonstrationSetupDir/
